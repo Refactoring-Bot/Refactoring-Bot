@@ -36,7 +36,7 @@ import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.metamodel.VariableDeclaratorMetaModel;
 
 public class RefactorBot {
-
+	// refactor method
 	public static void refactor() throws FileNotFoundException {
 
 		//CompilationUnit compilationUnit = JavaParser.parse(in);
