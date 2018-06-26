@@ -20,8 +20,6 @@ public class RefactorBot {
 	 */
 	public static JSONArray getSonarqubeIssues(String projectName) throws IOException {
 
-		// HttpGet httpGet = new HttpGet("http://localhost:9000/api/issues/search?resolved=false&format=json");
-		// HttpGet httpGet = new HttpGet("https://sonarcloud.io/api/issues/search?organization=timopfaff-github&resolved=false&format=json");
 		HttpGet httpGet = new HttpGet(
 				"https://sonarcloud.io/api/issues/search?projects=" + projectName + "&resolved=false&format=json");
 		try (CloseableHttpClient httpClient = HttpClients.createDefault();
