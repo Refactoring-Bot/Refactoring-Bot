@@ -4,7 +4,13 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
-
+/**
+ * 
+ * @author Timo Pfaff
+ * 
+ * Class for removing unused variables. 
+ *
+ */
 public class VariableDeletor extends ModifierVisitor<Void> {
 
 	private String variableName;
