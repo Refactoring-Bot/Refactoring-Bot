@@ -36,28 +36,35 @@ public class RefactorBot {
 	public static void main(String[] args) throws IOException, InterruptedException {
 
 		JSONArray issues = getSonarqubeIssues("Test:Test:master");
-
+		
 		/**
 		 * The Refactoring itself
 		 */
+		
 		for (int i = 0; i < issues.length(); i++) {
 			String rule = issues.getJSONObject(i).getString("rule");
-			if (rule.equals("squid:S1068")) {
-				
+			
+			if (rule.equals("squid:S1068")) {				
 				VariableDeletor deletor = new VariableDeletor();
 				deletor.RemoveUnusedVariable(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
-
+			}			
+			else if(rule.equals("squid:S1161")) {
+				AddOverrideAnnotation annotation = new AddOverrideAnnotation();
+				annotation.addOverrideAnnotation(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
 			}
 		}
+		
 		/**
 		 * execute script to commit changes and create pull request on GitHub
 		 */
+		
 		String bash = "c:/Programme/Git/bin/bash.exe"; 
 		String filename = "c:/Users/Timo/pull-request.sh"; 
 		String[] command = new String[] { bash, filename }; 
 		ProcessBuilder p = new ProcessBuilder(command).inheritIO();
 		Process pb = p.start(); 
 		pb.waitFor();
+		
 		
 	}
 
