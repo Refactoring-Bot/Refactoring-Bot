@@ -47,10 +47,21 @@ public class RefactorBot {
 			if (rule.equals("squid:S1068")) {				
 				VariableDeletor deletor = new VariableDeletor();
 				deletor.RemoveUnusedVariable(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
-			}			
+			}
+				
 			else if(rule.equals("squid:S1161")) {
 				AddOverrideAnnotation annotation = new AddOverrideAnnotation();
 				annotation.addOverrideAnnotation(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
+			}
+			
+			else if(rule.equals("squid:ModifiersOrderCheck")) {
+				ReorderModifier modifier = new ReorderModifier();
+				modifier.reorderModifier(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
+			}
+			
+			else if(rule.equals("squid:S1172")) {
+				RemoveUnusedMethodParameter remover = new RemoveUnusedMethodParameter();
+				remover.removeUnusedMethodParameter(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
 			}
 		}
 		
