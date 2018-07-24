@@ -1,6 +1,9 @@
 package refactoring;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -12,6 +15,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class RefactorBot {
+
+	static List<String> issuesDone = new ArrayList<String>();
 
 	/**
 	 * Get needed Issues from Sonarqube and parse it to a JSON Array
@@ -34,49 +39,65 @@ public class RefactorBot {
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
-
+		Config config = new Config();
+		int maxPullRequests = config.getMaxAnzahlOpenPullRequests();
+		boolean refactoringDone = false;
+		int issuePosition = 0;
 		JSONArray issues = getSonarqubeIssues("Test:Test:master");
-		
+
 		/**
 		 * The Refactoring itself
 		 */
-		
-		for (int i = 0; i < issues.length(); i++) {
-			String rule = issues.getJSONObject(i).getString("rule");
-			
-			if (rule.equals("squid:S1068")) {				
-				VariableDeletor deletor = new VariableDeletor();
-				deletor.RemoveUnusedVariable(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
-			}
-				
-			else if(rule.equals("squid:S1161")) {
-				AddOverrideAnnotation annotation = new AddOverrideAnnotation();
-				annotation.addOverrideAnnotation(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
-			}
-			
-			else if(rule.equals("squid:ModifiersOrderCheck")) {
-				ReorderModifier modifier = new ReorderModifier();
-				modifier.reorderModifier(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
-			}
-			
-			else if(rule.equals("squid:S1172")) {
-				RemoveUnusedMethodParameter remover = new RemoveUnusedMethodParameter();
-				remover.removeUnusedMethodParameter(issues.getJSONObject(i), "c://Users/Timo/Test/git/Calculator/");
+		while (!refactoringDone && issuePosition < issues.length()) {
+			String rule = issues.getJSONObject(issuePosition).getString("rule");
+			if (!issuesDone.contains(issues.getJSONObject(issuePosition).getString("key"))) {
+
+				if (rule.equals("squid:S1068")) {
+					VariableDeletor deletor = new VariableDeletor();
+					deletor.RemoveUnusedVariable(issues.getJSONObject(issuePosition), "c://Users/Timo/Test/git/Calculator/");
+					issuesDone.add(issues.getJSONObject(issuePosition).getString("key"));
+					refactoringDone = true;
+				}
+
+				else if (rule.equals("squid:S1161")) {
+					AddOverrideAnnotation annotation = new AddOverrideAnnotation();
+					annotation.addOverrideAnnotation(issues.getJSONObject(issuePosition), "c://Users/Timo/Test/git/Calculator/");
+					issuesDone.add(issues.getJSONObject(issuePosition).getString("key"));
+					refactoringDone = true;
+				}
+
+				else if (rule.equals("squid:ModifiersOrderCheck")) {
+					ReorderModifier modifier = new ReorderModifier();
+					modifier.reorderModifier(issues.getJSONObject(issuePosition), "c://Users/Timo/Test/git/Calculator/");
+					issuesDone.add(issues.getJSONObject(issuePosition).getString("key"));
+					refactoringDone = true;
+				}
+
+				else if (rule.equals("squid:S1172")) {
+					RemoveUnusedMethodParameter remover = new RemoveUnusedMethodParameter();
+					remover.removeUnusedMethodParameter(issues.getJSONObject(issuePosition), "c://Users/Timo/Test/git/Calculator/");
+					issuesDone.add(issues.getJSONObject(issuePosition).getString("key"));
+					refactoringDone = true;
+
+				}
+				issuePosition++;
+
 			}
 		}
-		
 		/**
 		 * execute script to commit changes and create pull request on GitHub
 		 */
 		
-		String bash = "c:/Programme/Git/bin/bash.exe"; 
-		String filename = "c:/Users/Timo/pull-request.sh"; 
-		String[] command = new String[] { bash, filename }; 
-		ProcessBuilder p = new ProcessBuilder(command).inheritIO();
-		Process pb = p.start(); 
-		pb.waitFor();
-		
-		
+		 String bash = "c:/Programme/Git/bin/bash.exe";
+		 String filename = "c:/Users/Timo/pull-request.sh";
+		 String[] command = new String[] { bash,filename};
+		 ProcessBuilder p = new ProcessBuilder(command).inheritIO();
+		 Map<String, String> environment = p.environment();
+		 environment.put("location", "c:/Users/Timo/Test/git/Calculator");
+		 Process pb = p.start(); 
+		 pb.waitFor();
+		 
+
 	}
 
 }
