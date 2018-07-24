@@ -30,17 +30,19 @@ public class ReorderModifier extends ModifierVisitor<Void>{
 		String path = component.substring(project.length() + 1, component.length());
 		FileInputStream in = new FileInputStream(projectPath + path);
 		CompilationUnit compilationUnit = JavaParser.parse(in);
-		System.out.println(component.toString());
+		System.out.println(compilationUnit.toString());
+		this.visit(compilationUnit, null);
+		System.out.println(compilationUnit.toString());
 
 		
 		
 		/**
 		 * Actually apply changes to the File 
 		 */
-		/*
+		
 		 PrintWriter out = new PrintWriter(projectPath + path);
 		 out.println(compilationUnit.toString());
 		 out.close();
-		*/
+		
 	}
 }
