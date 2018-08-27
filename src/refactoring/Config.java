@@ -2,7 +2,7 @@ package refactoring;
 
 public class Config {
 	
-	int maxAnzahlOpenPullRequests = 2;
+	int maxAnzahlOpenPullRequests = 1;
 	String sonarCloudProjectName = "Test:Test:master";
 	String fileLocation = "c://Users/Timo/Test/git/Calculator/";
 	String githubProject = "Refactoring-Bot/RefactoringTest";

@@ -67,10 +67,13 @@ public class RefactorBot {
 
 		Config config = new Config();
 		int maxPullRequests = config.getMaxAnzahlOpenPullRequests();
+		String gitHubProject = config.getGithubProject();
 		int numberOfOpenPullRequests = getNumberOfOpenPullRequests(config.githubProject);
 		boolean refactoringDone = false;
 		int issuePosition = 0;
 		String refactoredIssue = "";
+		String commitMessage ="";
+		String repoOwner = gitHubProject.substring(0, gitHubProject.indexOf("/"));
 		JSONArray issues = getSonarqubeIssues(config.getSonarCloudProjectName());
 
 		/**
@@ -82,9 +85,10 @@ public class RefactorBot {
 				if (!issuesDone.contains(issues.getJSONObject(issuePosition).getString("key"))) {
 
 					if (rule.equals("squid:S1068")) {
-						VariableDeletor deletor = new VariableDeletor();
-						deletor.RemoveUnusedVariable(issues.getJSONObject(issuePosition), config.getFileLocation());
+						RemoveUnusedVariable deletor = new RemoveUnusedVariable();
+						deletor.removeUnusedVariable(issues.getJSONObject(issuePosition), config.getFileLocation());
 						refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
+						commitMessage = deletor.getCommitMessage() + refactoredIssue;
 						issuesDone.add(refactoredIssue);
 						refactoringDone = true;
 					}
@@ -93,6 +97,8 @@ public class RefactorBot {
 						AddOverrideAnnotation annotation = new AddOverrideAnnotation();
 						annotation.addOverrideAnnotation(issues.getJSONObject(issuePosition), config.getFileLocation());
 						refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
+						commitMessage = annotation.getCommitMessage() + refactoredIssue;
+
 						issuesDone.add(refactoredIssue);
 						refactoringDone = true;
 					}
@@ -101,6 +107,7 @@ public class RefactorBot {
 						ReorderModifier modifier = new ReorderModifier();
 						modifier.reorderModifier(issues.getJSONObject(issuePosition), config.getFileLocation());
 						refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
+						commitMessage = modifier.getCommitMessage() + refactoredIssue;
 						issuesDone.add(refactoredIssue);
 						refactoringDone = true;
 					}
@@ -110,6 +117,7 @@ public class RefactorBot {
 						remover.removeUnusedMethodParameter(issues.getJSONObject(issuePosition),
 								config.getFileLocation());
 						refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
+						commitMessage = remover.getCommitMessage() + refactoredIssue;
 						issuesDone.add(refactoredIssue);
 						refactoringDone = true;
 
@@ -130,8 +138,9 @@ public class RefactorBot {
 				ProcessBuilder p = new ProcessBuilder(command).inheritIO();
 				Map<String, String> environment = p.environment();
 				environment.put("location", config.getFileLocation());
-				environment.put("commitMessage", "Refactoring-" + refactoredIssue);
-				environment.put("branchName", "Refactoring-" + refactoredIssue);
+				environment.put("commitMessage", commitMessage);
+				environment.put("branchName", commitMessage);
+				environment.put("repoOwner", repoOwner);
 				Process pb = p.start();
 				pb.waitFor();
 				refactoringDone = false;
@@ -139,11 +148,11 @@ public class RefactorBot {
 				System.out.println(numberOfOpenPullRequests);
 
 			} else {
-				System.out.println("Nothing to refactor found or Bot does not Support this Refactoring yet");
+				System.out.println("Nothing to refactor found or Bot does not support this Refactoring yet");
 			}
 
 		}
 
-		System.out.println("Maxmimal Number of Pull Requests reached");
+		System.out.println("Maximal Number of Pull Requests reached");
 	}
 }

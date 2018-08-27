@@ -14,7 +14,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 
-public class ReorderModifier extends ModifierVisitor<Void>{
+public class ReorderModifier extends ModifierVisitor<Void> implements Refactoring{
 	
 	@Override
 	public Node visit(FieldDeclaration declarator, Void args) {
@@ -44,5 +44,10 @@ public class ReorderModifier extends ModifierVisitor<Void>{
 		 out.println(compilationUnit.toString());
 		 out.close();
 		
+	}
+
+	@Override
+	public String getCommitMessage() {
+		return  "RefactoringBot-ReorderedModifier-Key=";
 	}
 }

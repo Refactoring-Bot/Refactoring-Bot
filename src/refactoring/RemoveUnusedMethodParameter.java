@@ -15,7 +15,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
-public class RemoveUnusedMethodParameter extends VoidVisitorAdapter{
+public class RemoveUnusedMethodParameter extends VoidVisitorAdapter implements Refactoring{
 	int line;
 	String name;
 
@@ -50,5 +50,10 @@ public class RemoveUnusedMethodParameter extends VoidVisitorAdapter{
 		 out.println(compilationUnit.toString());
 		 out.close();
 		 
+	}
+	@Override
+	public String getCommitMessage() {
+
+		return  "RefactoringBot-RemovedUnusedMethodParameter-Key=";
 	}
 }

@@ -17,7 +17,7 @@ import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
  * Class for adding the Override Annotation 
  *
  */
-public class AddOverrideAnnotation extends VoidVisitorAdapter{
+public class AddOverrideAnnotation extends VoidVisitorAdapter implements Refactoring{
 	int line;
 	
 	@Override
@@ -49,5 +49,11 @@ public class AddOverrideAnnotation extends VoidVisitorAdapter{
 		 out.println(compilationUnit.toString());
 		 out.close();
 		 
+	}
+
+	@Override
+	public String getCommitMessage() {
+		
+		return "RefactoringBot-AddedOverrideAnnotation-Key=";
 	}
 }

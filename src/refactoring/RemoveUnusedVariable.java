@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
  * Class for removing unused variables. 
  *
  */
-public class VariableDeletor extends ModifierVisitor<Void> {
+public class RemoveUnusedVariable extends ModifierVisitor<Void> implements Refactoring{
 
 	private String variableName;
 	
@@ -34,7 +34,7 @@ public class VariableDeletor extends ModifierVisitor<Void> {
 
 	}
 	
-	public void RemoveUnusedVariable(JSONObject issue, String projectPath) throws FileNotFoundException {
+	public void removeUnusedVariable(JSONObject issue, String projectPath) throws FileNotFoundException {
 		String project = issue.getString("project");
 		String component = issue.getString("component");
 		String path = component.substring(project.length() + 1, component.length());
@@ -62,6 +62,11 @@ public class VariableDeletor extends ModifierVisitor<Void> {
 
 	public void setVariableName(String variableName) {
 		this.variableName = variableName;
+	}
+
+	@Override
+	public String getCommitMessage() {
+		return  "RefactoringBot-RemovedUnusedVariable-Key=";
 	}
 
 }
