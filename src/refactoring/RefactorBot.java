@@ -1,9 +1,11 @@
 package refactoring;
 
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -38,7 +40,7 @@ public class RefactorBot {
 		}
 	}
 
-	public static int getNumberOfOpenPullRequests(String project) throws IOException {
+	public static int getNumberOfOpenPullRequests(String project, String gitHubLoginName) throws IOException {
 
 		HttpGet httpGet = new HttpGet("https://api.github.com/repos/" + project + "/pulls");
 		try (CloseableHttpClient httpClient = HttpClients.createDefault();
@@ -52,7 +54,7 @@ public class RefactorBot {
 					JSONObject obj = arr.getJSONObject(i);
 					JSONObject user = obj.getJSONObject("user");
 					String login = user.getString("login");
-					if (login.equals("TimoPfaff")) {
+					if (login.equals(gitHubLoginName)) {
 						numberOfPullRequests++;
 					}
 
@@ -64,17 +66,23 @@ public class RefactorBot {
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
-
-		Config config = new Config();
-		int maxPullRequests = config.getMaxAnzahlOpenPullRequests();
-		String gitHubProject = config.getGithubProject();
-		int numberOfOpenPullRequests = getNumberOfOpenPullRequests(config.githubProject);
+		System.out.println("reading property file " + args[0]);
+		Properties properties = new Properties();
+		try (FileReader in = new FileReader(args[0])) {
+			// load the properties from that reader
+			properties.load(in);
+		}
+		int maxPullRequests = Integer.valueOf(properties.getProperty("maxNumberOfOpenPullRequests"));
+		String gitHubProject = properties.getProperty("gitHubProject");
+		String fileLocation = properties.getProperty("fileLocation");
+		String gitHubLoginName = properties.getProperty("gitHubLoginName");
+		int numberOfOpenPullRequests = getNumberOfOpenPullRequests(gitHubProject, gitHubLoginName);
 		boolean refactoringDone = false;
 		int issuePosition = 0;
 		String refactoredIssue = "";
-		String commitMessage ="";
+		String commitMessage = "";
 		String repoOwner = gitHubProject.substring(0, gitHubProject.indexOf("/"));
-		JSONArray issues = getSonarqubeIssues(config.getSonarCloudProjectName());
+		JSONArray issues = getSonarqubeIssues(properties.getProperty("sonarCloudProjectName"));
 
 		/**
 		 * The Refactoring itself
@@ -86,7 +94,7 @@ public class RefactorBot {
 
 					if (rule.equals("squid:S1068")) {
 						RemoveUnusedVariable deletor = new RemoveUnusedVariable();
-						deletor.removeUnusedVariable(issues.getJSONObject(issuePosition), config.getFileLocation());
+						deletor.removeUnusedVariable(issues.getJSONObject(issuePosition), fileLocation);
 						refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
 						commitMessage = deletor.getCommitMessage() + refactoredIssue;
 						issuesDone.add(refactoredIssue);
@@ -95,7 +103,7 @@ public class RefactorBot {
 
 					else if (rule.equals("squid:S1161")) {
 						AddOverrideAnnotation annotation = new AddOverrideAnnotation();
-						annotation.addOverrideAnnotation(issues.getJSONObject(issuePosition), config.getFileLocation());
+						annotation.addOverrideAnnotation(issues.getJSONObject(issuePosition), fileLocation);
 						refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
 						commitMessage = annotation.getCommitMessage() + refactoredIssue;
 
@@ -105,7 +113,7 @@ public class RefactorBot {
 
 					else if (rule.equals("squid:ModifiersOrderCheck")) {
 						ReorderModifier modifier = new ReorderModifier();
-						modifier.reorderModifier(issues.getJSONObject(issuePosition), config.getFileLocation());
+						modifier.reorderModifier(issues.getJSONObject(issuePosition), fileLocation);
 						refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
 						commitMessage = modifier.getCommitMessage() + refactoredIssue;
 						issuesDone.add(refactoredIssue);
@@ -114,8 +122,7 @@ public class RefactorBot {
 
 					else if (rule.equals("squid:S1172")) {
 						RemoveUnusedMethodParameter remover = new RemoveUnusedMethodParameter();
-						remover.removeUnusedMethodParameter(issues.getJSONObject(issuePosition),
-								config.getFileLocation());
+						remover.removeUnusedMethodParameter(issues.getJSONObject(issuePosition), fileLocation);
 						refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
 						commitMessage = remover.getCommitMessage() + refactoredIssue;
 						issuesDone.add(refactoredIssue);
@@ -132,19 +139,19 @@ public class RefactorBot {
 				 * execute script to commit changes and create pull request on GitHub
 				 */
 
-				String bash = "c:/Programme/Git/bin/bash.exe";
-				String filename = "c:/Users/Timo/pull-request.sh";
+				String bash = properties.getProperty("bashLocation");
+				String filename = properties.getProperty("pullRequestScriptLocation");
 				String[] command = new String[] { bash, filename };
 				ProcessBuilder p = new ProcessBuilder(command).inheritIO();
 				Map<String, String> environment = p.environment();
-				environment.put("location", config.getFileLocation());
+				environment.put("location", fileLocation);
 				environment.put("commitMessage", commitMessage);
 				environment.put("branchName", commitMessage);
 				environment.put("repoOwner", repoOwner);
 				Process pb = p.start();
 				pb.waitFor();
 				refactoringDone = false;
-				numberOfOpenPullRequests = getNumberOfOpenPullRequests(config.githubProject);
+				numberOfOpenPullRequests = getNumberOfOpenPullRequests(gitHubProject, gitHubLoginName);
 				System.out.println(numberOfOpenPullRequests);
 
 			} else {

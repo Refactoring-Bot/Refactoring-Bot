@@ -35,11 +35,20 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.7.0</version>
+        <version>3.8.0</version>
         <configuration>
-          <release>10</release>
+        <source>1.8</source>
+        <target>1.8</target>
         </configuration>
       </plugin>
+           <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>1.2.1</version>
+            <configuration>
+                <mainClass>refactoring.RefactorBot</mainClass>
+            </configuration>
+        </plugin>
     </plugins>
   </build>
 </project>
