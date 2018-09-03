@@ -66,7 +66,7 @@ public class RemoveUnusedVariable extends ModifierVisitor<Void> implements Refac
 
 	@Override
 	public String getCommitMessage() {
-		return  "RefactoringBot-RemovedUnusedVariable-Key=";
+		return  "Remove unused variable";
 	}
 
 }

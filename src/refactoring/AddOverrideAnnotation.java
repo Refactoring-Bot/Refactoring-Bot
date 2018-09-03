@@ -54,6 +54,6 @@ public class AddOverrideAnnotation extends VoidVisitorAdapter implements Refacto
 	@Override
 	public String getCommitMessage() {
 		
-		return "RefactoringBot-AddedOverrideAnnotation-Key=";
+		return "Add override annotation to method";
 	}
 }

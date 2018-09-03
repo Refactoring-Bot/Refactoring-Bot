@@ -54,6 +54,6 @@ public class RemoveUnusedMethodParameter extends VoidVisitorAdapter implements R
 	@Override
 	public String getCommitMessage() {
 
-		return  "RefactoringBot-RemovedUnusedMethodParameter-Key=";
+		return  "Remove unused method parameter";
 	}
 }
