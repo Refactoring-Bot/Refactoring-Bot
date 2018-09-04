@@ -17,13 +17,15 @@ import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 public class RemoveUnusedMethodParameter extends VoidVisitorAdapter implements Refactoring{
 	int line;
-	String name;
+	String parameterName;
+	String methodName;
 
 	@Override
-	public void visit(MethodDeclaration declaration,Object arg) {
+	public void visit(MethodDeclaration declaration, Object arg) {
 		if(line == declaration.getName().getBegin().get().line) {
+			methodName = declaration.getNameAsString();
 			NodeList<Parameter> parameters = declaration.getParameters();
-			parameters.remove(declaration.getParameterByName(name).get());
+			parameters.remove(declaration.getParameterByName(parameterName).get());
 			declaration.setParameters(parameters);		
 		}
 
@@ -34,7 +36,7 @@ public class RemoveUnusedMethodParameter extends VoidVisitorAdapter implements R
 		String component = issue.getString("component");
 		String path = component.substring(project.length() + 1, component.length());
 		String message = issue.getString("message");
-		name = StringUtils.substringBetween(message, "\"", "\"");
+		parameterName = StringUtils.substringBetween(message, "\"", "\"");
 		line = issue.getInt("line");
 		FileInputStream in = new FileInputStream(projectPath + path);
 		CompilationUnit compilationUnit = JavaParser.parse(in);
@@ -54,6 +56,6 @@ public class RemoveUnusedMethodParameter extends VoidVisitorAdapter implements R
 	@Override
 	public String getCommitMessage() {
 
-		return  "Remove unused method parameter";
+		return  "Remove unused method parameter " + parameterName + " from method " + methodName;
 	}
 }

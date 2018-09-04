@@ -91,7 +91,7 @@ public class RefactorBot {
 		 }
 		 String fileLocation = properties.getProperty("fileLocation");
 		 String gitHubLoginName = properties.getProperty("gitHubLoginName");
-		 String branchName = "RefactoringBranch-";
+		 String branchName = "";
 		 int numberOfOpenPullRequests = getNumberOfOpenPullRequests(gitHubProject, gitHubLoginName);
 		 boolean refactoringDone = false;
 		 int issuePosition = 0;
@@ -113,7 +113,7 @@ public class RefactorBot {
 		 deletor.removeUnusedVariable(issues.getJSONObject(issuePosition), fileLocation);
 		 refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
 		 commitMessage = deletor.getCommitMessage();
-		 branchName = branchName + refactoredIssue;
+		 branchName = "RefactoringBranch-" + refactoredIssue;
 		 issuesDone.add(refactoredIssue);
 		 refactoringDone = true;
 		 }
@@ -123,7 +123,7 @@ public class RefactorBot {
 		 annotation.addOverrideAnnotation(issues.getJSONObject(issuePosition), fileLocation);
 		 refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
 		 commitMessage = annotation.getCommitMessage();
-		 branchName = branchName + refactoredIssue;
+		 branchName = "RefactoringBranch-" + refactoredIssue;
 		
 		 issuesDone.add(refactoredIssue);
 		 refactoringDone = true;
@@ -134,7 +134,7 @@ public class RefactorBot {
 		 modifier.reorderModifier(issues.getJSONObject(issuePosition), fileLocation);
 		 refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
 		 commitMessage = modifier.getCommitMessage();
-		 branchName = branchName + refactoredIssue;
+		 branchName = "RefactoringBranch-" + refactoredIssue;
 		 issuesDone.add(refactoredIssue);
 		 refactoringDone = true;
 		 }
@@ -144,14 +144,14 @@ public class RefactorBot {
 		 remover.removeUnusedMethodParameter(issues.getJSONObject(issuePosition), fileLocation);
 		 refactoredIssue = issues.getJSONObject(issuePosition).getString("key");
 		 commitMessage = remover.getCommitMessage();
-		 branchName = branchName + refactoredIssue;
+		 branchName = "RefactoringBranch-" + refactoredIssue;
 		 issuesDone.add(refactoredIssue);
 		 refactoringDone = true;
 		
 		 }
-		 issuePosition++;
 		
 		 }
+		 issuePosition++;
 		 }
 		 if (refactoringDone) {
 		
@@ -177,7 +177,6 @@ public class RefactorBot {
 		
 		 } else {
 		 System.out.println("Nothing to refactor found or Bot does not support this Refactoring yet");
-		 break;
 		 }
 		
 		 }

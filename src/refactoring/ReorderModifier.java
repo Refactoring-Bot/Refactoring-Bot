@@ -48,6 +48,6 @@ public class ReorderModifier extends ModifierVisitor<Void> implements Refactorin
 
 	@Override
 	public String getCommitMessage() {
-		return  "Reorder Modifier";
+		return  "Reorder modifier";
 	}
 }

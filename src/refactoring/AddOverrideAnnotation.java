@@ -19,11 +19,13 @@ import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
  */
 public class AddOverrideAnnotation extends VoidVisitorAdapter implements Refactoring{
 	int line;
+	String methodName;
 	
 	@Override
 	public void visit(MethodDeclaration declaration,Object arg) {
 
 		if(line == declaration.getName().getBegin().get().line) {
+			methodName = declaration.getNameAsString();
 			declaration.addMarkerAnnotation("Override");
 		}
 
@@ -54,6 +56,6 @@ public class AddOverrideAnnotation extends VoidVisitorAdapter implements Refacto
 	@Override
 	public String getCommitMessage() {
 		
-		return "Add override annotation to method";
+		return "Add override annotation to method " + methodName;
 	}
 }
