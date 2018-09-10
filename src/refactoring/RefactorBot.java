@@ -79,9 +79,11 @@ public class RefactorBot {
 		 int maxPullRequests = Integer.valueOf(properties.getProperty("maxNumberOfOpenPullRequests"));
 		 String gitHubProject = properties.getProperty("gitHubProject");
 		 String gitHubProjectName = gitHubProject.substring(gitHubProject.indexOf("/") + 1 , gitHubProject.length());
-		 File issuesDoneFile = new File("IssuesDone" + gitHubProjectName +".txt");
+		 String listOfDoneIssuesLocation = properties.getProperty("listOfDoneIssuesLocation");
+		 String issuesDoneFileName = "IssuesDone" + gitHubProjectName + ".txt";
+		 File issuesDoneFile = new File(listOfDoneIssuesLocation, issuesDoneFileName);
 		 if(issuesDoneFile.exists() && !issuesDoneFile.isDirectory()) {
-		 Scanner scan = new Scanner(new File("IssuesDone" + gitHubProjectName +".txt"));
+		 Scanner scan = new Scanner(new File(listOfDoneIssuesLocation, issuesDoneFileName));
 
 		 while(scan.hasNext()){
 			
@@ -182,7 +184,7 @@ public class RefactorBot {
 		 }
 		
 		 System.out.println("Maximal Number of Pull Requests reached");
-		 PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("IssuesDone" + gitHubProjectName +".txt")));
+		 PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(new File(listOfDoneIssuesLocation, issuesDoneFileName))));
 
 		 for( int i = 0; i < issuesDone.size(); i++) {
 			
