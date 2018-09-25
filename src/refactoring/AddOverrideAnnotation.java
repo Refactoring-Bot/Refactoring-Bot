@@ -9,53 +9,54 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
 /**
  * 
  * @author Timo Pfaff
  * 
- * Class for adding the Override Annotation 
+ *         this class is used for executing the add override annotation
+ *         refactoring.
  *
  */
-public class AddOverrideAnnotation extends VoidVisitorAdapter implements Refactoring{
+public class AddOverrideAnnotation extends VoidVisitorAdapter implements Refactoring {
 	int line;
 	String methodName;
-	
-	@Override
-	public void visit(MethodDeclaration declaration,Object arg) {
 
-		if(line == declaration.getName().getBegin().get().line) {
+	@Override
+	public void visit(MethodDeclaration declaration, Object arg) {
+
+		if (line == declaration.getName().getBegin().get().line) {
 			methodName = declaration.getNameAsString();
 			declaration.addMarkerAnnotation("Override");
 		}
 
-		
 	}
-	
+
 	public void addOverrideAnnotation(JSONObject issue, String projectPath) throws FileNotFoundException {
 		String project = issue.getString("project");
 		String component = issue.getString("component");
 		String path = component.substring(project.length() + 1, component.length());
 		line = issue.getInt("line");
 		FileInputStream in = new FileInputStream(projectPath + path);
-		CompilationUnit compilationUnit = JavaParser.parse(in);
-		System.out.println(compilationUnit.toString());
+		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+		System.out.println(LexicalPreservingPrinter.print(compilationUnit));
 		this.visit(compilationUnit, null);
-		System.out.println(compilationUnit.toString());
-		
+		System.out.println(LexicalPreservingPrinter.print(compilationUnit));
+
 		/**
-		 * Actually apply changes to the File 
+		 * Actually apply changes to the File
 		 */
-		
-		 PrintWriter out = new PrintWriter(projectPath + path);
-		 out.println(compilationUnit.toString());
-		 out.close();
-		 
+
+		PrintWriter out = new PrintWriter(projectPath + path);
+		out.println(LexicalPreservingPrinter.print(compilationUnit));
+		out.close();
+
 	}
 
 	@Override
 	public String getCommitMessage() {
-		
+
 		return "Add override annotation to method " + methodName;
 	}
 }

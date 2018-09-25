@@ -14,8 +14,20 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 
-public class ReorderModifier extends ModifierVisitor<Void> implements Refactoring{
-	
+/**
+ * @author Timo Pfaff
+ * 
+ *         this class is used to execute the reorder modifier refactoring.
+ * 
+ *         The LexicalPreservationPrinter is not used here, because there are
+ *         Problems when reordering the Modifiers. The Printer expects the
+ *         String, that was there before the Refactoring was done and therefore
+ *         throws an exception. It also has the same problem as the remove of
+ *         the unused variable.
+ *
+ */
+public class ReorderModifier extends ModifierVisitor<Void> implements Refactoring {
+
 	@Override
 	public Node visit(FieldDeclaration declarator, Void args) {
 		EnumSet<Modifier> modifiers = declarator.getModifiers();
@@ -23,7 +35,7 @@ public class ReorderModifier extends ModifierVisitor<Void> implements Refactorin
 		return declarator;
 
 	}
-	
+
 	public void reorderModifier(JSONObject issue, String projectPath) throws FileNotFoundException {
 		String project = issue.getString("project");
 		String component = issue.getString("component");
@@ -34,20 +46,17 @@ public class ReorderModifier extends ModifierVisitor<Void> implements Refactorin
 		this.visit(compilationUnit, null);
 		System.out.println(compilationUnit.toString());
 
-		
-		
 		/**
-		 * Actually apply changes to the File 
+		 * Actually apply changes to the File
 		 */
-		
-		 PrintWriter out = new PrintWriter(projectPath + path);
-		 out.println(compilationUnit.toString());
-		 out.close();
-		
+		PrintWriter out = new PrintWriter(projectPath + path);
+		out.println(compilationUnit.toString());
+		out.close();
+
 	}
 
 	@Override
 	public String getCommitMessage() {
-		return  "Reorder modifier";
+		return "Reorder modifier";
 	}
 }

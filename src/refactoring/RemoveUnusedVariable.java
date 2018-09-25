@@ -18,13 +18,22 @@ import org.apache.commons.lang3.StringUtils;
  * 
  * @author Timo Pfaff
  * 
- * Class for removing unused variables. 
+ *         this class is used to execute the removing unused variables
+ *         refactoring.
+ * 
+ *         it does not use LexicalPreservingPrinter yet, because it throws an
+ *         execption when the type of the variable, that should be removed is
+ *         not a primitive type. there is already an open issue for that on the
+ *         JavaParser GitHub page:
+ *         https://github.com/javaparser/javaparser/issues/1667 When this issue
+ *         gets fixed the LexicalPreservingPrinter should be used to get rid of
+ *         the formatting problem.
  *
  */
-public class RemoveUnusedVariable extends ModifierVisitor<Void> implements Refactoring{
+public class RemoveUnusedVariable extends ModifierVisitor<Void> implements Refactoring {
 
 	private String variableName;
-	
+
 	@Override
 	public Node visit(VariableDeclarator declarator, Void args) {
 		if (declarator.getNameAsString().equals(variableName)) {
@@ -33,7 +42,7 @@ public class RemoveUnusedVariable extends ModifierVisitor<Void> implements Refac
 		return declarator;
 
 	}
-	
+
 	public void removeUnusedVariable(JSONObject issue, String projectPath) throws FileNotFoundException {
 		String project = issue.getString("project");
 		String component = issue.getString("component");
@@ -46,27 +55,23 @@ public class RemoveUnusedVariable extends ModifierVisitor<Void> implements Refac
 		this.setVariableName(name);
 		this.visit(compilationUnit, null);
 		System.out.println(compilationUnit.toString());
-		
+
 		/**
-		 * Actually apply changes to the File 
+		 * Actually apply changes to the File
 		 */
-		 PrintWriter out = new PrintWriter(projectPath + path);
-		 out.println(compilationUnit.toString());
-		 out.close();
+		PrintWriter out = new PrintWriter(projectPath + path);
+		out.println(compilationUnit.toString());
+		out.close();
 
 	}
 
-	public String getVariableName() {
-		return variableName;
-	}
-
-	public void setVariableName(String variableName) {
+	private void setVariableName(String variableName) {
 		this.variableName = variableName;
 	}
 
 	@Override
 	public String getCommitMessage() {
-		return  "Remove unused variable " + variableName;
+		return "Remove unused variable " + variableName;
 	}
 
 }

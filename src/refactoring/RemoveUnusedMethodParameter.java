@@ -14,23 +14,32 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
-public class RemoveUnusedMethodParameter extends VoidVisitorAdapter implements Refactoring{
+/**
+ * 
+ * @author Timo Pfaff
+ *
+ *         this class is used to execute the remove unused method parameter
+ *         refactoring.
+ *
+ */
+public class RemoveUnusedMethodParameter extends VoidVisitorAdapter implements Refactoring {
 	int line;
 	String parameterName;
 	String methodName;
 
 	@Override
 	public void visit(MethodDeclaration declaration, Object arg) {
-		if(line == declaration.getName().getBegin().get().line) {
+		if (line == declaration.getName().getBegin().get().line) {
 			methodName = declaration.getNameAsString();
 			NodeList<Parameter> parameters = declaration.getParameters();
 			parameters.remove(declaration.getParameterByName(parameterName).get());
-			declaration.setParameters(parameters);		
+			declaration.setParameters(parameters);
 		}
 
-		
 	}
+
 	public void removeUnusedMethodParameter(JSONObject issue, String projectPath) throws FileNotFoundException {
 		String project = issue.getString("project");
 		String component = issue.getString("component");
@@ -39,23 +48,23 @@ public class RemoveUnusedMethodParameter extends VoidVisitorAdapter implements R
 		parameterName = StringUtils.substringBetween(message, "\"", "\"");
 		line = issue.getInt("line");
 		FileInputStream in = new FileInputStream(projectPath + path);
-		CompilationUnit compilationUnit = JavaParser.parse(in);
-		System.out.println(compilationUnit.toString());
+		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+		System.out.println(LexicalPreservingPrinter.print(compilationUnit));
 		this.visit(compilationUnit, null);
-		System.out.println(compilationUnit.toString());
-		
+		System.out.println(LexicalPreservingPrinter.print(compilationUnit));
+
 		/**
-		 * Actually apply changes to the File 
+		 * Actually apply changes to the File
 		 */
-		
 		 PrintWriter out = new PrintWriter(projectPath + path);
-		 out.println(compilationUnit.toString());
+		 out.println(LexicalPreservingPrinter.print(compilationUnit));
 		 out.close();
-		 
+
 	}
+
 	@Override
 	public String getCommitMessage() {
 
-		return  "Remove unused method parameter " + parameterName + " from method " + methodName;
+		return "Remove unused method parameter " + parameterName + " from method " + methodName;
 	}
 }
