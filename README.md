@@ -21,4 +21,4 @@ Implementation of a bot, that does automatic refactorings based on the result of
 
 ## How to implement new Refactorings
 
-Create new class for the refactoring and implement it in this class. It should implement the interface "Refactoring". Add the sonarcloud rule to the "RefactoringRules" class and add the rule to the switch-case block in the main method from the "RefactoringBot" class.
+Create new class for the refactoring and implement it in this class. It should implement the interface "Refactoring". Add the sonarcloud rule to the "RefactoringRules" class and add the rule to the switch-case block in the main method from the "RefactorBot" class.
