@@ -7,7 +7,7 @@ Implementation of a bot, that does automatic refactorings based on the result of
 2. [Git](https://git-scm.com/) must be installed.
 3. [Apache Maven](https://maven.apache.org/) must be installed.
 
-## Requirements for the project 
+## Requirements for the project you would like to refactor
 
 1. Project is in a public Github repository.
 2. Results from the static code analysis are on sonarcloud with public access.
@@ -21,4 +21,4 @@ Implementation of a bot, that does automatic refactorings based on the result of
 
 ## How to implement new Refactorings
 
-Create new class for the refactoring and implement it in this class. It should implement the interface "Refactoring". Add the sonarcloud rule to the "RefactoringRules" class and add the rule to the switch-case block in the main method from the "RefactorBot" class.
+Create new class for the refactoring and implement it in this class. It should implement the interface "Refactoring". Add the sonarcloud rule to the "RefactoringRules" class and add the rule to the switch-case block in the main method from the "RefactorBot" class. You can look in the other refactoring classes to get an idea on how to implement a refactoring. 
