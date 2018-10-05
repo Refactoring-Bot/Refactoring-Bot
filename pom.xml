@@ -46,7 +46,7 @@
             <artifactId>exec-maven-plugin</artifactId>
             <version>1.2.1</version>
             <configuration>
-                <mainClass>refactoring.RefactorBot</mainClass>
+                <mainClass>main.java.de.unistuttgart.iste.refactoringbot.RefactorBot</mainClass>
             </configuration>
         </plugin>
     </plugins>

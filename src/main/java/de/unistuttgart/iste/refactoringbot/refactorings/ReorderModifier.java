@@ -1,5 +1,6 @@
-package refactoring;
+package main.java.de.unistuttgart.iste.refactoringbot.refactorings;
 
+import main.java.de.unistuttgart.iste.refactoringbot.Refactoring;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
