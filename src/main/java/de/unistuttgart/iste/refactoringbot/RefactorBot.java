@@ -1,9 +1,9 @@
-package main.java.de.unistuttgart.iste.refactoringbot;
+package de.unistuttgart.iste.refactoringbot;
 
-import main.java.de.unistuttgart.iste.refactoringbot.refactorings.AddOverrideAnnotation;
-import main.java.de.unistuttgart.iste.refactoringbot.refactorings.RemoveUnusedMethodParameter;
-import main.java.de.unistuttgart.iste.refactoringbot.refactorings.RemoveUnusedVariable;
-import main.java.de.unistuttgart.iste.refactoringbot.refactorings.ReorderModifier;
+import de.unistuttgart.iste.refactoringbot.refactorings.AddOverrideAnnotation;
+import de.unistuttgart.iste.refactoringbot.refactorings.RemoveUnusedMethodParameter;
+import de.unistuttgart.iste.refactoringbot.refactorings.RemoveUnusedVariable;
+import de.unistuttgart.iste.refactoringbot.refactorings.ReorderModifier;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;

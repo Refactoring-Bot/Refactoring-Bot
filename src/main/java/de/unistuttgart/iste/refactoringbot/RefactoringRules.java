@@ -1,4 +1,4 @@
-package main.java.de.unistuttgart.iste.refactoringbot;
+package de.unistuttgart.iste.refactoringbot;
 /**
  * 
  * @author Timo Pfaff

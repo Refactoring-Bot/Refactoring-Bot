@@ -1,10 +1,10 @@
-package main.java.de.unistuttgart.iste.refactoringbot.refactorings;
+package de.unistuttgart.iste.refactoringbot.refactorings;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 
-import main.java.de.unistuttgart.iste.refactoringbot.Refactoring;
+import de.unistuttgart.iste.refactoringbot.Refactoring;
 import org.json.JSONObject;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;

@@ -1,4 +1,4 @@
-package main.java.de.unistuttgart.iste.refactoringbot.refactorings;
+package de.unistuttgart.iste.refactoringbot.refactorings;
 
 import org.json.JSONObject;
 
@@ -8,7 +8,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 
-import main.java.de.unistuttgart.iste.refactoringbot.Refactoring;
+import de.unistuttgart.iste.refactoringbot.Refactoring;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
