@@ -25,7 +25,7 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class RefactorBot {
+public class Main {
 
 	/**
 	 * Gets needed issues from SonarQube using a HTTP-Get-Request and parse it to a
