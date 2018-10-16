@@ -75,4 +75,10 @@ public class RemoveUnusedVariable extends ModifierVisitor<Void> implements Refac
 		return "Remove unused variable " + variableName;
 	}
 
+	@Override
+	public void performRefactoring(JSONObject issue, String projectPath) throws FileNotFoundException {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

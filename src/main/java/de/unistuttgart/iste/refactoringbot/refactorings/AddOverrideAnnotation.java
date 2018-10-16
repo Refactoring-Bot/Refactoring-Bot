@@ -4,26 +4,25 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 
-import de.unistuttgart.iste.refactoringbot.Refactoring;
 import org.json.JSONObject;
+
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
+import de.unistuttgart.iste.refactoringbot.Refactoring;
+
 /**
- * 
- * @author Timo Pfaff
- * 
- *         this class is used for executing the add override annotation
- *         refactoring.
+ * This class is used for executing the add override annotation refactoring.
  *
+ * @author Timo Pfaff
  */
 public class AddOverrideAnnotation extends VoidVisitorAdapter implements Refactoring {
 	int line;
 	String methodName;
-
+	
 	@Override
 	public void visit(MethodDeclaration declaration, Object arg) {
 
@@ -34,7 +33,8 @@ public class AddOverrideAnnotation extends VoidVisitorAdapter implements Refacto
 
 	}
 
-	public void addOverrideAnnotation(JSONObject issue, String projectPath) throws FileNotFoundException {
+	@Override
+	public void performRefactoring(JSONObject issue, String projectPath) throws FileNotFoundException {
 		String project = issue.getString("project");
 		String component = issue.getString("component");
 		String path = component.substring(project.length() + 1, component.length());
@@ -57,7 +57,7 @@ public class AddOverrideAnnotation extends VoidVisitorAdapter implements Refacto
 
 	@Override
 	public String getCommitMessage() {
-
 		return "Add override annotation to method " + methodName;
 	}
+
 }

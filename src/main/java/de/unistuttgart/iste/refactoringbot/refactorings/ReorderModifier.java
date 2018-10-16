@@ -1,6 +1,5 @@
 package de.unistuttgart.iste.refactoringbot.refactorings;
 
-import de.unistuttgart.iste.refactoringbot.Refactoring;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -15,17 +14,17 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 
+import de.unistuttgart.iste.refactoringbot.Refactoring;
+
 /**
- * @author Timo Pfaff
+ * This class is used to execute the reorder modifier refactoring.
  * 
- *         this class is used to execute the reorder modifier refactoring.
- * 
- *         The LexicalPreservationPrinter is not used here, because there are
- *         Problems when reordering the Modifiers. The Printer expects the
- *         String, that was there before the Refactoring was done and therefore
- *         throws an exception. It also has the same problem as the remove of
- *         the unused variable.
+ * The LexicalPreservationPrinter is not used here, because there are Problems
+ * when reordering the Modifiers. The Printer expects the String, that was there
+ * before the Refactoring was done and therefore throws an exception. It also
+ * has the same problem as the remove of the unused variable.
  *
+ * @author Timo Pfaff
  */
 public class ReorderModifier extends ModifierVisitor<Void> implements Refactoring {
 
@@ -37,7 +36,8 @@ public class ReorderModifier extends ModifierVisitor<Void> implements Refactorin
 
 	}
 
-	public void reorderModifier(JSONObject issue, String projectPath) throws FileNotFoundException {
+	@Override
+	public void performRefactoring(JSONObject issue, String projectPath) throws FileNotFoundException {
 		String project = issue.getString("project");
 		String component = issue.getString("component");
 		String path = component.substring(project.length() + 1, component.length());

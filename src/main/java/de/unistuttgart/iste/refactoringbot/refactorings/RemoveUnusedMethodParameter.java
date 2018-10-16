@@ -67,4 +67,10 @@ public class RemoveUnusedMethodParameter extends VoidVisitorAdapter implements R
 
 		return "Remove unused method parameter " + parameterName + " from method " + methodName;
 	}
+
+	@Override
+	public void performRefactoring(JSONObject issue, String projectPath) throws FileNotFoundException {
+		// TODO Auto-generated method stub
+		
+	}
 }
