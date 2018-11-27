@@ -17,7 +17,7 @@ import de.BA.refactoringBot.api.sonarCube.SonarCubeDataGrabber;
 import de.BA.refactoringBot.configuration.BotConfiguration;
 import de.BA.refactoringBot.controller.main.BotController;
 import de.BA.refactoringBot.controller.main.GitController;
-import de.BA.refactoringBot.controller.main.GrammerController;
+import de.BA.refactoringBot.controller.main.GrammarController;
 import de.BA.refactoringBot.controller.sonarCube.SonarCubeObjectTranslator;
 import de.BA.refactoringBot.model.botIssue.BotIssue;
 import de.BA.refactoringBot.model.configuration.ConfigurationRepository;
@@ -58,7 +58,7 @@ public class RefactoringController {
 	@Autowired
 	BotController botController;
 	@Autowired
-	GrammerController grammarController;
+	GrammarController grammarController;
 	@Autowired
 	RefactoringPicker refactoring;
 	@Autowired

@@ -21,7 +21,7 @@ import de.BA.refactoringBot.model.outputModel.botPullRequestComment.BotPullReque
  *
  */
 @Component
-public class GrammerController {
+public class GrammarController {
 
 	/**
 	 * This method checks if a comment has a valid bot grammar and returns if the
