@@ -462,7 +462,7 @@ public class RenameMethod {
 	 */
 	private String getFullMethodSignature(MethodDeclaration methodDeclaration, Integer position) {
 		// If method is at the refactored position
-		if (position == methodDeclaration.getBegin().get().line) {
+		if (position == methodDeclaration.getName().getBegin().get().line) {
 			ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
 			return resolvedMethod.getQualifiedSignature();
 		}
@@ -490,7 +490,7 @@ public class RenameMethod {
 	 */
 	private String getMethodDeclarationAsString(MethodDeclaration methodDeclaration, Integer position) {
 		// If method is at the refactored position
-		if (position == methodDeclaration.getBegin().get().line) {
+		if (position == methodDeclaration.getName().getBegin().get().line) {
 			return methodDeclaration.getSignature().asString();
 		}
 		return null;

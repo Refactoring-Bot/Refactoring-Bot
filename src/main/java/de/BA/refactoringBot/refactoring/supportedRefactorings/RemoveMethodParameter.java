@@ -468,7 +468,7 @@ public class RemoveMethodParameter {
 	 */
 	private String getFullMethodSignature(MethodDeclaration methodDeclaration, Integer position, String parameterName) {
 		// If method is at the refactored position and parameter exists
-		if (position == methodDeclaration.getBegin().get().line
+		if (position == methodDeclaration.getName().getBegin().get().line
 				&& methodDeclaration.getParameterByName(parameterName).isPresent()) {
 			ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
 			return resolvedMethod.getQualifiedSignature();
@@ -497,7 +497,7 @@ public class RemoveMethodParameter {
 	 */
 	private String getMethodDeclarationAsString(MethodDeclaration methodDeclaration, Integer position) {
 		// If method is at the refactored position
-		if (position == methodDeclaration.getBegin().get().line) {
+		if (position == methodDeclaration.getName().getBegin().get().line) {
 			return methodDeclaration.getSignature().asString();
 		}
 		return null;
