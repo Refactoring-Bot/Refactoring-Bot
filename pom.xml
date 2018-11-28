@@ -4,13 +4,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>de.BA</groupId>
-	<artifactId>AlternativeRefactoringBot</artifactId>
+	<groupId>de.refactoringBot</groupId>
+	<artifactId>RefactoringBot</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>AlternativeRefactoringBot</name>
-	<description>Alternativer Refactoring-Bot für die Bachelorarbeit</description>
+	<name>Refactoring-Bot</name>
+	<description>A refactoring bot for performing automated refactorings</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -26,7 +26,7 @@
 	</properties>
 
 	<dependencies>
-		<!-- Spring-Boot-Starter Abhängigkeiten -->
+		<!-- Spring-Boot-Starter dependency -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -37,7 +37,7 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Swagger.io Abhängigkeiten -->
+		<!-- Swagger.io dependencies -->
 		<dependency>
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger2</artifactId>
@@ -49,21 +49,21 @@
 			<version>2.8.0</version>
 		</dependency>
 
-		<!-- Configuration-Prozessor Abhängigkeiten -->
+		<!-- Configuration-Processor dependency -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
 
-		<!-- JGit Abhängigkeiten -->
+		<!-- JGit dependency -->
 		<dependency>
 			<groupId>org.eclipse.jgit</groupId>
 			<artifactId>org.eclipse.jgit</artifactId>
 			<version>5.1.2.201810061102-r</version>
 		</dependency>
 
-		<!-- Datenbank Abhängigkeiten -->
+		<!-- Database dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -80,7 +80,7 @@
 			<artifactId>httpclient</artifactId>
 		</dependency>
 
-		<!-- JavaParser vom OG-Bot -->
+		<!-- JavaParser dependencies -->
 		<dependency>
 			<groupId>com.github.javaparser</groupId>
 			<artifactId>javaparser-core</artifactId>
@@ -98,11 +98,18 @@
 			<artifactId>commons-io</artifactId>
 			<version>2.6</version>
 		</dependency>
+		
 		<!-- Antlr -->
 		<dependency>
 			<groupId>org.antlr</groupId>
 			<artifactId>antlr4-runtime</artifactId>
 			<version>4.7.1</version>
+		</dependency>
+		
+		<!-- JAXB dependency -->
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
 		</dependency>
 	</dependencies>
 
