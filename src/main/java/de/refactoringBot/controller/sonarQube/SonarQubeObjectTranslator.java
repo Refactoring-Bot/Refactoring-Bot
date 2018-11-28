@@ -3,9 +3,11 @@ package de.refactoringBot.controller.sonarQube;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import de.refactoringBot.model.botIssue.BotIssue;
+import de.refactoringBot.model.botIssue.RefactoringOperations;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.sonarQube.SonarQubeIssues;
 import de.refactoringBot.model.sonarQube.SonarIssue;
@@ -18,6 +20,9 @@ import de.refactoringBot.model.sonarQube.SonarIssue;
  */
 @Component
 public class SonarQubeObjectTranslator {
+	
+	@Autowired
+	RefactoringOperations operations;
 
 	/**
 	 * This method translates all SonarCubeIssues to BotIssues.
@@ -48,13 +53,13 @@ public class SonarQubeObjectTranslator {
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
 			case "squid:S1161":
-				botIssue.setRefactoringOperation("Add Override Annotation");
+				botIssue.setRefactoringOperation(operations.addOverrideAnnotation);
 				break;
 			case "squid:ModifiersOrderCheck":
-				botIssue.setRefactoringOperation("Reorder Modifier");
+				botIssue.setRefactoringOperation(operations.reorderModifier);
 				break;
 			default:
-				botIssue.setRefactoringOperation("Unknown Refactoring");
+				botIssue.setRefactoringOperation(operations.unknownRefactoring);
 				break;
 			}
 

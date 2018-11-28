@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import de.refactoringBot.model.botIssue.BotIssue;
+import de.refactoringBot.model.botIssue.RefactoringOperations;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.refactoring.supportedRefactorings.AddOverrideAnnotation;
 import de.refactoringBot.refactoring.supportedRefactorings.RemoveMethodParameter;
@@ -27,6 +28,8 @@ public class RefactoringPicker {
 	RenameMethod renameMethod;
 	@Autowired
 	RemoveMethodParameter removeMethodParameter;
+	@Autowired
+	RefactoringOperations operations;
 
 	/**
 	 * This method checks which refactoring needs to be performed. It transfers the
@@ -41,16 +44,15 @@ public class RefactoringPicker {
 
 		// Pick refactoring class
 		try {
-			switch (issue.getRefactoringOperation()) {
-			case "Add Override Annotation":
+			if (issue.getRefactoringOperation().equals(operations.addOverrideAnnotation)) {
 				return addOverride.performRefactoring(issue, gitConfig);
-			case "Reorder Modifier":
+			} else if (issue.getRefactoringOperation().equals(operations.reorderModifier)) {
 				return reorderModifier.performRefactoring(issue, gitConfig);
-			case "Rename Method":
-			    return renameMethod.performRefactoring(issue, gitConfig);
-			case "Remove Parameter":
+			} else if (issue.getRefactoringOperation().equals(operations.renameMethod)) {
+				return renameMethod.performRefactoring(issue, gitConfig);
+			} else if (issue.getRefactoringOperation().equals(operations.removeParameter)) {
 				return removeMethodParameter.performRefactoring(issue, gitConfig);
-			default:
+			} else {
 				return null;
 			}
 		} catch (Exception e) {

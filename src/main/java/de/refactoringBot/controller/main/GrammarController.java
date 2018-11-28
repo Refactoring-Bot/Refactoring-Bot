@@ -5,12 +5,14 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import de.refactoringBot.grammar.botGrammar.BotOperationsBaseListener;
 import de.refactoringBot.grammar.botGrammar.BotOperationsLexer;
 import de.refactoringBot.grammar.botGrammar.BotOperationsParser;
 import de.refactoringBot.model.botIssue.BotIssue;
+import de.refactoringBot.model.botIssue.RefactoringOperations;
 import de.refactoringBot.model.outputModel.botPullRequestComment.BotPullRequestComment;
 
 /**
@@ -22,6 +24,9 @@ import de.refactoringBot.model.outputModel.botPullRequestComment.BotPullRequestC
  */
 @Component
 public class GrammarController {
+	
+	@Autowired
+	RefactoringOperations operations;
 
 	/**
 	 * This method checks if a comment has a valid bot grammar and returns if the
@@ -82,7 +87,7 @@ public class GrammarController {
 				if (commentArr[2].equals("ANNOTATION")) {
 					// Add override annotation
 					if (commentArr[3].equals("Override")) {
-						issue.setRefactoringOperation("Add Override Annotation");
+						issue.setRefactoringOperation(operations.addOverrideAnnotation);
 					}
 					// Add line/position
 					issue.setLine(Integer.valueOf(commentArr[5]));
@@ -93,7 +98,7 @@ public class GrammarController {
 			if (commentArr[1].equals("REORDER")) {
 				// Reorder modifier operation
 				if (commentArr[2].equals("MODIFIER")) {
-					issue.setRefactoringOperation("Reorder Modifier");
+					issue.setRefactoringOperation(operations.reorderModifier);
 				}
 			}
 
@@ -101,7 +106,7 @@ public class GrammarController {
 			if (commentArr[1].equals("RENAME")) {
 				// Rename method operations
 				if (commentArr[2].equals("METHOD")) {
-					issue.setRefactoringOperation("Rename Method");
+					issue.setRefactoringOperation(operations.renameMethod);
 					// Set new name of the method
 					issue.setRefactorString(commentArr[6]);
 				}
@@ -113,7 +118,7 @@ public class GrammarController {
 			if (commentArr[1].equals("REMOVE")) {
 				// Remove method parameter
 				if (commentArr[2].equals("PARAMETER")) {
-					issue.setRefactoringOperation("Remove Parameter");
+					issue.setRefactoringOperation(operations.removeParameter);
 					// Set name of the parameter
 					issue.setRefactorString(commentArr[6]);
 				}
