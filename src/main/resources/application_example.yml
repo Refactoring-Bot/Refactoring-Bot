@@ -1,0 +1,22 @@
+# Copy this file in the same location and name it application.yml
+# Changes are most likely necessary for the datasource parameters and the botRefactoringDirectory
+spring:
+  application:
+    name: alternativerefactoringbot
+  datasource:
+    url: jdbc:mysql://localhost:3306/refactoringbot_db?verifyServerCertificate=false&useSSL=true
+    username: root
+    password: root
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+  profiles:
+    active: "dev"
+server:
+  port: 8808
+---
+spring:
+  profiles: dev
+bot:
+  botRefactoringDirectory: C:/Users/Marvin/Documents/BotForks/
