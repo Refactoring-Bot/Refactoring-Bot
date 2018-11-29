@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.EnumSet;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.github.javaparser.JavaParser;
@@ -18,6 +17,7 @@ import com.github.javaparser.ast.visitor.ModifierVisitor;
 import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.refactoring.RefactoringImpl;
 
 /**
  * This class is used to execute the reorder modifier refactoring.
@@ -30,10 +30,7 @@ import de.refactoringBot.model.configuration.GitConfiguration;
  * @author Timo Pfaff
  */
 @Component
-public class ReorderModifier extends ModifierVisitor<Void> {
-
-	@Autowired
-	BotConfiguration botConfig;
+public class ReorderModifier extends ModifierVisitor<Void> implements RefactoringImpl {
 
 	/**
 	 * This method performs the refactoring and returns the a commit message.
@@ -43,7 +40,8 @@ public class ReorderModifier extends ModifierVisitor<Void> {
 	 * @return commitMessage
 	 * @throws FileNotFoundException
 	 */
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws FileNotFoundException {
+	@Override
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig, BotConfiguration botConfig) throws FileNotFoundException {
 		// Get filepath
 		String path = issue.getFilePath();
 

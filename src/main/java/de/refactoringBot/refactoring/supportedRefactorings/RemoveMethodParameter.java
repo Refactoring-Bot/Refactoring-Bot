@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.github.javaparser.JavaParser;
@@ -33,6 +32,7 @@ import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.javaparser.ParserRefactoring;
 import de.refactoringBot.model.javaparser.ParserRefactoringCollection;
+import de.refactoringBot.refactoring.RefactoringImpl;
 
 /**
  * This refactoring class is used for removing unused parameters of methods of a
@@ -42,10 +42,7 @@ import de.refactoringBot.model.javaparser.ParserRefactoringCollection;
  *
  */
 @Component
-public class RemoveMethodParameter {
-
-	@Autowired
-	BotConfiguration botConfig;
+public class RemoveMethodParameter implements RefactoringImpl {
 
 	/**
 	 * This method performs the refactoring and returns the a commit message.
@@ -55,7 +52,8 @@ public class RemoveMethodParameter {
 	 * @return commitMessage
 	 * @throws IOException
 	 */
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws IOException {
+	@Override
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig, BotConfiguration botConfig) throws IOException {
 
 		// Init Refactorings
 		ParserRefactoringCollection allRefactorings = new ParserRefactoringCollection();

@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import de.refactoringBot.model.botIssue.BotIssue;
-import de.refactoringBot.model.botIssue.RefactoringOperations;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.sonarQube.SonarQubeIssues;
+import de.refactoringBot.refactoring.RefactoringOperations;
 import de.refactoringBot.model.sonarQube.SonarIssue;
 
 /**
@@ -53,13 +53,13 @@ public class SonarQubeObjectTranslator {
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
 			case "squid:S1161":
-				botIssue.setRefactoringOperation(operations.addOverrideAnnotation);
+				botIssue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
 				break;
 			case "squid:ModifiersOrderCheck":
-				botIssue.setRefactoringOperation(operations.reorderModifier);
+				botIssue.setRefactoringOperation(operations.REORDER_MODIFIER);
 				break;
 			default:
-				botIssue.setRefactoringOperation(operations.unknownRefactoring);
+				botIssue.setRefactoringOperation(operations.UNKNOWN);
 				break;
 			}
 

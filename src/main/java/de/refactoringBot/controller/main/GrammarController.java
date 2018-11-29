@@ -12,8 +12,8 @@ import de.refactoringBot.grammar.botGrammar.BotOperationsBaseListener;
 import de.refactoringBot.grammar.botGrammar.BotOperationsLexer;
 import de.refactoringBot.grammar.botGrammar.BotOperationsParser;
 import de.refactoringBot.model.botIssue.BotIssue;
-import de.refactoringBot.model.botIssue.RefactoringOperations;
 import de.refactoringBot.model.outputModel.botPullRequestComment.BotPullRequestComment;
+import de.refactoringBot.refactoring.RefactoringOperations;
 
 /**
  * This class performs all task that have something to do with the grammar that
@@ -87,7 +87,7 @@ public class GrammarController {
 				if (commentArr[2].equals("ANNOTATION")) {
 					// Add override annotation
 					if (commentArr[3].equals("Override")) {
-						issue.setRefactoringOperation(operations.addOverrideAnnotation);
+						issue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
 					}
 					// Add line/position
 					issue.setLine(Integer.valueOf(commentArr[5]));
@@ -98,7 +98,7 @@ public class GrammarController {
 			if (commentArr[1].equals("REORDER")) {
 				// Reorder modifier operation
 				if (commentArr[2].equals("MODIFIER")) {
-					issue.setRefactoringOperation(operations.reorderModifier);
+					issue.setRefactoringOperation(operations.REORDER_MODIFIER);
 				}
 			}
 
@@ -106,7 +106,7 @@ public class GrammarController {
 			if (commentArr[1].equals("RENAME")) {
 				// Rename method operations
 				if (commentArr[2].equals("METHOD")) {
-					issue.setRefactoringOperation(operations.renameMethod);
+					issue.setRefactoringOperation(operations.RENAME_METHOD);
 					// Set new name of the method
 					issue.setRefactorString(commentArr[6]);
 				}
@@ -118,7 +118,7 @@ public class GrammarController {
 			if (commentArr[1].equals("REMOVE")) {
 				// Remove method parameter
 				if (commentArr[2].equals("PARAMETER")) {
-					issue.setRefactoringOperation(operations.removeParameter);
+					issue.setRefactoringOperation(operations.REMOVE_PARAMETER);
 					// Set name of the parameter
 					issue.setRefactorString(commentArr[6]);
 				}

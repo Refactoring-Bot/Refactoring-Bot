@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.github.javaparser.JavaParser;
@@ -16,6 +15,7 @@ import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinte
 import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.refactoring.RefactoringImpl;
 
 /**
  * This class is used for executing the add override annotation refactoring.
@@ -23,10 +23,7 @@ import de.refactoringBot.model.configuration.GitConfiguration;
  * @author Timo Pfaff
  */
 @Component
-public class AddOverrideAnnotation {
-
-	@Autowired
-	BotConfiguration botConfig;
+public class AddOverrideAnnotation implements RefactoringImpl {
 
 	/**
 	 * This method performs the refactoring and returns the a commit message.
@@ -36,7 +33,9 @@ public class AddOverrideAnnotation {
 	 * @return commitMessage
 	 * @throws FileNotFoundException
 	 */
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws FileNotFoundException {
+	@Override
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig, BotConfiguration botConfig) throws FileNotFoundException {
+
 		// Prepare data
 		String path = issue.getFilePath();
 		String methodName = null;
@@ -52,13 +51,13 @@ public class AddOverrideAnnotation {
 		for (MethodDeclaration method : methods) {
 			// If methods match
 			methodName = addAnnotation(method, issue.getLine());
-			
+
 			// If method found
 			if (methodName != null) {
 				break;
 			}
 		}
-		
+
 		// If method not found
 		if (methodName == null) {
 			return null;
@@ -83,7 +82,7 @@ public class AddOverrideAnnotation {
 	 * @return methodName
 	 */
 	public String addAnnotation(MethodDeclaration declaration, Integer line) {
-        // If method declaration = method that needs refactoring
+		// If method declaration = method that needs refactoring
 		if (line == declaration.getName().getBegin().get().line) {
 			// Add annotation
 			declaration.addMarkerAnnotation("Override");
