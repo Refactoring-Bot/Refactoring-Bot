@@ -185,7 +185,7 @@ public class RenameMethod implements RefactoringImpl {
 			for (ParserRefactoring refactoring : allRefactorings.getRefactoring()) {
 
 				// if refactoring = method declaration
-				if (refactoring.getMethod() != null) {
+				if (refactoring.getMethod() != null && javaFile.equals(refactoring.getJavaFile())) {
 					List<MethodDeclaration> methods = compilationUnit.findAll(MethodDeclaration.class);
 					// Search all methods
 					for (MethodDeclaration method : methods) {
@@ -197,7 +197,7 @@ public class RenameMethod implements RefactoringImpl {
 				}
 
 				// If refactoring = method call
-				if (refactoring.getMethodCall() != null) {
+				if (refactoring.getMethodCall() != null && javaFile.equals(refactoring.getJavaFile())) {
 					List<MethodCallExpr> methodCalls = compilationUnit.findAll(MethodCallExpr.class);
 					// Iterate method calls that need refactoring
 					for (MethodCallExpr refExpr : refactoring.getMethodCall()) {
