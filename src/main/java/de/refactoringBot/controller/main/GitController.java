@@ -182,7 +182,7 @@ public class GitController {
 			// Perform 'git add .'
 			git.add().addFilepattern(".").call();
 			// Perform 'git commit -m'
-			git.commit().setMessage(commitMessage).call();
+			git.commit().setMessage(commitMessage).setCommitter(gitConfig.getBotName(), gitConfig.getBotEmail()).call();
 			// Push with bot credenials
 			git.push()
 					.setCredentialsProvider(

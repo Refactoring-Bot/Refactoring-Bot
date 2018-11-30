@@ -23,6 +23,7 @@ public class GitConfiguration {
 	
 	private String botName;
 	private String botPassword;
+	private String botEmail;
 	private String botToken;
 	private String forkApiLink;
 	private String forkGitLink;
@@ -144,6 +145,14 @@ public class GitConfiguration {
 
 	public void setAnalysisServiceProjectKey(String analysisServiceProjectKey) {
 		this.analysisServiceProjectKey = analysisServiceProjectKey;
+	}
+
+	public String getBotEmail() {
+		return botEmail;
+	}
+
+	public void setBotEmail(String botEmail) {
+		this.botEmail = botEmail;
 	}
 	
 }

@@ -59,6 +59,7 @@ public class ConfigurationController {
 			@RequestParam(value = "ProjectRootFolder", required = true, defaultValue = "Calculator") String projectRootFolder,
 			@RequestParam(value = "botUsername", required = true) String botUsername,
 			@RequestParam(value = "botPassword", required = true) String botPassword,
+			@RequestParam(value = "botEmail", required = true) String botEmail,
 			@RequestParam(value = "botToken", required = true) String botToken,
 			@RequestParam(value = "analysisService", required = false) String analysisService,
 			@RequestParam(value = "analysisServiceProjectKey", required = false) String analysisServiceProjectKey,
@@ -71,14 +72,30 @@ public class ConfigurationController {
 					HttpStatus.CONFLICT);
 		}
 
+		// Init database config
+		GitConfiguration savedConfig = null;
+
 		try {
 			// Create configuration object + check if data valid
 			GitConfiguration config = grabber.createConfigurationForRepo(repoName, repoOwner, repoService, botUsername,
-					botPassword, botToken, analysisService, analysisServiceProjectKey, maxAmountRequests,
+					botPassword, botEmail, botToken, analysisService, analysisServiceProjectKey, maxAmountRequests,
 					projectRootFolder);
-			// Save configuration to database
-			GitConfiguration savedConfig = repo.save(config);
-			// Create local folder for the fork
+			// Try to save configuration to database
+			try {
+				savedConfig = repo.save(config);
+			} catch (Exception e) {
+				// Print exception and abort if database error occurs
+				e.printStackTrace();
+				return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+
+			// Delete local folder for config if exists (if database was resetted)
+			if (new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).exists()) {
+				FileUtils.deleteDirectory(
+						new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
+			}
+
+			// Create new local folder for the fork
 			File dir = new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId());
 			dir.mkdir();
 			// Create the fork on the filehoster bot account
@@ -88,6 +105,11 @@ public class ConfigurationController {
 
 			return new ResponseEntity<GitConfiguration>(config, HttpStatus.CREATED);
 		} catch (Exception e) {
+			// If error occured after config was created -> delete config
+			if (savedConfig != null) {
+				repo.delete(savedConfig);
+			}
+
 			e.printStackTrace();
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
@@ -107,26 +129,37 @@ public class ConfigurationController {
 			@RequestParam(value = "configurationId", required = true) Long configurationId) {
 		// Check if configuration exists
 		Optional<GitConfiguration> existsConfig = repo.getByID(configurationId);
+		String userFeedback = "";
 		// If it does
 		if (existsConfig.isPresent()) {
+			// Delete configuration from the database
 			try {
-				// Delete repository from the filehoster bot account
-				grabber.deleteRepository(existsConfig.get());
-				// Delete configuration from the database
 				repo.delete(existsConfig.get());
-				// Delete local folder
+				userFeedback = userFeedback.concat("Configuration deleted from database!");
+			} catch (Exception e) {
+				e.printStackTrace();
+				return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+			// Delete repository from the filehoster bot account
+			try {
+				grabber.deleteRepository(existsConfig.get());
+			} catch (Exception e) {
+				userFeedback = userFeedback
+						.concat(" Could not delete repository on " + existsConfig.get().getRepoService() + "!");
+			}
+			// Delete local folder
+			try {
 				File forkFolder = new File(
 						botConfig.getBotRefactoringDirectory() + existsConfig.get().getConfigurationId());
 				FileUtils.deleteDirectory(forkFolder);
-
-				return new ResponseEntity<String>("Configuration deleted!", HttpStatus.OK);
 			} catch (Exception e) {
-				e.printStackTrace();
-				return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+				userFeedback = userFeedback.concat(" Could not delete local folder '"
+						+ existsConfig.get().getConfigurationId() + "' of the configuration!");
 			}
+			// Return feedback to user
+			return new ResponseEntity<String>(userFeedback, HttpStatus.OK);
 		} else {
-			return new ResponseEntity<String>("Configuration with given ID does not exist!",
-					HttpStatus.NOT_FOUND);
+			return new ResponseEntity<String>("Configuration with given ID does not exist!", HttpStatus.NOT_FOUND);
 		}
 	}
 
