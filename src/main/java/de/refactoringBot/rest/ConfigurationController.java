@@ -55,13 +55,13 @@ public class ConfigurationController {
 	public ResponseEntity<?> add(
 			@RequestParam(value = "repoService", required = true, defaultValue = "Github") String repoService,
 			@RequestParam(value = "repoName", required = true, defaultValue = "RefactoringTest") String repoName,
-			@RequestParam(value = "ownerName", required = true, defaultValue = "TimoPfaff") String repoOwner,
+			@RequestParam(value = "ownerName", required = true, defaultValue = "Refactoring-Bot") String repoOwner,
 			@RequestParam(value = "ProjectRootFolder", required = true, defaultValue = "Calculator") String projectRootFolder,
 			@RequestParam(value = "botUsername", required = true) String botUsername,
 			@RequestParam(value = "botPassword", required = true) String botPassword,
 			@RequestParam(value = "botEmail", required = true) String botEmail,
 			@RequestParam(value = "botToken", required = true) String botToken,
-			@RequestParam(value = "analysisService", required = false) String analysisService,
+			@RequestParam(value = "analysisService", required = false, defaultValue = "sonarqube") String analysisService,
 			@RequestParam(value = "analysisServiceProjectKey", required = false) String analysisServiceProjectKey,
 			@RequestParam(value = "maxAmountRequests", required = true, defaultValue = "5") Integer maxAmountRequests) {
 		// Check if repository already exists in another configuration
