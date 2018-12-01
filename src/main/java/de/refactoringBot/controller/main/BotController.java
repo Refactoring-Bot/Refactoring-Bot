@@ -1,8 +1,12 @@
 package de.refactoringBot.controller.main;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.springframework.stereotype.Component;
 
 import de.refactoringBot.model.botIssue.BotIssue;
@@ -22,7 +26,8 @@ import de.refactoringBot.model.refactoredIssue.RefactoredIssue;
 public class BotController {
 
 	/**
-	 * This method checks if the maximal amount of pull requests created by the bot is reached.
+	 * This method checks if the maximal amount of pull requests created by the bot
+	 * is reached.
 	 * 
 	 * @param requests
 	 * @param gitConfig
@@ -42,13 +47,14 @@ public class BotController {
 
 		// Check if max amount is reached
 		if (counter >= gitConfig.getMaxAmountRequests()) {
-			throw new Exception("Maximal amount of requests reached." + "(Maximum = "
-					+ gitConfig.getMaxAmountRequests() + "; Currently = " + counter + " bot requests are open)");
+			throw new Exception("Maximal amount of requests reached." + "(Maximum = " + gitConfig.getMaxAmountRequests()
+					+ "; Currently = " + counter + " bot requests are open)");
 		}
 	}
 
 	/**
-	 * The Method creates a RefactoredIssue-Object from a Analysis-Service-Refactoring.
+	 * The Method creates a RefactoredIssue-Object from a
+	 * Analysis-Service-Refactoring.
 	 * 
 	 * @param issue
 	 * @param gitConfig
@@ -77,7 +83,8 @@ public class BotController {
 	}
 
 	/**
-	 * The Method creates a RefactoredIssue-Object from a Request-Comment-Refactoring.
+	 * The Method creates a RefactoredIssue-Object from a
+	 * Request-Comment-Refactoring.
 	 * 
 	 * @param issue
 	 * @param gitConfig
@@ -109,5 +116,31 @@ public class BotController {
 		}
 
 		return refactoredIssue;
+	}
+
+	/**
+	 * This method finds the Root-Folder of a repository. That is the folder that
+	 * contains the src folder.
+	 * 
+	 * @param repoFolder
+	 * @return rootFolder
+	 * @throws IOException 
+	 */
+	public String findRootFolder(String repoFolder) throws Exception {
+		// Get root folder of project
+		File dir = new File(repoFolder);
+
+		// Get paths to all java files of the project
+		List<File> files = (List<File>) FileUtils.listFilesAndDirs(dir, TrueFileFilter.INSTANCE,
+				TrueFileFilter.INSTANCE);
+		for (File file : files) {
+			if (file.isDirectory() && file.getName().equals("src")) {
+				String srcPath = file.getAbsolutePath();
+				return srcPath;
+			}
+		}
+		
+		// If no src-folder found
+		throw new Exception("No src-folder found inside this java-project!");
 	}
 }

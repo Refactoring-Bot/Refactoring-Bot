@@ -1,8 +1,10 @@
 package de.refactoringBot.controller.sonarQube;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,9 +44,16 @@ public class SonarQubeObjectTranslator {
 			// Create filepath
 			String project = issue.getProject();
 			String component = issue.getComponent();
-			String path = component.substring(project.length() + 1, component.length());
-			path = gitConfig.getProjectRootFolder() + "/" + path;
-			botIssue.setFilePath(path);
+			String sonarIssuePath = Paths.get(component.substring(project.length() + 1, component.length())).toString();
+			
+			// Create full path for sonar issue
+			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3) + sonarIssuePath;
+			// Cut path outside the repository
+			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
+			// Remove leading '/'
+			translatedPath = translatedPath.substring(1);
+			
+			botIssue.setFilePath(translatedPath);
 
 			// Fill object
 			botIssue.setLine(issue.getLine());

@@ -113,7 +113,6 @@ public class RefactoringController {
 						return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 					}
 
-
 					try {
 						// For Requests created by someone else
 						if (!request.getCreatorName().equals(gitConfig.get().getBotName())) {

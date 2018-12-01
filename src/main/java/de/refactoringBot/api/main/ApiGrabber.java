@@ -133,7 +133,7 @@ public class ApiGrabber {
 	 */
 	public GitConfiguration createConfigurationForRepo(String repoName, String repoOwner, String repoService,
 			String botUsername, String botPassword, String botEmail, String botToken, String analysisService,
-			String analysisServiceProjectKey, Integer maxAmountRequests, String projectRootFolder) throws Exception {
+			String analysisServiceProjectKey, Integer maxAmountRequests) throws Exception {
 
 		// Init object
 		GitConfiguration gitConfig = null;
@@ -149,7 +149,7 @@ public class ApiGrabber {
 
 			// Create git configuration and a fork
 			gitConfig = githubTranslator.createConfiguration(repoName, repoOwner, botUsername, botPassword, botEmail, botToken,
-					repoService, analysisService, analysisServiceProjectKey, maxAmountRequests, projectRootFolder);
+					repoService, analysisService, analysisServiceProjectKey, maxAmountRequests);
 			return gitConfig;
 		default:
 			throw new Exception("Filehoster " + "'" + repoService + "' is not supported!");

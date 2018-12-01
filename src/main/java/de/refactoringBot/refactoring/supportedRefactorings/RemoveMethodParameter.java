@@ -27,7 +27,6 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 
-import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.javaparser.ParserRefactoring;
@@ -53,7 +52,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @throws IOException
 	 */
 	@Override
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig, BotConfiguration botConfig) throws IOException {
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws IOException {
 
 		// Init Refactorings
 		ParserRefactoringCollection allRefactorings = new ParserRefactoringCollection();
@@ -62,8 +61,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		List<String> allJavaFiles = new ArrayList<String>();
 
 		// Init needed variables
-		String issueFilePath = botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/"
-				+ issue.getFilePath();
+		String issueFilePath = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
 		String globalMethodSignature = null;
 		String localMethodSignature = null;
 		String methodClassSignature = null;
@@ -72,8 +70,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		MethodDeclaration methodToRefactor = null;
 
 		// Get root folder of project
-		File dir = new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/"
-				+ gitConfig.getProjectRootFolder());
+		File dir = new File(gitConfig.getRepoFolder());
 
 		// Get paths to all java files of the project
 		List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
@@ -85,8 +82,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 		// Configure solver for the project
 		CombinedTypeSolver typeSolver = new CombinedTypeSolver();
-		typeSolver.add(new JavaParserTypeSolver(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()
-				+ "/" + gitConfig.getProjectRootFolder() + "/src"));
+		typeSolver.add(new JavaParserTypeSolver(gitConfig.getSrcFolder()));
 		typeSolver.add(new ReflectionTypeSolver());
 		JavaSymbolSolver javaSymbolSolver = new JavaSymbolSolver(typeSolver);
 		JavaParser.getStaticConfiguration().setSymbolResolver(javaSymbolSolver);

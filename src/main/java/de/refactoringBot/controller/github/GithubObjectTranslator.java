@@ -50,7 +50,7 @@ public class GithubObjectTranslator {
 	 */
 	public GitConfiguration createConfiguration(String repoName, String repoOwner, String botUsername,
 			String botPassword, String botEmail, String botToken, String repoService, String analysisService,
-			String analysusServiceProjectKey, Integer maxAmountRequests, String projectRootFolder) {
+			String analysusServiceProjectKey, Integer maxAmountRequests) {
 		// Create Configuration
 		GitConfiguration config = new GitConfiguration();
 
@@ -73,7 +73,6 @@ public class GithubObjectTranslator {
 		config.setAnalysisServiceProjectKey(analysusServiceProjectKey);
 		config.setMaxAmountRequests(maxAmountRequests);
 		config.setBotToken(botToken);
-		config.setProjectRootFolder(projectRootFolder);
 
 		return config;
 	}

@@ -12,7 +12,6 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
-import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.refactoring.RefactoringImpl;
@@ -34,15 +33,14 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 	 * @throws FileNotFoundException
 	 */
 	@Override
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig, BotConfiguration botConfig) throws FileNotFoundException {
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws FileNotFoundException {
 
 		// Prepare data
 		String path = issue.getFilePath();
 		String methodName = null;
 
 		// Read file
-		FileInputStream in = new FileInputStream(
-				botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/" + path);
+		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
 
 		List<MethodDeclaration> methods = compilationUnit.findAll(MethodDeclaration.class);
@@ -64,8 +62,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		}
 
 		// Save changes to file
-		PrintWriter out = new PrintWriter(
-				botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/" + path);
+		PrintWriter out = new PrintWriter(gitConfig.getRepoFolder() + "/" + path);
 		out.println(LexicalPreservingPrinter.print(compilationUnit));
 		out.close();
 

@@ -1,6 +1,7 @@
 package de.refactoringBot.rest;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import org.apache.commons.io.FileUtils;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import de.refactoringBot.api.main.ApiGrabber;
 import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.controller.github.GithubObjectTranslator;
+import de.refactoringBot.controller.main.BotController;
 import de.refactoringBot.controller.main.GitController;
 import de.refactoringBot.model.configuration.ConfigurationRepository;
 import de.refactoringBot.model.configuration.GitConfiguration;
@@ -41,6 +43,8 @@ public class ConfigurationController {
 	BotConfiguration botConfig;
 	@Autowired
 	GitController gitController;
+	@Autowired
+	BotController botController;
 
 	/**
 	 * This method creates an git configuration with the user inputs.
@@ -56,7 +60,6 @@ public class ConfigurationController {
 			@RequestParam(value = "repoService", required = true, defaultValue = "Github") String repoService,
 			@RequestParam(value = "repoName", required = true, defaultValue = "RefactoringTest") String repoName,
 			@RequestParam(value = "ownerName", required = true, defaultValue = "Refactoring-Bot") String repoOwner,
-			@RequestParam(value = "ProjectRootFolder", required = true, defaultValue = "Calculator") String projectRootFolder,
 			@RequestParam(value = "botUsername", required = true) String botUsername,
 			@RequestParam(value = "botPassword", required = true) String botPassword,
 			@RequestParam(value = "botEmail", required = true) String botEmail,
@@ -78,8 +81,7 @@ public class ConfigurationController {
 		try {
 			// Create configuration object + check if data valid
 			GitConfiguration config = grabber.createConfigurationForRepo(repoName, repoOwner, repoService, botUsername,
-					botPassword, botEmail, botToken, analysisService, analysisServiceProjectKey, maxAmountRequests,
-					projectRootFolder);
+					botPassword, botEmail, botToken, analysisService, analysisServiceProjectKey, maxAmountRequests);
 			// Try to save configuration to database
 			try {
 				savedConfig = repo.save(config);
@@ -102,6 +104,11 @@ public class ConfigurationController {
 			grabber.createFork(savedConfig);
 			// Clone fork + add remote of origin repository
 			gitController.initLocalWorkspace(savedConfig);
+
+			// Find and add root folder to config
+			savedConfig.setRepoFolder(Paths.get(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).toString());
+			savedConfig.setSrcFolder(botController.findRootFolder(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
+			repo.save(savedConfig);
 
 			// Fetch target-Repository-Data and check bot password
 			gitController.fetchRemote(savedConfig);
