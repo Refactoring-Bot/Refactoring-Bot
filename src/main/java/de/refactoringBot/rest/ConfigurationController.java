@@ -105,9 +105,9 @@ public class ConfigurationController {
 			// Clone fork + add remote of origin repository
 			gitController.initLocalWorkspace(savedConfig);
 
-			// Find and add root folder to config
+			// Add repo path and src-folder path to config
 			savedConfig.setRepoFolder(Paths.get(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).toString());
-			savedConfig.setSrcFolder(botController.findRootFolder(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
+			savedConfig.setSrcFolder(botController.findSrcFolder(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
 			repo.save(savedConfig);
 
 			// Fetch target-Repository-Data and check bot password

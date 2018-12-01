@@ -126,7 +126,7 @@ public class BotController {
 	 * @return rootFolder
 	 * @throws IOException 
 	 */
-	public String findRootFolder(String repoFolder) throws Exception {
+	public String findSrcFolder(String repoFolder) throws Exception {
 		// Get root folder of project
 		File dir = new File(repoFolder);
 
