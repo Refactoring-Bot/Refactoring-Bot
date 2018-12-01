@@ -116,15 +116,14 @@ public class ConfigurationController {
 				// Try to delete configuration if created
 				if (savedConfig != null) {
 					repo.delete(savedConfig);
-				}
-				
-				// Try to delete local folder
-				File forkFolder = new File(
-						botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId());
-				FileUtils.deleteDirectory(forkFolder);
+					// Try to delete local folder
+					File forkFolder = new File(
+							botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId());
+					FileUtils.deleteDirectory(forkFolder);
 
-				// Try to delete Repo
-				grabber.deleteRepository(savedConfig);
+					// Try to delete Repo
+					grabber.deleteRepository(savedConfig);
+				}
 			} catch (Exception t) {
 				t.printStackTrace();
 			}
