@@ -103,11 +103,30 @@ public class ConfigurationController {
 			// Clone fork + add remote of origin repository
 			gitController.initLocalWorkspace(savedConfig);
 
+			// Fetch target-Repository-Data and check bot password
+			gitController.fetchRemote(savedConfig);
+			String newBranch = "testCredentialsFor_" + savedConfig.getBotName();
+			gitController.createBranch(savedConfig, "master", newBranch);
+			gitController.pushChanges(savedConfig, "Test bot password");
+
 			return new ResponseEntity<GitConfiguration>(config, HttpStatus.CREATED);
 		} catch (Exception e) {
-			// If error occured after config was created -> delete config
-			if (savedConfig != null) {
-				repo.delete(savedConfig);
+			// If error occured after config was created
+			try {
+				// Try to delete configuration if created
+				if (savedConfig != null) {
+					repo.delete(savedConfig);
+				}
+				
+				// Try to delete local folder
+				File forkFolder = new File(
+						botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId());
+				FileUtils.deleteDirectory(forkFolder);
+
+				// Try to delete Repo
+				grabber.deleteRepository(savedConfig);
+			} catch (Exception t) {
+				t.printStackTrace();
 			}
 
 			e.printStackTrace();
