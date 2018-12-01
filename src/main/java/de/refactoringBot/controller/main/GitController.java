@@ -208,7 +208,7 @@ public class GitController {
 			git.close();
 			throw new Exception("Wrong bot password!");
 		} catch (Exception e) {
-			git.clean();
+			git.close();
 			throw new Exception("Could not successfully perform 'git push'!");
 		}
 	}
