@@ -179,6 +179,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 		// Iterate all java files
 		for (String javaFile : allJavaFiles) {
+			// Helper variable
+			boolean fileEdited = false;
 			// Create compilation unit
 			FileInputStream methodPath = new FileInputStream(javaFile);
 			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
@@ -194,6 +196,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 						// If methods match
 						if (method.equals(refactoring.getMethod())) {
 							performRemoveMethodParameter(method, parameterName);
+							fileEdited = true;
 						}
 					}
 				}
@@ -208,16 +211,20 @@ public class RemoveMethodParameter implements RefactoringImpl {
 							// If method calls match
 							if (expr.equals(refExpr)) {
 								performRemoveMethodCallParameter(expr, paramPosition);
+								fileEdited = true;
 							}
 						}
 					}
 				}
 			}
-
-			// Save changes to file
-			PrintWriter out = new PrintWriter(javaFile);
-			out.println(LexicalPreservingPrinter.print(compilationUnit));
-			out.close();
+			
+			// If javafile was edited
+			if (fileEdited) {
+				// Save changes to file
+				PrintWriter out = new PrintWriter(javaFile);
+				out.println(LexicalPreservingPrinter.print(compilationUnit));
+				out.close();
+			}
 		}
 	}
 

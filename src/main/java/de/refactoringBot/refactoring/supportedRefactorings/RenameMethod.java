@@ -58,8 +58,7 @@ public class RenameMethod implements RefactoringImpl {
 		List<String> allJavaFiles = new ArrayList<String>();
 
 		// Init needed variables
-		String issueFilePath = gitConfig.getRepoFolder() + "/"
-				+ issue.getFilePath();
+		String issueFilePath = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
 		String globalMethodSignature = null;
 		String localMethodSignature = null;
 		String methodClassSignature = null;
@@ -174,6 +173,8 @@ public class RenameMethod implements RefactoringImpl {
 
 		// Iterate all java files
 		for (String javaFile : allJavaFiles) {
+			// Helper variable
+			boolean fileEdited = false;
 			// Create compilation unit
 			FileInputStream methodPath = new FileInputStream(javaFile);
 			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
@@ -189,6 +190,7 @@ public class RenameMethod implements RefactoringImpl {
 						// If methods match
 						if (method.equals(refactoring.getMethod())) {
 							performRenameMethod(method, newName);
+							fileEdited = true;
 						}
 					}
 				}
@@ -203,16 +205,20 @@ public class RenameMethod implements RefactoringImpl {
 							// If method calls match
 							if (expr.equals(refExpr)) {
 								performRenameMethodCall(expr, newName);
+								fileEdited = true;
 							}
 						}
 					}
 				}
 			}
 
-			// Save changes to file
-			PrintWriter out = new PrintWriter(javaFile);
-			out.println(LexicalPreservingPrinter.print(compilationUnit));
-			out.close();
+			// If javafile was edited
+			if (fileEdited) {
+				// Save changes to file
+				PrintWriter out = new PrintWriter(javaFile);
+				out.println(LexicalPreservingPrinter.print(compilationUnit));
+				out.close();
+			}
 		}
 	}
 
