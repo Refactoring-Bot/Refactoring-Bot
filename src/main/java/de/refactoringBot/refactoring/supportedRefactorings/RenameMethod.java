@@ -165,7 +165,18 @@ public class RenameMethod implements RefactoringImpl {
 		return "Renamed method '" + oldMethodName + "' to '" + issue.getRefactorString() + "'";
 	}
 
+	/**
+	 * This method returns all root-folders of java files (like the src folder or
+	 * the src/main/java folder from maven projects)
+	 * 
+	 * @param allJavaFiles
+	 * @param repoFolder
+	 * @return javaRoots
+	 * @throws FileNotFoundException
+	 */
 	public List<String> findJavaRoots(List<String> allJavaFiles, String repoFolder) throws FileNotFoundException {
+		
+		// Init roots list
 		List<String> javaRoots = new ArrayList<String>();
 
 		for (String javaFile : allJavaFiles) {
@@ -212,7 +223,6 @@ public class RenameMethod implements RefactoringImpl {
 		}
 
 		return javaRoots;
-
 	}
 
 	/**
