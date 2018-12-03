@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -76,9 +77,14 @@ public class RenameMethod implements RefactoringImpl {
 			}
 		}
 
+		List<String> javaRoots = findJavaRoots(allJavaFiles, gitConfig.getRepoFolder());
+
 		// Configure solver for the project
 		CombinedTypeSolver typeSolver = new CombinedTypeSolver();
-		typeSolver.add(new JavaParserTypeSolver(gitConfig.getSrcFolder()));
+		// Add java-roots
+		for (String javaRoot : javaRoots) {
+			typeSolver.add(new JavaParserTypeSolver(javaRoot));
+		}
 		typeSolver.add(new ReflectionTypeSolver());
 		JavaSymbolSolver javaSymbolSolver = new JavaSymbolSolver(typeSolver);
 		JavaParser.getStaticConfiguration().setSymbolResolver(javaSymbolSolver);
@@ -157,6 +163,56 @@ public class RenameMethod implements RefactoringImpl {
 		renameFindings(allRefactorings, allJavaFiles, issue.getRefactorString());
 
 		return "Renamed method '" + oldMethodName + "' to '" + issue.getRefactorString() + "'";
+	}
+
+	public List<String> findJavaRoots(List<String> allJavaFiles, String repoFolder) throws FileNotFoundException {
+		List<String> javaRoots = new ArrayList<String>();
+
+		for (String javaFile : allJavaFiles) {
+			// parse a file
+			FileInputStream filepath = new FileInputStream(javaFile);
+			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
+
+			// Get all Classes
+			List<PackageDeclaration> packageDeclarations = compilationUnit.findAll(PackageDeclaration.class);
+
+			// If javafile has no package
+			if (packageDeclarations.isEmpty()) {
+				// Get javafile
+				File rootlessFile = new File(javaFile);
+				// Add parent of file to root
+				if (!javaRoots.contains(rootlessFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
+					javaRoots.add(rootlessFile.getParentFile().getAbsolutePath());
+				}
+			} else {
+				// Only 1 package declaration for each file
+				PackageDeclaration packageDeclaration = packageDeclarations.get(0);
+				String rootPackage = null;
+
+				if (packageDeclaration.getNameAsString().split("\\.").length == 1) {
+					rootPackage = packageDeclaration.getNameAsString();
+				} else {
+					rootPackage = packageDeclaration.getNameAsString().split("\\.")[0];
+				}
+
+				// Get javafile
+				File currentFile = new File(javaFile);
+
+				// Until finding the root package
+				while (!currentFile.isDirectory() || !currentFile.getName().equals(rootPackage)) {
+					currentFile = currentFile.getParentFile();
+				}
+
+				// Add parent of rootPackage as java root
+				if (!javaRoots.contains(currentFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
+					javaRoots.add(currentFile.getParentFile().getAbsolutePath());
+				}
+			}
+
+		}
+
+		return javaRoots;
+
 	}
 
 	/**
@@ -256,11 +312,17 @@ public class RenameMethod implements RefactoringImpl {
 				NodeList<ClassOrInterfaceType> ext = currentClass.getExtendedTypes();
 				// Add all implements signatures to list
 				for (int i = 0; i < impl.size(); i++) {
-					allRefactorings.addToDoClass(impl.get(i).resolve().getQualifiedName());
+					try {
+						allRefactorings.addToDoClass(impl.get(i).resolve().getQualifiedName());
+					} catch (Exception e) {
+					}
 				}
 				// Add all extends signatures to list
 				for (int i = 0; i < ext.size(); i++) {
-					allRefactorings.addToDoClass(ext.get(i).resolve().getQualifiedName());
+					try {
+						allRefactorings.addToDoClass(ext.get(i).resolve().getQualifiedName());
+					} catch (Exception e) {
+					}
 				}
 			}
 		}
@@ -314,14 +376,21 @@ public class RenameMethod implements RefactoringImpl {
 				NodeList<ClassOrInterfaceType> ext = currentClass.getExtendedTypes();
 				// If class implements of one of the done classes
 				for (int i = 0; i < impl.size(); i++) {
-					if (allRefactorings.getDoneClasses().contains(impl.get(i).resolve().getQualifiedName())) {
-						allRefactorings.addToDoClass(currentClass.resolve().getQualifiedName());
+					try {
+						if (allRefactorings.getDoneClasses().contains(impl.get(i).resolve().getQualifiedName())) {
+							allRefactorings.addToDoClass(currentClass.resolve().getQualifiedName());
+						}
+					} catch (Exception e) {
 					}
 				}
 				// If class extends of one of the done classes
 				for (int i = 0; i < ext.size(); i++) {
-					if (allRefactorings.getDoneClasses().contains(ext.get(i).resolve().getQualifiedName())) {
-						allRefactorings.addToDoClass(currentClass.resolve().getQualifiedName());
+					try {
+						if (allRefactorings.getDoneClasses().contains(ext.get(i).resolve().getQualifiedName())) {
+							allRefactorings.addToDoClass(currentClass.resolve().getQualifiedName());
+						}
+					} catch (Exception e) {
+
 					}
 				}
 			}
@@ -416,8 +485,11 @@ public class RenameMethod implements RefactoringImpl {
 		// Rename all suitable method calls
 		for (MethodCallExpr methodCall : methodCalls) {
 			// Check if call invokes the refactoring method
-			if (checkMethodCall(methodCall, methodSignature) != null) {
-				validCalls.add(checkMethodCall(methodCall, methodSignature));
+			try {
+				if (checkMethodCall(methodCall, methodSignature) != null) {
+					validCalls.add(checkMethodCall(methodCall, methodSignature));
+				}
+			} catch (Exception e) {
 			}
 		}
 
