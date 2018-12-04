@@ -138,21 +138,21 @@ public class ApiGrabber {
 		// Init object
 		GitConfiguration gitConfig = null;
 
+		// Check analysis service data
+		checkAnalysisService(analysisService, analysisServiceProjectKey);
+
 		// Pick filehoster
 		switch (repoService.toLowerCase()) {
 		case "github":
 			// Check repository
 			githubGrabber.checkRepository(repoName, repoOwner);
-			
-			// Check analysis service data
-			checkAnalysisService(analysisService, analysisServiceProjectKey);
 
 			// Check bot user and bot token
 			githubGrabber.checkGithubUser(botUsername, botToken, botEmail);
 
 			// Create git configuration and a fork
-			gitConfig = githubTranslator.createConfiguration(repoName, repoOwner, botUsername, botPassword, botEmail, botToken,
-					repoService, analysisService, analysisServiceProjectKey, maxAmountRequests);
+			gitConfig = githubTranslator.createConfiguration(repoName, repoOwner, botUsername, botPassword, botEmail,
+					botToken, repoService, analysisService, analysisServiceProjectKey, maxAmountRequests);
 			return gitConfig;
 		default:
 			throw new Exception("Filehoster " + "'" + repoService + "' is not supported!");
@@ -234,14 +234,14 @@ public class ApiGrabber {
 			break;
 		}
 	}
-	
+
 	/**
 	 * This method checks the analysis service data.
 	 * 
 	 * @param analysisService
 	 * @param analysisServiceProjectKey
 	 */
-	private void checkAnalysisService(String analysisService, String analysisServiceProjectKey) throws Exception{
+	private void checkAnalysisService(String analysisService, String analysisServiceProjectKey) throws Exception {
 		// Check if input exists
 		if (analysisService == null || analysisServiceProjectKey == null) {
 			return;
@@ -252,6 +252,6 @@ public class ApiGrabber {
 			sonarQubeGrabber.checkSonarData(analysisServiceProjectKey);
 			break;
 		}
-		
+
 	}
 }
