@@ -106,8 +106,10 @@ public class ConfigurationController {
 			gitController.initLocalWorkspace(savedConfig);
 
 			// Add repo path and src-folder path to config
-			savedConfig.setRepoFolder(Paths.get(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).toString());
-			savedConfig.setSrcFolder(botController.findSrcFolder(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
+			savedConfig.setRepoFolder(
+					Paths.get(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).toString());
+			savedConfig.setSrcFolder(botController
+					.findSrcFolder(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
 			repo.save(savedConfig);
 
 			// Fetch target-Repository-Data and check bot password
@@ -153,7 +155,15 @@ public class ConfigurationController {
 	public ResponseEntity<?> deleteConfig(
 			@RequestParam(value = "configurationId", required = true) Long configurationId) {
 		// Check if configuration exists
-		Optional<GitConfiguration> existsConfig = repo.getByID(configurationId);
+		Optional<GitConfiguration> existsConfig;
+		try {
+			// Try to get the Git-Configuration with the given ID
+			existsConfig = repo.getByID(configurationId);
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			e.printStackTrace();
+			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 		String userFeedback = "";
 		// If it does
 		if (existsConfig.isPresent()) {
@@ -196,7 +206,14 @@ public class ConfigurationController {
 	@RequestMapping(value = "/getAllConfigs", method = RequestMethod.GET, produces = "application/json")
 	@ApiOperation(value = "Get all Git-Configurations")
 	public ResponseEntity<?> getAllConfigs() {
-		Iterable<GitConfiguration> allConfigs = repo.findAll();
+		Iterable<GitConfiguration> allConfigs;
+		try {
+			allConfigs = repo.findAll();
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			e.printStackTrace();
+			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 		return new ResponseEntity<Iterable<GitConfiguration>>(allConfigs, HttpStatus.OK);
 	}
 }

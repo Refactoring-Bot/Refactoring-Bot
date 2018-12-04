@@ -78,8 +78,15 @@ public class RefactoringController {
 		// Create empty list of refactored Issues
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<RefactoredIssue>();
 
-		// Try to get the Git-Configuration with the given ID
-		Optional<GitConfiguration> gitConfig = configRepo.getByID(configID);
+		Optional<GitConfiguration> gitConfig;
+		try {
+			// Try to get the Git-Configuration with the given ID
+			gitConfig = configRepo.getByID(configID);
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			e.printStackTrace();
+			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 		// If Configuration does not exist
 		if (!gitConfig.isPresent()) {
 			return new ResponseEntity<String>("Configuration with given ID does not exist!", HttpStatus.NOT_FOUND);
@@ -187,8 +194,15 @@ public class RefactoringController {
 		// Create empty list of refactored Issues
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<RefactoredIssue>();
 
-		// Try to get the Git-Configuration with the given ID
-		Optional<GitConfiguration> gitConfig = configRepo.getByID(configID);
+		Optional<GitConfiguration> gitConfig;
+		try {
+			// Try to get the Git-Configuration with the given ID
+			gitConfig = configRepo.getByID(configID);
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			e.printStackTrace();
+			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 		// If configuration does not exist
 		if (!gitConfig.isPresent()) {
 			return new ResponseEntity<String>("Configuration with the given ID does not exist!", HttpStatus.NOT_FOUND);
