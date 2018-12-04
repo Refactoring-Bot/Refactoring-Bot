@@ -98,6 +98,7 @@ public class GithubObjectTranslator {
 			pullRequest.setRequestName(githubRequest.getTitle());
 			pullRequest.setRequestDescription(githubRequest.getBody());
 			pullRequest.setRequestNumber(githubRequest.getNumber());
+			pullRequest.setRequestLink(githubRequest.getHtmlUrl());
 			pullRequest.setRequestStatus(githubRequest.getState());
 			pullRequest.setCreatorName(githubRequest.getUser().getLogin());
 			pullRequest.setDateCreated(githubRequest.getCreatedAt());
@@ -198,7 +199,7 @@ public class GithubObjectTranslator {
 
 		// Fill object with data
 		createRequest.setTitle("Bot Pull-Request Refactoring for PullRequest #" + refactoredRequest.getRequestNumber());
-		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + ".");
+		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + " for PullRequest " + refactoredRequest.getRequestLink() + ".");
 		createRequest.setHead(gitConfig.getBotName() + ":" + botBranchName);
 		createRequest.setBase(refactoredRequest.getBranchName());
 		createRequest.setMaintainer_can_modify(true);
