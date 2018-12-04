@@ -143,6 +143,9 @@ public class ApiGrabber {
 		case "github":
 			// Check repository
 			githubGrabber.checkRepository(repoName, repoOwner);
+			
+			// Check analysis service data
+			checkAnalysisService(analysisService, analysisServiceProjectKey);
 
 			// Check bot user and bot token
 			githubGrabber.checkGithubUser(botUsername, botToken, botEmail);
@@ -230,5 +233,25 @@ public class ApiGrabber {
 			githubGrabber.createRequest(createRequest, gitConfig);
 			break;
 		}
+	}
+	
+	/**
+	 * This method checks the analysis service data.
+	 * 
+	 * @param analysisService
+	 * @param analysisServiceProjectKey
+	 */
+	private void checkAnalysisService(String analysisService, String analysisServiceProjectKey) throws Exception{
+		// Check if input exists
+		if (analysisService == null || analysisServiceProjectKey == null) {
+			return;
+		}
+		// Pick service
+		switch (analysisService.toLowerCase()) {
+		case "sonarqube":
+			sonarQubeGrabber.checkSonarData(analysisServiceProjectKey);
+			break;
+		}
+		
 	}
 }
