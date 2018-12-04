@@ -58,6 +58,9 @@ public class SonarQubeObjectTranslator {
 			case "squid:ModifiersOrderCheck":
 				botIssue.setRefactoringOperation(operations.REORDER_MODIFIER);
 				break;
+			case "squid:S138":
+				botIssue.setRefactoringOperation(operations.EXTRACT_METHOD);
+				break;
 			default:
 				botIssue.setRefactoringOperation(operations.UNKNOWN);
 				break;

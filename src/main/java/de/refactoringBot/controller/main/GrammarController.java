@@ -125,6 +125,15 @@ public class GrammarController {
 				// Add line/position
 				issue.setLine(Integer.valueOf(commentArr[4]));
 			}
+			// Extract operations
+			if (commentArr[1].equals("EXTRACT")) {
+				// Extract method
+				if (commentArr[2].equals("METHOD")) {
+					issue.setRefactoringOperation(operations.EXTRACT_METHOD);
+				}
+				// Add line/position
+				issue.setLine(Integer.valueOf(commentArr[4]));
+			}
 			return issue;
 		} catch (Exception e) {
 			e.printStackTrace();
