@@ -10,6 +10,7 @@ public class BotPullRequest {
 	private String requestName;
 	private String requestDescription;
 	private Integer requestNumber;
+	private String requestLink;
 	private String requestStatus;
 	private String creatorName;
 	private String dateCreated;
@@ -114,6 +115,14 @@ public class BotPullRequest {
 
 	public void setBranchCreator(String branchCreator) {
 		this.branchCreator = branchCreator;
+	}
+
+	public String getRequestLink() {
+		return requestLink;
+	}
+
+	public void setRequestLink(String requestLink) {
+		this.requestLink = requestLink;
 	}
 
 }

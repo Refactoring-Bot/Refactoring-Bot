@@ -33,7 +33,14 @@ public class RefactoredIssuesController {
 	@RequestMapping(value = "/getAllIssues", method = RequestMethod.GET, produces = "application/json")
 	@ApiOperation(value = "Get all refactored issues.")
 	public ResponseEntity<?> getAllIssues() {
-		Iterable<RefactoredIssue> allIssues = repo.findAll();
+		Iterable<RefactoredIssue> allIssues;
+		try {
+			allIssues = repo.findAll();
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			e.printStackTrace();
+			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 		return new ResponseEntity<Iterable<RefactoredIssue>>(allIssues, HttpStatus.OK);
 	}
 
@@ -46,7 +53,14 @@ public class RefactoredIssuesController {
 	@ApiOperation(value = "Get all refactored issues from a specific filehoster.")
 	public ResponseEntity<?> getAllServiceIssues(
 			@RequestParam(value = "repoService", required = true, defaultValue = "github") String repoService) {
-		Iterable<RefactoredIssue> allIssues = repo.getAllServiceRefactorings(repoService);
+		Iterable<RefactoredIssue> allIssues;
+		try {
+			allIssues = repo.getAllServiceRefactorings(repoService);
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			e.printStackTrace();
+			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 		return new ResponseEntity<Iterable<RefactoredIssue>>(allIssues, HttpStatus.OK);
 	}
 
@@ -61,7 +75,14 @@ public class RefactoredIssuesController {
 	public ResponseEntity<?> getAllUserIssues(
 			@RequestParam(value = "repoService", required = true, defaultValue = "github") String repoService,
 			@RequestParam(value = "ownerName", required = true, defaultValue = "LHommeDeBat") String repoOwner) {
-		Iterable<RefactoredIssue> allIssues = repo.getAllUserIssues(repoService, repoOwner);
+		Iterable<RefactoredIssue> allIssues;
+		try {
+			allIssues = repo.getAllUserIssues(repoService, repoOwner);
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			e.printStackTrace();
+			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 		return new ResponseEntity<Iterable<RefactoredIssue>>(allIssues, HttpStatus.OK);
 	}
 
@@ -73,7 +94,13 @@ public class RefactoredIssuesController {
 	@RequestMapping(value = "/deleteAllIssues", method = RequestMethod.DELETE, produces = "application/json")
 	@ApiOperation(value = "This method deletes all refactored issues from the database (for testing purposes).")
 	public ResponseEntity<?> deleteAllRefactoredIssues() {
-		repo.deleteAll();
+		try {
+			repo.deleteAll();
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			e.printStackTrace();
+			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 		return new ResponseEntity<String>("All refactored issues deleted!", HttpStatus.OK);
 	}
 }

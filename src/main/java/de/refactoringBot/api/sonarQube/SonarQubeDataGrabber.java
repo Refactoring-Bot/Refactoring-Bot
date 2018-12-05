@@ -54,4 +54,35 @@ public class SonarQubeDataGrabber {
 			throw new Exception("Could not access SonarCube API!");
 		}
 	}
+
+	/**
+	 * This method checks if a project with the given project key exists on
+	 * SonarQube/SonarCloud.
+	 * 
+	 * @param analysisServiceProjectKey
+	 * @throws Exception
+	 */
+	public void checkSonarData(String analysisServiceProjectKey) throws Exception {
+		// Build URI
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("sonarcloud.io")
+				.path("api/components/show");
+
+		apiUriBuilder.queryParam("component", analysisServiceProjectKey);
+
+		URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
+
+		// Create REST-Template
+		RestTemplate rest = new RestTemplate();
+		// Build Header
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+
+		// Send request
+		try {
+			rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody();
+		} catch (RestClientException e) {
+			throw new Exception("Project with given project key does not exist on SonarQube!");
+		}
+	}
 }

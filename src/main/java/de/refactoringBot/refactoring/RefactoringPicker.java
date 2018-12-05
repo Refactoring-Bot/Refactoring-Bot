@@ -6,7 +6,6 @@ import java.util.HashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 
@@ -21,8 +20,6 @@ public class RefactoringPicker {
 
 	@Autowired
 	RefactoringOperations operations;
-	@Autowired
-	BotConfiguration botConfig;
 
 	/**
 	 * This method checks which refactoring needs to be performed. It transfers the
@@ -45,7 +42,7 @@ public class RefactoringPicker {
 			if (refactoringClass != null) {
 				Constructor<?> ctor = refactoringClass.getConstructor();
 				Object object = ctor.newInstance(new Object[] {});
-				return (String) refactoringClass.getMethod("performRefactoring", BotIssue.class, GitConfiguration.class, BotConfiguration.class).invoke(object, issue, gitConfig, botConfig);
+				return (String) refactoringClass.getMethod("performRefactoring", BotIssue.class, GitConfiguration.class).invoke(object, issue, gitConfig);
 			} else {
 				return null;
 			}

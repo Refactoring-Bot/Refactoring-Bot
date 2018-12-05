@@ -14,7 +14,6 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 
-import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.refactoring.RefactoringImpl;
@@ -41,21 +40,19 @@ public class ReorderModifier extends ModifierVisitor<Void> implements Refactorin
 	 * @throws FileNotFoundException
 	 */
 	@Override
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig, BotConfiguration botConfig) throws FileNotFoundException {
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws FileNotFoundException {
 		// Get filepath
 		String path = issue.getFilePath();
 
 		// Read file
-		FileInputStream in = new FileInputStream(
-				botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/" + path);
+		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
 		CompilationUnit compilationUnit = JavaParser.parse(in);
 
 		// Visit place in the code that needs refactoring
 		visit(compilationUnit, null);
 
 		// Save changes to file
-		PrintWriter out = new PrintWriter(
-				botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/" + path);
+		PrintWriter out = new PrintWriter(gitConfig.getRepoFolder() + "/" + path);
 		out.println(compilationUnit.toString());
 		out.close();
 
