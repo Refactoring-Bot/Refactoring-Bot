@@ -11,4 +11,4 @@ cache:
 before_install:
   - chmod +x mvnw
 script:
-  - mvn clean install sonar:sonar
+  - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar
