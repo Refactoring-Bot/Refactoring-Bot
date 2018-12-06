@@ -11,5 +11,5 @@ cache:
 before_install:
   - chmod +x mvnw
 script:
-  - ./mvnw test -B
-  - mvn clean package sonar:sonar
+  - mvn clean package
+  - sonar-scanner
