@@ -12,5 +12,5 @@ before_install:
   - chmod +x mvnw
 script:
   # other script steps might be done before running the actual SonarQube analysis
-  - mvn test -B
+  - ./mvnw test -B
   - sonar-scanner
