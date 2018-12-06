@@ -1,0 +1,18 @@
+language: java
+jdk:
+  - oraclejdk8
+  - oraclejdk9
+  - oraclejdk10
+addons:
+  sonarcloud:
+    organization: "refactoring-bot" # the key of the org you chose at step #3
+cache:
+  directories:
+  - "$HOME/.m2/repository"
+  - "$HOME/.sonar/cache"
+before_install:
+  - chmod +x gradlew
+script:
+  # other script steps might be done before running the actual SonarQube analysis
+  - mvn test -B
+  - sonar-scanner
