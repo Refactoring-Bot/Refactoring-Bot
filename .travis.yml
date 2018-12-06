@@ -11,5 +11,4 @@ cache:
 before_install:
   - chmod +x mvnw
 script:
-  - mvn clean package
-  - sonar-scanner
+  - mvn clean install sonar:sonar
