@@ -5,6 +5,8 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +30,8 @@ public class GrammarController {
 	@Autowired
 	RefactoringOperations operations;
 
+	private static final Logger logger = LoggerFactory.getLogger(GrammarController.class);
+	
 	/**
 	 * This method checks if a comment has a valid bot grammar and returns if the
 	 * comment is valid or not.
@@ -127,7 +131,7 @@ public class GrammarController {
 			}
 			return issue;
 		} catch (Exception e) {
-			e.printStackTrace();
+		    logger.error(e.getMessage(), e);
 			throw new Exception("Could not create a BotIssue from the comment '" + comment.getCommentBody() + "'!");
 		}
 	}

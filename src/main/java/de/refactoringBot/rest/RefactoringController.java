@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +66,8 @@ public class RefactoringController {
 	@Autowired
 	SonarQubeObjectTranslator sonarTranslator;
 
+	private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
+	
 	/**
 	 * This method performs refactorings with comments within Pull-Requests of a
 	 * Filehoster like GitHub.
@@ -83,8 +87,8 @@ public class RefactoringController {
 			// Try to get the Git-Configuration with the given ID
 			gitConfig = configRepo.getByID(configID);
 		} catch (Exception e) {
-			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			// Log exception and abort if database error occurs
+		    logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		// If Configuration does not exist
@@ -100,7 +104,7 @@ public class RefactoringController {
 			// Get Pull-Requests with comments
 			allRequests = grabber.getRequestsWithComments(gitConfig.get());
 		} catch (Exception e) {
-			e.printStackTrace();
+		    logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
@@ -169,7 +173,7 @@ public class RefactoringController {
 							}
 						}
 					} catch (Exception e) {
-						e.printStackTrace();
+					    logger.error(e.getMessage(), e);
 						return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 					}
 				}
@@ -199,8 +203,8 @@ public class RefactoringController {
 			// Try to get the Git-Configuration with the given ID
 			gitConfig = configRepo.getByID(configID);
 		} catch (Exception e) {
-			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			// Log exception and abort if database error occurs
+		    logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		// If configuration does not exist
@@ -219,7 +223,7 @@ public class RefactoringController {
 			// Check if max amount of Requests reached
 			grabber.getRequestsWithComments(gitConfig.get());
 		} catch (Exception e) {
-			e.printStackTrace();
+		    logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
@@ -262,7 +266,7 @@ public class RefactoringController {
 
 			return new ResponseEntity<List<RefactoredIssue>>(allRefactoredIssues, HttpStatus.OK);
 		} catch (Exception e) {
-			e.printStackTrace();
+		    logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}

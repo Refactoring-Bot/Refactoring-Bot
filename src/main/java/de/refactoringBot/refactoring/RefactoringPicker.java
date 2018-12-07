@@ -3,6 +3,8 @@ package de.refactoringBot.refactoring;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +23,8 @@ public class RefactoringPicker {
 	@Autowired
 	RefactoringOperations operations;
 
+	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
+	
 	/**
 	 * This method checks which refactoring needs to be performed. It transfers the
 	 * refactoring request to the correct refactoring class and returns a commit
@@ -47,7 +51,7 @@ public class RefactoringPicker {
 				return null;
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+		    logger.error(e.getMessage(), e);
 			throw new Exception("Something went wrong during the refactoring process!");
 		}
 	}

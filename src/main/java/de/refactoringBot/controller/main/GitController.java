@@ -10,6 +10,8 @@ import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +29,8 @@ public class GitController {
 
 	@Autowired
 	BotConfiguration botConfig;
+	
+	private static final Logger logger = LoggerFactory.getLogger(GitController.class);
 
 	/**
 	 * This method initialises the workspace.
@@ -60,7 +64,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not add as remote " + "'" + gitConfig.getRepoGitLink() + "' successfully!");
 		}
 	}
@@ -81,7 +85,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not fetch data from 'upstream'!");
 		}
 	}
@@ -102,7 +106,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Faild to stash changes!");
 		}
 	}
@@ -156,7 +160,7 @@ public class GitController {
 			switchBranch(gitConfig, newBranch);
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Branch with the name " + "'" + newBranch + "' could not be created!");
 		}
 	}
@@ -179,7 +183,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not switch to the branch with the name " + "'" + branchName + "'!");
 		}
 	}
