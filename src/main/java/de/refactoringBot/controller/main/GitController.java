@@ -193,7 +193,6 @@ public class GitController {
 	 * @param branchName
 	 * @throws Exception
 	 */
-
 	public void switchBranch(GitConfiguration gitConfig, String branchName) throws Exception {
 		Git git = null;
 		try {
