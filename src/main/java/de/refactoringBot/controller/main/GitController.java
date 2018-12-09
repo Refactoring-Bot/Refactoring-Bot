@@ -181,7 +181,6 @@ public class GitController {
 			if (git != null) {
 				git.close();
 			}
-
 			logger.error(e.getMessage(), e);
 			throw new Exception("Branch with the name " + "'" + newBranch + "' could not be created!");
 		}
@@ -215,7 +214,6 @@ public class GitController {
 			if (git != null) {
 				git.close();
 			}
-
 			logger.error(e.getMessage(), e);
 			throw new Exception("Could not switch to the branch with the name " + "'" + branchName + "'!");
 		}
@@ -246,7 +244,6 @@ public class GitController {
 			if (git != null) {
 				git.close();
 			}
-
 			logger.error(t.getMessage(), t);
 			throw new Exception("Wrong bot password!");
 		} catch (Exception e) {
@@ -254,7 +251,6 @@ public class GitController {
 			if (git != null) {
 				git.close();
 			}
-
 			logger.error(e.getMessage(), e);
 			throw new Exception("Could not successfully perform 'git push'!");
 		}
