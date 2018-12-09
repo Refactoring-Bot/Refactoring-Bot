@@ -5,6 +5,8 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +47,9 @@ public class ConfigurationController {
 	GitController gitController;
 	@Autowired
 	BotController botController;
+	
+	// Logger
+    private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
 
 	/**
 	 * This method creates an git configuration with the user inputs.
@@ -87,7 +92,7 @@ public class ConfigurationController {
 				savedConfig = repo.save(config);
 			} catch (Exception e) {
 				// Print exception and abort if database error occurs
-				e.printStackTrace();
+				logger.error(e.getMessage(), e);
 				return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 
@@ -134,10 +139,10 @@ public class ConfigurationController {
 					grabber.deleteRepository(savedConfig);
 				}
 			} catch (Exception t) {
-				t.printStackTrace();
+				logger.error(t.getMessage(), t);
 			}
 
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}
@@ -161,7 +166,7 @@ public class ConfigurationController {
 			existsConfig = repo.getByID(configurationId);
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		String userFeedback = "";
@@ -172,13 +177,14 @@ public class ConfigurationController {
 				repo.delete(existsConfig.get());
 				userFeedback = userFeedback.concat("Configuration deleted from database!");
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage(), e);
 				return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 			// Delete repository from the filehoster bot account
 			try {
 				grabber.deleteRepository(existsConfig.get());
 			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
 				userFeedback = userFeedback
 						.concat(" Could not delete repository on " + existsConfig.get().getRepoService() + "!");
 			}
@@ -188,6 +194,7 @@ public class ConfigurationController {
 						botConfig.getBotRefactoringDirectory() + existsConfig.get().getConfigurationId());
 				FileUtils.deleteDirectory(forkFolder);
 			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
 				userFeedback = userFeedback.concat(" Could not delete local folder '"
 						+ existsConfig.get().getConfigurationId() + "' of the configuration!");
 			}
@@ -211,7 +218,7 @@ public class ConfigurationController {
 			allConfigs = repo.findAll();
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		return new ResponseEntity<Iterable<GitConfiguration>>(allConfigs, HttpStatus.OK);

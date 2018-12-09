@@ -5,6 +5,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.model.exceptions.BotRefactoringException;
 import de.refactoringBot.model.githubModels.fork.GithubFork;
 import de.refactoringBot.model.githubModels.pullRequest.GithubUpdateRequest;
 import de.refactoringBot.model.githubModels.pullRequest.GithubPullRequest;
@@ -44,6 +47,9 @@ public class GithubDataGrabber {
 	ObjectMapper mapper;
 	@Autowired
 	BotConfiguration botConfig;
+	
+	// Logger
+	private static final Logger logger = LoggerFactory.getLogger(GithubDataGrabber.class);
 
 	private final String USER_AGENT = "Mozilla/5.0";
 
@@ -74,6 +80,7 @@ public class GithubDataGrabber {
 		try {
 			rest.exchange(githubURI, HttpMethod.GET, entity, GithubRepository.class).getBody();
 		} catch (RestClientException e) {
+			logger.error(e.getMessage(), e);
 			throw new Exception("Repository does not exist on Github!");
 		}
 	}
@@ -83,7 +90,7 @@ public class GithubDataGrabber {
 	 * 
 	 * @param botUsername
 	 * @param botToken
-	 * @param botEmail 
+	 * @param botEmail
 	 * @return
 	 * @throws Exception
 	 */
@@ -108,6 +115,7 @@ public class GithubDataGrabber {
 		try {
 			githubUser = rest.exchange(githubURI, HttpMethod.GET, entity, GithubUser.class).getBody();
 		} catch (RestClientException e) {
+			logger.error(e.getMessage(), e);
 			throw new Exception("Invalid Bot-Token!");
 		}
 
@@ -125,6 +133,52 @@ public class GithubDataGrabber {
 	}
 
 	/**
+	 * This method checks if a branch with a specific name exists on the fork. If
+	 * such a branch exists, the method throws an exception.
+	 * 
+	 * @param gitConfig
+	 * @param branchName
+	 * @throws Exception
+	 */
+	public void checkBranch(GitConfiguration gitConfig, String branchName) throws Exception {
+		// Read URI from configuration
+		URI configUri = null;
+		try {
+			configUri = new URI(gitConfig.getForkApiLink());
+		} catch (URISyntaxException u) {
+			logger.error(u.getMessage(), u);
+			throw new Exception("Could not read URI from configuration!");
+		}
+
+		// Build URI
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
+				.host(configUri.getHost()).path(configUri.getPath() + "/branches/" + branchName);
+
+		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
+
+		URI pullsUri = apiUriBuilder.build().encode().toUri();
+		// Create REST-Template
+		RestTemplate rest = new RestTemplate();
+		// Create Header
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+		// Send Request to the GitHub-API
+		try {
+			// If branch found -> error
+			rest.exchange(pullsUri, HttpMethod.GET, entity, String.class).getBody();
+			throw new BotRefactoringException("Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
+		} catch (RestClientException e) {
+			// If branch does not exist -> return
+		    if (e.getMessage().equals("404 Not Found")) {
+		    	return;
+		    }
+		    logger.error(e.getMessage(), e);
+			throw new Exception("Could not get Branch from Github!");
+		}
+	}
+
+	/**
 	 * This method returns all PullRequest from Github.
 	 * 
 	 * @return allRequests
@@ -136,6 +190,7 @@ public class GithubDataGrabber {
 		try {
 			configUri = new URI(gitConfig.getRepoApiLink());
 		} catch (URISyntaxException u) {
+			logger.error(u.getMessage(), u);
 			throw new Exception("Could not read URI from configuration!");
 		}
 
@@ -157,6 +212,7 @@ public class GithubDataGrabber {
 		try {
 			json = rest.exchange(pullsUri, HttpMethod.GET, entity, String.class).getBody();
 		} catch (RestClientException e) {
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not get Pull-Requests from Github!");
 		}
 
@@ -170,6 +226,7 @@ public class GithubDataGrabber {
 			allRequests.setAllPullRequests(requestList);
 			return allRequests;
 		} catch (IOException e) {
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not create object from Github-Request json!");
 		}
 	}
@@ -213,6 +270,7 @@ public class GithubDataGrabber {
 			allComments.setComments(commentList);
 			return allComments;
 		} catch (IOException e) {
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not create object from Github-Comment json!");
 		}
 	}

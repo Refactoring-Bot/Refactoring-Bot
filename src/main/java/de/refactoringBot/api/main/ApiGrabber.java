@@ -63,8 +63,6 @@ public class ApiGrabber {
 			GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
 			// Translate github object
 			botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
-			// Check if max amount of requests reached
-			botController.checkAmountOfBotRequests(botRequests, gitConfig);
 			break;
 		}
 		return botRequests;
@@ -114,6 +112,42 @@ public class ApiGrabber {
 			githubGrabber.responseToBotComment(
 					githubTranslator.createReplyComment(comment, gitConfig, newGithubRequest.getHtmlUrl()), gitConfig,
 					request.getRequestNumber());
+			break;
+		}
+	}
+	
+	/**
+	 * Reply to comment if refactoring failed.
+	 * 
+	 * @param request
+	 * @param gitConfig
+	 * @throws Exception
+	 */
+	public void replyToUserForFailedRefactoring(BotPullRequest request, BotPullRequestComment comment, GitConfiguration gitConfig, String errorMessage) throws Exception {
+		// Pick filehoster
+		switch (gitConfig.getRepoService()) {
+		case "github":
+			// Reply to comment
+			githubGrabber.responseToBotComment(
+					githubTranslator.createFailureReply(comment, errorMessage), gitConfig,
+					request.getRequestNumber());
+			break;
+		}
+	}
+	
+	/**
+	 * Check if Branch exists on repository.
+	 * 
+	 * @param request
+	 * @param gitConfig
+	 * @throws Exception
+	 */
+	public void checkBranch(GitConfiguration gitConfig, String branchName) throws Exception {
+		// Pick filehoster
+		switch (gitConfig.getRepoService()) {
+		case "github":
+			// Reply to comment
+			githubGrabber.checkBranch(gitConfig, branchName);
 			break;
 		}
 	}

@@ -10,6 +10,8 @@ import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +29,9 @@ public class GitController {
 
 	@Autowired
 	BotConfiguration botConfig;
+	
+	// Logger
+	private static final Logger logger = LoggerFactory.getLogger(GitController.class);
 
 	/**
 	 * This method initialises the workspace.
@@ -60,7 +65,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not add as remote " + "'" + gitConfig.getRepoGitLink() + "' successfully!");
 		}
 	}
@@ -81,7 +86,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not fetch data from 'upstream'!");
 		}
 	}
@@ -102,7 +107,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Faild to stash changes!");
 		}
 	}
@@ -123,6 +128,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Faild to clone " + "'" + gitConfig.getForkGitLink() + "' successfully!");
 		}
 	}
@@ -152,11 +158,11 @@ public class GitController {
 			// If branch already exists
 		} catch (RefAlreadyExistsException r) {
 			git.close();
-			// Switch to branch
-			switchBranch(gitConfig, newBranch);
+			logger.error(r.getMessage(), r);
+			throw new Exception("Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Branch with the name " + "'" + newBranch + "' could not be created!");
 		}
 	}
@@ -179,7 +185,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not switch to the branch with the name " + "'" + branchName + "'!");
 		}
 	}
@@ -206,9 +212,11 @@ public class GitController {
 			git.close();
 		} catch (TransportException t) { 
 			git.close();
+			logger.error(t.getMessage(), t);
 			throw new Exception("Wrong bot password!");
 		} catch (Exception e) {
 			git.close();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not successfully perform 'git push'!");
 		}
 	}

@@ -1,5 +1,7 @@
 package de.refactoringBot.rest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,9 @@ public class RefactoredIssuesController {
 
 	@Autowired
 	RefactoredIssueRepository repo;
+	
+	// Logger
+    private static final Logger logger = LoggerFactory.getLogger(RefactoredIssuesController.class);
 
 	/**
 	 * This method returns all refactored issues from the database.
@@ -38,7 +43,7 @@ public class RefactoredIssuesController {
 			allIssues = repo.findAll();
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		return new ResponseEntity<Iterable<RefactoredIssue>>(allIssues, HttpStatus.OK);
@@ -58,7 +63,7 @@ public class RefactoredIssuesController {
 			allIssues = repo.getAllServiceRefactorings(repoService);
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		return new ResponseEntity<Iterable<RefactoredIssue>>(allIssues, HttpStatus.OK);
@@ -80,7 +85,7 @@ public class RefactoredIssuesController {
 			allIssues = repo.getAllUserIssues(repoService, repoOwner);
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		return new ResponseEntity<Iterable<RefactoredIssue>>(allIssues, HttpStatus.OK);
@@ -98,7 +103,7 @@ public class RefactoredIssuesController {
 			repo.deleteAll();
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		return new ResponseEntity<String>("All refactored issues deleted!", HttpStatus.OK);

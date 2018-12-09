@@ -7,6 +7,8 @@ public class BotIssue {
 	private Integer line;
 	private String commentServiceID;
 	private String refactorString;
+	private String errorMessage;
+	private String commitMessage;
 	
 	public String getRefactoringOperation() {
 		return refactoringOperation;
@@ -46,6 +48,22 @@ public class BotIssue {
 
 	public void setRefactorString(String refactorString) {
 		this.refactorString = refactorString;
+	}
+
+	public String getErrorMessage() {
+		return errorMessage;
+	}
+
+	public void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
+	}
+
+	public String getCommitMessage() {
+		return commitMessage;
+	}
+
+	public void setCommitMessage(String commitMessage) {
+		this.commitMessage = commitMessage;
 	}
 	
 }
