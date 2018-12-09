@@ -153,7 +153,7 @@ public class RefactoringController {
 							// Check if branch already exists (throws exception if it does)
 							grabber.checkBranch(gitConfig.get(), newBranch);
 							// Create new Branch
-							dataGetter.createBranch(gitConfig.get(), request.getBranchName(), newBranch);
+							dataGetter.createBranch(gitConfig.get(), request.getBranchName(), newBranch, "upstream");
 
 							// Try to refactor
 							botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, gitConfig.get()));
@@ -323,7 +323,7 @@ public class RefactoringController {
 						String newBranch = "sonarCube_Refactoring_" + botIssue.getCommentServiceID();
 						// Check if branch already exists (throws exception if it does)
 						grabber.checkBranch(gitConfig.get(), newBranch);
-						dataGetter.createBranch(gitConfig.get(), "master", newBranch);
+						dataGetter.createBranch(gitConfig.get(), "master", newBranch, "upstream");
 						// Try to refactor
 						botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, gitConfig.get()));
 

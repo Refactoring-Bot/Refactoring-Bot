@@ -6,6 +6,7 @@ import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RemoteAddCommand;
 import org.eclipse.jgit.api.errors.RefAlreadyExistsException;
+import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
@@ -152,7 +153,7 @@ public class GitController {
 	 * @param id
 	 * @throws Exception
 	 */
-	public void createBranch(GitConfiguration gitConfig, String branchName, String newBranch) throws Exception {
+	public void createBranch(GitConfiguration gitConfig, String branchName, String newBranch, String origin) throws Exception {
 		Git git = null;
 		try {
 			// Open git folder
@@ -161,7 +162,7 @@ public class GitController {
 			@SuppressWarnings("unused")
 			Ref ref = git.checkout().setCreateBranch(true).setName(newBranch)
 					.setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
-					.setStartPoint("upstream/" + branchName).call();
+					.setStartPoint(origin + "/" + branchName).call();
 			// Pull data
 			git.pull();
 			git.close();
@@ -201,6 +202,9 @@ public class GitController {
 			@SuppressWarnings("unused")
 			Ref ref = git.checkout().setName(branchName).call();
 			git.close();
+			
+		} catch (RefNotFoundException r) {
+			createBranch(gitConfig, branchName, branchName, "origin");
 		} catch (Exception e) {
 			// Close git if possible
 			if (git != null) {
