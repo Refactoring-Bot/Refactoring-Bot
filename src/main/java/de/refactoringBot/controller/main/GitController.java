@@ -153,7 +153,8 @@ public class GitController {
 	 * @param id
 	 * @throws Exception
 	 */
-	public void createBranch(GitConfiguration gitConfig, String branchName, String newBranch, String origin) throws Exception {
+	public void createBranch(GitConfiguration gitConfig, String branchName, String newBranch, String origin)
+			throws Exception {
 		Git git = null;
 		try {
 			// Open git folder
@@ -202,8 +203,13 @@ public class GitController {
 			@SuppressWarnings("unused")
 			Ref ref = git.checkout().setName(branchName).call();
 			git.close();
-			
+			// If branch does not exist localy anymore
 		} catch (RefNotFoundException r) {
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+			// Recreate branch with current branch data from remote origin
 			createBranch(gitConfig, branchName, branchName, "origin");
 		} catch (Exception e) {
 			// Close git if possible
