@@ -189,6 +189,8 @@ public class RefactoringController {
 
 								// Push changes
 								dataGetter.pushChanges(gitConfig.get(), botIssue.getCommitMessage());
+								// Reply to User
+								grabber.replyToUserInsideBotRequest(request, comment, gitConfig.get());
 
 								// Save to Database + add to list
 								RefactoredIssue savedIssue = refactoredIssues.save(refactoredIssue);
