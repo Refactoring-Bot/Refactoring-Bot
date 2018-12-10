@@ -4,14 +4,12 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import de.refactoringBot.api.main.ApiGrabber;
 import de.refactoringBot.configuration.BotConfiguration;
@@ -153,7 +151,8 @@ public class ConfigurationController {
 	@RequestMapping(value = "/deleteConfig", method = RequestMethod.DELETE, produces = "application/json")
 	@ApiOperation(value = "Delete Git-Konfiguration")
 	public ResponseEntity<?> deleteConfig(
-			@RequestParam(value = "configurationId", required = true) Long configurationId) {
+			@RequestParam(value = "configurationId") Long configurationId,
+			@RequestParam(value = "deleteRepository", defaultValue = "true") Boolean deleteRepo) {
 		// Check if configuration exists
 		Optional<GitConfiguration> existsConfig;
 		try {
@@ -176,11 +175,13 @@ public class ConfigurationController {
 				return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 			// Delete repository from the filehoster bot account
-			try {
-				grabber.deleteRepository(existsConfig.get());
-			} catch (Exception e) {
-				userFeedback = userFeedback
-						.concat(" Could not delete repository on " + existsConfig.get().getRepoService() + "!");
+			if (deleteRepo) {
+				try {
+					grabber.deleteRepository(existsConfig.get());
+				} catch (Exception e) {
+					userFeedback = userFeedback
+							.concat(" Could not delete repository on " + existsConfig.get().getRepoService() + "!");
+				}
 			}
 			// Delete local folder
 			try {
