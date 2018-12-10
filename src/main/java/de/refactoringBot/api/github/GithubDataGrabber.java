@@ -374,9 +374,15 @@ public class GithubDataGrabber {
 	 * @throws Exception
 	 */
 	public void deleteRepository(GitConfiguration gitConfig) throws Exception {
+		String originalRepo = gitConfig.getRepoApiLink();
+		String forkRepo = gitConfig.getForkApiLink();
+		// never delete the original repository
+		if (originalRepo.equals(forkRepo)) {
+			return;
+		}
 
 		// Read URI from configuration
-		URI configUri = null;
+		URI configUri;
 		try {
 			configUri = new URI(gitConfig.getForkApiLink());
 		} catch (URISyntaxException u) {
