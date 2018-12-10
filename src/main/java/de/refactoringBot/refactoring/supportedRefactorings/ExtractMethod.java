@@ -45,8 +45,16 @@ public class ExtractMethod implements RefactoringImpl {
 	 */
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws IOException {
+		// Get filepath
+		String path = issue.getFilePath();
 
-		return "";
+		// Read file
+		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
+		CompilationUnit compilationUnit = JavaParser.parse(in);
+
+		
+
+		return "extracted method";
 	}
 
 }
