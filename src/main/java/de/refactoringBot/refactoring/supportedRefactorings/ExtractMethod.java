@@ -44,7 +44,7 @@ public class ExtractMethod implements RefactoringImpl {
 	 * @throws IOException
 	 */
 	@Override
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig, BotConfiguration botConfig) throws IOException {
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws IOException {
 
 		return "";
 	}
