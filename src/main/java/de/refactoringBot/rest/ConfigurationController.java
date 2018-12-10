@@ -63,7 +63,7 @@ public class ConfigurationController {
 	@ApiOperation(value = "Create Git-Konfiguration")
 	public ResponseEntity<?> add(
 			@RequestParam(value = "repoService", required = true, defaultValue = "Github") String repoService,
-			@RequestParam(value = "repoName", required = true, defaultValue = "RefactoringTest") String repoName,
+			@RequestParam(value = "repoName", required = true, defaultValue = "Bot-Playground") String repoName,
 			@RequestParam(value = "ownerName", required = true, defaultValue = "Refactoring-Bot") String repoOwner,
 			@RequestParam(value = "botUsername", required = true) String botUsername,
 			@RequestParam(value = "botPassword", required = true) String botPassword,
