@@ -2,7 +2,7 @@
 # Changes are most likely necessary for the datasource parameters and the botRefactoringDirectory
 spring:
   application:
-    name: alternativerefactoringbot
+    name: refactoringbot
   datasource:
     url: jdbc:mysql://localhost:3306/refactoringbot_db?verifyServerCertificate=false&useSSL=true
     username: root

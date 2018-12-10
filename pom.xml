@@ -98,14 +98,20 @@
 			<artifactId>commons-io</artifactId>
 			<version>2.6</version>
 		</dependency>
-		
+
+		<!-- Apache-Commons-Lang -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+
 		<!-- Antlr -->
 		<dependency>
 			<groupId>org.antlr</groupId>
 			<artifactId>antlr4-runtime</artifactId>
 			<version>4.7.1</version>
 		</dependency>
-		
+
 		<!-- JAXB dependency -->
 		<dependency>
 			<groupId>javax.xml.bind</groupId>

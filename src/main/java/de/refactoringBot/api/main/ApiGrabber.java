@@ -132,11 +132,14 @@ public class ApiGrabber {
 	 * @throws Exception
 	 */
 	public GitConfiguration createConfigurationForRepo(String repoName, String repoOwner, String repoService,
-			String botUsername, String botPassword, String botToken, String analysisService,
-			String analysisServiceProjectKey, Integer maxAmountRequests, String projectRootFolder) throws Exception {
+			String botUsername, String botPassword, String botEmail, String botToken, String analysisService,
+			String analysisServiceProjectKey, Integer maxAmountRequests) throws Exception {
 
 		// Init object
 		GitConfiguration gitConfig = null;
+
+		// Check analysis service data
+		checkAnalysisService(analysisService, analysisServiceProjectKey);
 
 		// Pick filehoster
 		switch (repoService.toLowerCase()) {
@@ -145,12 +148,11 @@ public class ApiGrabber {
 			githubGrabber.checkRepository(repoName, repoOwner);
 
 			// Check bot user and bot token
-			githubGrabber.checkGithubUser(botUsername, botToken);
+			githubGrabber.checkGithubUser(botUsername, botToken, botEmail);
 
 			// Create git configuration and a fork
-			gitConfig = githubTranslator.createConfiguration(repoName, repoOwner, botUsername, botPassword, botToken,
-					repoService, analysisService, analysisServiceProjectKey, maxAmountRequests, projectRootFolder);
-			githubGrabber.createFork(gitConfig);
+			gitConfig = githubTranslator.createConfiguration(repoName, repoOwner, botUsername, botPassword, botEmail,
+					botToken, repoService, analysisService, analysisServiceProjectKey, maxAmountRequests);
 			return gitConfig;
 		default:
 			throw new Exception("Filehoster " + "'" + repoService + "' is not supported!");
@@ -184,7 +186,7 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case "github":
-			// Create fork
+			// Create fork if not already exists
 			githubGrabber.createFork(gitConfig);
 			break;
 		}
@@ -231,5 +233,25 @@ public class ApiGrabber {
 			githubGrabber.createRequest(createRequest, gitConfig);
 			break;
 		}
+	}
+
+	/**
+	 * This method checks the analysis service data.
+	 * 
+	 * @param analysisService
+	 * @param analysisServiceProjectKey
+	 */
+	private void checkAnalysisService(String analysisService, String analysisServiceProjectKey) throws Exception {
+		// Check if input exists
+		if (analysisService == null || analysisServiceProjectKey == null) {
+			return;
+		}
+		// Pick service
+		switch (analysisService.toLowerCase()) {
+		case "sonarqube":
+			sonarQubeGrabber.checkSonarData(analysisServiceProjectKey);
+			break;
+		}
+
 	}
 }

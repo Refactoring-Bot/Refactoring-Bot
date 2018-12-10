@@ -83,10 +83,11 @@ public class GithubDataGrabber {
 	 * 
 	 * @param botUsername
 	 * @param botToken
+	 * @param botEmail 
 	 * @return
 	 * @throws Exception
 	 */
-	public void checkGithubUser(String botUsername, String botToken) throws Exception {
+	public void checkGithubUser(String botUsername, String botToken, String botEmail) throws Exception {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("api.github.com")
 				.path("/user");
@@ -113,6 +114,13 @@ public class GithubDataGrabber {
 		// Prüfe Usernamen
 		if (!githubUser.getLogin().equals(botUsername)) {
 			throw new Exception("Bot-User does not exist on Github!");
+		}
+		// Prüfe Email
+		if (githubUser.getEmail() == null) {
+			throw new Exception("Bot-User does not have a public email on Github!");
+		}
+		if (!githubUser.getEmail().equals(botEmail)) {
+			throw new Exception("Invalid Bot-Email!");
 		}
 	}
 

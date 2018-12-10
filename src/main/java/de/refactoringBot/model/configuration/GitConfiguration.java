@@ -19,10 +19,13 @@ public class GitConfiguration {
 	private String repoApiLink;
 	private String repoGitLink;
 	private String repoService;
-	private String projectRootFolder;
+	
+	private String repoFolder;
+	private String srcFolder;
 	
 	private String botName;
 	private String botPassword;
+	private String botEmail;
 	private String botToken;
 	private String forkApiLink;
 	private String forkGitLink;
@@ -122,14 +125,6 @@ public class GitConfiguration {
 		this.maxAmountRequests = maxAmountRequests;
 	}
 
-	public String getProjectRootFolder() {
-		return projectRootFolder;
-	}
-
-	public void setProjectRootFolder(String projectRootFolder) {
-		this.projectRootFolder = projectRootFolder;
-	}
-
 	public String getAnalysisService() {
 		return analysisService;
 	}
@@ -144,6 +139,30 @@ public class GitConfiguration {
 
 	public void setAnalysisServiceProjectKey(String analysisServiceProjectKey) {
 		this.analysisServiceProjectKey = analysisServiceProjectKey;
+	}
+
+	public String getBotEmail() {
+		return botEmail;
+	}
+
+	public void setBotEmail(String botEmail) {
+		this.botEmail = botEmail;
+	}
+
+	public String getRepoFolder() {
+		return repoFolder;
+	}
+
+	public void setRepoFolder(String repoFolder) {
+		this.repoFolder = repoFolder;
+	}
+
+	public String getSrcFolder() {
+		return srcFolder;
+	}
+
+	public void setSrcFolder(String srcFolder) {
+		this.srcFolder = srcFolder;
 	}
 	
 }
