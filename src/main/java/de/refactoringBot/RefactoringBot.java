@@ -1,7 +1,9 @@
 package de.refactoringBot;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 
 /**
  * This Class bootstraps Spring and automatically configures it.
@@ -19,5 +21,10 @@ public class RefactoringBot {
 	 */
 	public static void main(String[] args) {
 		SpringApplication.run(RefactoringBot.class, args);
+	}
+
+	@Bean
+	public ModelMapper modelMapper() {
+		return new ModelMapper();
 	}
 }
