@@ -2,6 +2,8 @@ package de.refactoringBot.api.sonarQube;
 
 import java.net.URI;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -22,6 +24,9 @@ import de.refactoringBot.model.sonarQube.SonarQubeIssues;
 public class SonarQubeDataGrabber {
 
 	private final String USER_AGENT = "Mozilla/5.0";
+
+	// Logger
+	private static final Logger logger = LoggerFactory.getLogger(SonarQubeDataGrabber.class);
 
 	/**
 	 * This method gets all SonarCubeIssues of a Project.
@@ -51,6 +56,7 @@ public class SonarQubeDataGrabber {
 		try {
 			return rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody();
 		} catch (RestClientException e) {
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not access SonarCube API!");
 		}
 	}
@@ -82,6 +88,7 @@ public class SonarQubeDataGrabber {
 		try {
 			rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody();
 		} catch (RestClientException e) {
+			logger.error(e.getMessage(), e);
 			throw new Exception("Project with given project key does not exist on SonarQube!");
 		}
 	}

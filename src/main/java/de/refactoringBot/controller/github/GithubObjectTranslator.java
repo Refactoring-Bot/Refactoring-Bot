@@ -5,6 +5,8 @@ import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +40,9 @@ public class GithubObjectTranslator {
 	@Autowired
 	BotConfiguration botConfig;
 
+	// Logger
+	private static final Logger logger = LoggerFactory.getLogger(GithubObjectTranslator.class);
+	
 	/**
 	 * This method creates a GitConfiguration from GitHub data.
 	 * 
@@ -65,7 +70,7 @@ public class GithubObjectTranslator {
 		config.setBotName(botUsername);
 		config.setBotPassword(botPassword);
 		config.setBotEmail(botEmail);
-		
+
 		if (analysisService != null) {
 			config.setAnalysisService(analysisService.toLowerCase());
 		}
@@ -113,6 +118,7 @@ public class GithubObjectTranslator {
 			try {
 				commentUri = new URI(githubRequest.getReviewCommentsUrl());
 			} catch (URISyntaxException e) {
+				logger.error(e.getMessage(), e);
 				throw new Exception("Could not build comment URI!");
 			}
 
@@ -199,7 +205,8 @@ public class GithubObjectTranslator {
 
 		// Fill object with data
 		createRequest.setTitle("Bot Pull-Request Refactoring for PullRequest #" + refactoredRequest.getRequestNumber());
-		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + " for PullRequest " + refactoredRequest.getRequestLink() + ".");
+		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + " for PullRequest "
+				+ refactoredRequest.getRequestLink() + ".");
 		createRequest.setHead(gitConfig.getBotName() + ":" + botBranchName);
 		createRequest.setBase(refactoredRequest.getBranchName());
 		createRequest.setMaintainer_can_modify(true);
@@ -266,6 +273,27 @@ public class GithubObjectTranslator {
 			comment.setBody("Refactored by " + gitConfig.getBotName() + " on " + date + ".");
 		}
 
+		return comment;
+	}
+
+	/**
+	 * This method creates a reply comment for a failed refactoring that was
+	 * triggered by a comment of a pull request.
+	 * 
+	 * @param comment
+	 * @param errorMessage
+	 * @return
+	 */
+	public ReplyComment createFailureReply(BotPullRequestComment replyTo, String errorMessage) {
+		// Create objcet
+		ReplyComment comment = new ReplyComment();
+
+		// Fill with data
+		comment.setIn_reply_to(replyTo.getCommentID());
+		
+		// Set error message
+		comment.setBody(errorMessage);
+		
 		return comment;
 	}
 

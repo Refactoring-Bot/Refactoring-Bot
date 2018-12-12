@@ -3,7 +3,6 @@ package de.refactoringBot.refactoring.supportedRefactorings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,10 +48,10 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @param issue
 	 * @param gitConfig
 	 * @return commitMessage
-	 * @throws IOException
+	 * @throws Exception 
 	 */
 	@Override
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws IOException {
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
 
 		// Init Refactorings
 		ParserRefactoringCollection allRefactorings = new ParserRefactoringCollection();
@@ -123,7 +122,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 		// If refactor-method not found
 		if (methodToRefactor == null) {
-			return null;
+			throw new Exception("Could not find specified method! Automated refactoring failed.");
 		}
 
 		// Add class to the TO-DO list
@@ -160,7 +159,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		}
 
 		removeParameter(allRefactorings, allJavaFiles, issue.getRefactorString(), paramPosition);
-
+		
 		return "Removed method parameter '" + issue.getRefactorString() + "' of method '" + oldMethodName + "'";
 	}
 

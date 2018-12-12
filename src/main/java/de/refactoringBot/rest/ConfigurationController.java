@@ -5,11 +5,15 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,6 +49,9 @@ public class ConfigurationController {
 	GitController gitController;
 	@Autowired
 	BotController botController;
+	
+	// Logger
+    private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
 
 	/**
 	 * This method creates an git configuration with the user inputs.
@@ -54,7 +61,7 @@ public class ConfigurationController {
 	 * @param repoService
 	 * @return
 	 */
-	@RequestMapping(value = "/createConfig", method = RequestMethod.POST, produces = "application/json")
+	@PostMapping(value = "/createConfig", produces = "application/json")
 	@ApiOperation(value = "Create Git-Konfiguration")
 	public ResponseEntity<?> add(
 			@RequestParam(value = "repoService", required = true, defaultValue = "Github") String repoService,
@@ -87,7 +94,7 @@ public class ConfigurationController {
 				savedConfig = repo.save(config);
 			} catch (Exception e) {
 				// Print exception and abort if database error occurs
-				e.printStackTrace();
+				logger.error(e.getMessage(), e);
 				return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 
@@ -115,7 +122,7 @@ public class ConfigurationController {
 			// Fetch target-Repository-Data and check bot password
 			gitController.fetchRemote(savedConfig);
 			String newBranch = "testCredentialsFor_" + savedConfig.getBotName();
-			gitController.createBranch(savedConfig, "master", newBranch);
+			gitController.createBranch(savedConfig, "master", newBranch, "upstream");
 			gitController.pushChanges(savedConfig, "Test bot password");
 
 			return new ResponseEntity<GitConfiguration>(config, HttpStatus.CREATED);
@@ -134,10 +141,10 @@ public class ConfigurationController {
 					grabber.deleteRepository(savedConfig);
 				}
 			} catch (Exception t) {
-				t.printStackTrace();
+				logger.error(t.getMessage(), t);
 			}
 
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}
@@ -150,7 +157,7 @@ public class ConfigurationController {
 	 * @param repoService
 	 * @return {feedbackString}
 	 */
-	@RequestMapping(value = "/deleteConfig", method = RequestMethod.DELETE, produces = "application/json")
+	@DeleteMapping(value = "/deleteConfig", produces = "application/json")
 	@ApiOperation(value = "Delete Git-Konfiguration")
 	public ResponseEntity<?> deleteConfig(
 			@RequestParam(value = "configurationId", required = true) Long configurationId) {
@@ -161,7 +168,7 @@ public class ConfigurationController {
 			existsConfig = repo.getByID(configurationId);
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		String userFeedback = "";
@@ -172,13 +179,14 @@ public class ConfigurationController {
 				repo.delete(existsConfig.get());
 				userFeedback = userFeedback.concat("Configuration deleted from database!");
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage(), e);
 				return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 			// Delete repository from the filehoster bot account
 			try {
 				grabber.deleteRepository(existsConfig.get());
 			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
 				userFeedback = userFeedback
 						.concat(" Could not delete repository on " + existsConfig.get().getRepoService() + "!");
 			}
@@ -188,6 +196,7 @@ public class ConfigurationController {
 						botConfig.getBotRefactoringDirectory() + existsConfig.get().getConfigurationId());
 				FileUtils.deleteDirectory(forkFolder);
 			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
 				userFeedback = userFeedback.concat(" Could not delete local folder '"
 						+ existsConfig.get().getConfigurationId() + "' of the configuration!");
 			}
@@ -203,7 +212,7 @@ public class ConfigurationController {
 	 * 
 	 * @return allConfigs
 	 */
-	@RequestMapping(value = "/getAllConfigs", method = RequestMethod.GET, produces = "application/json")
+	@GetMapping(value = "/getAllConfigs", produces = "application/json")
 	@ApiOperation(value = "Get all Git-Configurations")
 	public ResponseEntity<?> getAllConfigs() {
 		Iterable<GitConfiguration> allConfigs;
@@ -211,7 +220,7 @@ public class ConfigurationController {
 			allConfigs = repo.findAll();
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		return new ResponseEntity<Iterable<GitConfiguration>>(allConfigs, HttpStatus.OK);

@@ -1,7 +1,6 @@
 package de.refactoringBot.refactoring.supportedRefactorings;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.List;
 
@@ -14,6 +13,7 @@ import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinte
 
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.model.exceptions.BotRefactoringException;
 import de.refactoringBot.refactoring.RefactoringImpl;
 
 /**
@@ -30,10 +30,10 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 	 * @param issue
 	 * @param gitConfig
 	 * @return commitMessage
-	 * @throws FileNotFoundException
+	 * @throws Exception 
 	 */
 	@Override
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws FileNotFoundException {
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
 
 		// Prepare data
 		String path = issue.getFilePath();
@@ -58,7 +58,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 
 		// If method not found
 		if (methodName == null) {
-			return null;
+			throw new BotRefactoringException("Could not find method at specified line! Automated refactoring failed.");
 		}
 
 		// Save changes to file

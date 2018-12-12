@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import de.refactoringBot.api.main.ApiGrabber;
@@ -22,6 +24,7 @@ import de.refactoringBot.controller.sonarQube.SonarQubeObjectTranslator;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.ConfigurationRepository;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.model.exceptions.BotRefactoringException;
 import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequest;
 import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequests;
 import de.refactoringBot.model.outputModel.botPullRequestComment.BotPullRequestComment;
@@ -63,6 +66,9 @@ public class RefactoringController {
 	RefactoringPicker refactoring;
 	@Autowired
 	SonarQubeObjectTranslator sonarTranslator;
+	
+	// Logger
+    private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
 
 	/**
 	 * This method performs refactorings with comments within Pull-Requests of a
@@ -71,12 +77,13 @@ public class RefactoringController {
 	 * @param configID
 	 * @return allRequests
 	 */
-	@RequestMapping(value = "/refactorWithComments/{configID}", method = RequestMethod.GET, produces = "application/json")
+	@GetMapping(value = "/refactorWithComments/{configID}", produces = "application/json")
 	@ApiOperation(value = "Perform refactorings with Pull-Request-Comments.")
 	public ResponseEntity<?> refactorWithComments(@PathVariable Long configID) {
 
 		// Create empty list of refactored Issues
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<RefactoredIssue>();
+		Integer amountBotRequests = 0;
 
 		Optional<GitConfiguration> gitConfig;
 		try {
@@ -84,7 +91,7 @@ public class RefactoringController {
 			gitConfig = configRepo.getByID(configID);
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		// If Configuration does not exist
@@ -99,8 +106,17 @@ public class RefactoringController {
 			dataGetter.fetchRemote(gitConfig.get());
 			// Get Pull-Requests with comments
 			allRequests = grabber.getRequestsWithComments(gitConfig.get());
+			amountBotRequests = botController.getAmountOfBotRequests(allRequests, gitConfig.get());
+
+			// Check if max amount is reached
+			if (amountBotRequests >= gitConfig.get().getMaxAmountRequests()) {
+				return new ResponseEntity<String>(
+						"Maximal amount of requests reached." + "(Maximum = " + gitConfig.get().getMaxAmountRequests()
+								+ "; Currently = " + amountBotRequests + " bot requests are open)",
+						HttpStatus.BAD_REQUEST);
+			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
@@ -108,6 +124,13 @@ public class RefactoringController {
 		for (BotPullRequest request : allRequests.getAllPullRequests()) {
 			// Iterate through all comments
 			for (BotPullRequestComment comment : request.getAllComments()) {
+
+				// When Bot-Pull-Request-Limit reached -> return
+				if (amountBotRequests >= gitConfig.get().getMaxAmountRequests()) {
+					// Return all refactored issues
+					return new ResponseEntity<List<RefactoredIssue>>(allRefactoredIssues, HttpStatus.OK);
+				}
+
 				// Check if comment is valid and not already refactored
 				if (grammarController.checkComment(comment.getCommentBody()) && !issueRepo
 						.refactoredComment(gitConfig.get().getRepoService(), comment.getCommentID().toString())
@@ -117,6 +140,7 @@ public class RefactoringController {
 					try {
 						botIssue = grammarController.createIssueFromComment(comment);
 					} catch (Exception e) {
+						logger.error(e.getMessage(), e);
 						return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 					}
 
@@ -126,24 +150,28 @@ public class RefactoringController {
 							// Create refactoring branch with Filehoster-Service + Comment-ID
 							String newBranch = gitConfig.get().getRepoService() + "_Refactoring_"
 									+ comment.getCommentID().toString();
-							dataGetter.createBranch(gitConfig.get(), request.getBranchName(), newBranch);
+							// Check if branch already exists (throws exception if it does)
+							grabber.checkBranch(gitConfig.get(), newBranch);
+							// Create new Branch
+							dataGetter.createBranch(gitConfig.get(), request.getBranchName(), newBranch, "upstream");
 
 							// Try to refactor
-							String commitMessage = refactoring.pickAndRefactor(botIssue, gitConfig.get());
+							botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, gitConfig.get()));
 
 							// If successful
-							if (commitMessage != null) {
+							if (botIssue.getCommitMessage() != null) {
 								// Create Refactored-Obect
 								RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue,
 										gitConfig.get());
 
+								// Push changes + create Pull-Request
+								dataGetter.pushChanges(gitConfig.get(), botIssue.getCommitMessage());
+								grabber.makeCreateRequest(request, comment, gitConfig.get(), newBranch);
+
 								// Save to Database + add to list
 								RefactoredIssue savedIssue = refactoredIssues.save(refactoredIssue);
 								allRefactoredIssues.add(savedIssue);
-
-								// Push changes + create Pull-Request
-								dataGetter.pushChanges(gitConfig.get(), commitMessage);
-								grabber.makeCreateRequest(request, comment, gitConfig.get(), newBranch);
+								amountBotRequests++;
 							}
 							// For Requests created by the bot
 						} else {
@@ -151,26 +179,61 @@ public class RefactoringController {
 							dataGetter.switchBranch(gitConfig.get(), request.getBranchName());
 
 							// Try to refactor
-							String commitMessage = refactoring.pickAndRefactor(botIssue, gitConfig.get());
+							botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, gitConfig.get()));
 
 							// If successful
-							if (commitMessage != null) {
+							if (botIssue.getCommitMessage() != null) {
 								// Create Refactored-Object
 								RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue,
 										gitConfig.get());
 
+								// Push changes
+								dataGetter.pushChanges(gitConfig.get(), botIssue.getCommitMessage());
+								// Reply to User
+								grabber.replyToUserInsideBotRequest(request, comment, gitConfig.get());
+
 								// Save to Database + add to list
 								RefactoredIssue savedIssue = refactoredIssues.save(refactoredIssue);
 								allRefactoredIssues.add(savedIssue);
-
-								// Push changes + edit Pull-Request
-								dataGetter.pushChanges(gitConfig.get(), commitMessage);
-								grabber.makeUpdateRequest(request, comment, gitConfig.get());
 							}
 						}
+						// Catch refactoring errors
+					} catch (BotRefactoringException e) {
+						// Create failed Refactored-Object
+						botIssue.setErrorMessage(e.getMessage());
+						RefactoredIssue failedIssue = botController.buildRefactoredIssue(botIssue, gitConfig.get());
+
+						// Reply to user
+						try {
+							grabber.replyToUserForFailedRefactoring(request, comment, gitConfig.get(),
+									botIssue.getErrorMessage());
+						} catch (Exception u) {
+							logger.error(u.getMessage(), u);
+						}
+
+						// Save failed refactoring to database + add to list
+						RefactoredIssue savedFailIssue = refactoredIssues.save(failedIssue);
+						allRefactoredIssues.add(savedFailIssue);
+						logger.error(e.getMessage(), e);
+
+						// Catch other errors
 					} catch (Exception e) {
-						e.printStackTrace();
-						return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+						// Create failed Refactored-Object
+						botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
+						RefactoredIssue failedIssue = botController.buildRefactoredIssue(botIssue, gitConfig.get());
+
+						// Reply to user
+						try {
+							grabber.replyToUserForFailedRefactoring(request, comment, gitConfig.get(),
+									botIssue.getErrorMessage());
+						} catch (Exception u) {
+							logger.error(u.getMessage(), u);
+						}
+
+						// Save failed refactoring to database + add to list
+						RefactoredIssue savedFailIssue = refactoredIssues.save(failedIssue);
+						allRefactoredIssues.add(savedFailIssue);
+						logger.error(e.getMessage(), e);
 					}
 				}
 			}
@@ -187,12 +250,13 @@ public class RefactoringController {
 	 * @param configID
 	 * @return allRefactoredIssues
 	 */
-	@RequestMapping(value = "/refactorWithAnalysisService/{configID}", method = RequestMethod.GET, produces = "application/json")
+	@GetMapping(value = "/refactorWithAnalysisService/{configID}", produces = "application/json")
 	@ApiOperation(value = "Perform refactorings with analysis service.")
 	public ResponseEntity<?> refactorWithSonarCube(@PathVariable Long configID) {
 
 		// Create empty list of refactored Issues
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<RefactoredIssue>();
+		Integer amountBotRequests = 0;
 
 		Optional<GitConfiguration> gitConfig;
 		try {
@@ -200,7 +264,7 @@ public class RefactoringController {
 			gitConfig = configRepo.getByID(configID);
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		// If configuration does not exist
@@ -216,10 +280,19 @@ public class RefactoringController {
 		try {
 			// Fetch target-Repository-data
 			dataGetter.fetchRemote(gitConfig.get());
-			// Check if max amount of Requests reached
-			grabber.getRequestsWithComments(gitConfig.get());
+			// Get Pull-Requests with comments
+			BotPullRequests allRequests = grabber.getRequestsWithComments(gitConfig.get());
+			amountBotRequests = botController.getAmountOfBotRequests(allRequests, gitConfig.get());
+
+			// Check if max amount is reached
+			if (amountBotRequests >= gitConfig.get().getMaxAmountRequests()) {
+				return new ResponseEntity<String>(
+						"Maximal amount of requests reached." + "(Maximum = " + gitConfig.get().getMaxAmountRequests()
+								+ "; Currently = " + amountBotRequests + " bot requests are open)",
+						HttpStatus.BAD_REQUEST);
+			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
@@ -236,33 +309,56 @@ public class RefactoringController {
 
 			// Iterate all issues
 			for (BotIssue botIssue : botIssues) {
-				// If issue was not already refactored
-				if (!issueRepo.refactoredAnalysisIssue(botIssue.getCommentServiceID()).isPresent()) {
-					// Create new branch for refactoring
-					String newBranch = "sonarCube_Refactoring_" + botIssue.getCommentServiceID();
-					dataGetter.createBranch(gitConfig.get(), "master", newBranch);
-					// Try to refactor
-					String commitMessage = refactoring.pickAndRefactor(botIssue, gitConfig.get());
 
-					// If successful
-					if (commitMessage != null) {
-						// Create Refactored-Object
-						RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, gitConfig.get());
+				// When Bot-Pull-Request-Limit reached -> return
+				if (amountBotRequests >= gitConfig.get().getMaxAmountRequests()) {
+					// Return all refactored issues
+					return new ResponseEntity<List<RefactoredIssue>>(allRefactoredIssues, HttpStatus.OK);
+				}
 
-						// Save to database + add to list
-						RefactoredIssue savedIssue = refactoredIssues.save(refactoredIssue);
-						allRefactoredIssues.add(savedIssue);
+				try {
+					// If issue was not already refactored
+					if (!issueRepo.refactoredAnalysisIssue(botIssue.getCommentServiceID()).isPresent()) {
+						// Create new branch for refactoring
+						String newBranch = "sonarCube_Refactoring_" + botIssue.getCommentServiceID();
+						// Check if branch already exists (throws exception if it does)
+						grabber.checkBranch(gitConfig.get(), newBranch);
+						dataGetter.createBranch(gitConfig.get(), "master", newBranch, "upstream");
+						// Try to refactor
+						botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, gitConfig.get()));
 
-						// Push changes + create Pull-Request
-						dataGetter.pushChanges(gitConfig.get(), commitMessage);
-						grabber.makeCreateRequestWithAnalysisService(botIssue, gitConfig.get(), newBranch);
+						// If successful
+						if (botIssue.getCommitMessage() != null) {
+							// Create Refactored-Object
+							RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue,
+									gitConfig.get());
+
+							// Push changes + create Pull-Request
+							dataGetter.pushChanges(gitConfig.get(), botIssue.getCommitMessage());
+							grabber.makeCreateRequestWithAnalysisService(botIssue, gitConfig.get(), newBranch);
+
+							// Save to database + add to list
+							RefactoredIssue savedIssue = refactoredIssues.save(refactoredIssue);
+							allRefactoredIssues.add(savedIssue);
+
+							amountBotRequests++;
+						}
 					}
+				} catch (Exception e) {
+					// Create failed Refactored-Object
+					botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
+					RefactoredIssue failedIssue = botController.buildRefactoredIssue(botIssue, gitConfig.get());
+
+					// Save failed refactoring to database + add to list
+					RefactoredIssue savedFailIssue = refactoredIssues.save(failedIssue);
+					allRefactoredIssues.add(savedFailIssue);
+					logger.error(e.getMessage(), e);
 				}
 			}
 
 			return new ResponseEntity<List<RefactoredIssue>>(allRefactoredIssues, HttpStatus.OK);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}

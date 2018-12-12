@@ -17,7 +17,6 @@ import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.githubModels.pullRequest.GithubCreateRequest;
 import de.refactoringBot.model.githubModels.pullRequest.GithubPullRequest;
 import de.refactoringBot.model.githubModels.pullRequest.GithubPullRequests;
-import de.refactoringBot.model.githubModels.pullRequest.GithubUpdateRequest;
 import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequest;
 import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequests;
 import de.refactoringBot.model.outputModel.botPullRequestComment.BotPullRequestComment;
@@ -63,30 +62,25 @@ public class ApiGrabber {
 			GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
 			// Translate github object
 			botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
-			// Check if max amount of requests reached
-			botController.checkAmountOfBotRequests(botRequests, gitConfig);
 			break;
 		}
 		return botRequests;
 	}
 
 	/**
-	 * This method updates a pull request of a specific filehoster.
+	 * This method replies to User inside a Pull-Request that belongs to a Bot if
+	 * the refactoring was successful.
 	 * 
 	 * @param request
 	 * @param gitConfig
 	 * @throws Exception
 	 * @throws OperationNotSupportedException
 	 */
-	public void makeUpdateRequest(BotPullRequest request, BotPullRequestComment comment, GitConfiguration gitConfig)
-			throws Exception {
+	public void replyToUserInsideBotRequest(BotPullRequest request, BotPullRequestComment comment,
+			GitConfiguration gitConfig) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case "github":
-			// Create updateRequest
-			GithubUpdateRequest updateRequest = githubTranslator.makeUpdateRequest(request, gitConfig);
-			// Update Request
-			githubGrabber.updatePullRequest(updateRequest, gitConfig, request.getRequestNumber());
 			// Reply to comment
 			githubGrabber.responseToBotComment(githubTranslator.createReplyComment(comment, gitConfig, null), gitConfig,
 					request.getRequestNumber());
@@ -114,6 +108,42 @@ public class ApiGrabber {
 			githubGrabber.responseToBotComment(
 					githubTranslator.createReplyComment(comment, gitConfig, newGithubRequest.getHtmlUrl()), gitConfig,
 					request.getRequestNumber());
+			break;
+		}
+	}
+
+	/**
+	 * Reply to comment if refactoring failed.
+	 * 
+	 * @param request
+	 * @param gitConfig
+	 * @throws Exception
+	 */
+	public void replyToUserForFailedRefactoring(BotPullRequest request, BotPullRequestComment comment,
+			GitConfiguration gitConfig, String errorMessage) throws Exception {
+		// Pick filehoster
+		switch (gitConfig.getRepoService()) {
+		case "github":
+			// Reply to comment
+			githubGrabber.responseToBotComment(githubTranslator.createFailureReply(comment, errorMessage), gitConfig,
+					request.getRequestNumber());
+			break;
+		}
+	}
+
+	/**
+	 * Check if Branch exists on repository.
+	 * 
+	 * @param request
+	 * @param gitConfig
+	 * @throws Exception
+	 */
+	public void checkBranch(GitConfiguration gitConfig, String branchName) throws Exception {
+		// Pick filehoster
+		switch (gitConfig.getRepoService()) {
+		case "github":
+			// Reply to comment
+			githubGrabber.checkBranch(gitConfig, branchName);
 			break;
 		}
 	}

@@ -3,11 +3,14 @@ package de.refactoringBot.refactoring;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.model.exceptions.BotRefactoringException;
 
 /**
  * This class checks which refactoring needs to be performed.
@@ -20,6 +23,9 @@ public class RefactoringPicker {
 
 	@Autowired
 	RefactoringOperations operations;
+	
+	// Logger
+	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
 
 	/**
 	 * This method checks which refactoring needs to be performed. It transfers the
@@ -44,11 +50,17 @@ public class RefactoringPicker {
 				Object object = ctor.newInstance(new Object[] {});
 				return (String) refactoringClass.getMethod("performRefactoring", BotIssue.class, GitConfiguration.class).invoke(object, issue, gitConfig);
 			} else {
-				return null;
+				throw new BotRefactoringException("Bot does not support specified refactoring yet!");
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			throw new Exception("Something went wrong during the refactoring process!");
+			if (e.getCause() != null) {
+				logger.error(e.getCause().getMessage(), e.getCause());
+				throw new BotRefactoringException(e.getCause().getMessage());
+			} else {
+				logger.error(e.getMessage(), e);
+				throw new BotRefactoringException(e.getMessage());
+			}
+			
 		}
 	}
 }
