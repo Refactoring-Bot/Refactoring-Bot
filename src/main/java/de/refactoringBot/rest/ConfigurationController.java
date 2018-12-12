@@ -149,12 +149,13 @@ public class ConfigurationController {
 			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
+
+		// unwrap optional
+		GitConfiguration savedConfig = existsConfig.get();
 		// Init database config
-		modelMapper.map(newConfiguration, existsConfig);
+		modelMapper.map(newConfiguration, savedConfig);
 
 		try {
-			// unwrap optional
-			GitConfiguration savedConfig = existsConfig.get();
 			// Delete local folder for config if exists (if database was resetted)
 			if (new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).exists()) {
 				FileUtils.deleteDirectory(
