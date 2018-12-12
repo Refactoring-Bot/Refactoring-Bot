@@ -69,10 +69,9 @@ public class ConfigurationController {
 	@ApiOperation(value = "Create Git-Konfiguration")
 	public ResponseEntity<Object> add(
 			@RequestBody GitConfigurationDTO newConfiguration) {
-		// Init database config
-		GitConfiguration savedConfig = modelMapper.map(newConfiguration, GitConfiguration.class);
-
+	    GitConfiguration savedConfig = null;
 		try {
+            savedConfig = grabber.createConfigurationForRepo(newConfiguration);
 			try {
 				// Try to save the new configuration
 				savedConfig = repo.save(savedConfig);
@@ -156,6 +155,7 @@ public class ConfigurationController {
 		modelMapper.map(newConfiguration, savedConfig);
 
 		try {
+
 			// Delete local folder for config if exists (if database was resetted)
 			if (new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).exists()) {
 				FileUtils.deleteDirectory(

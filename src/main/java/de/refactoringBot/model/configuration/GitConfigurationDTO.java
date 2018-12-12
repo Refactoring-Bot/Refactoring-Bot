@@ -4,16 +4,12 @@ public class GitConfigurationDTO {
 
 	private String repoName;
 	private String repoOwner;
-	private String repoApiLink;
-	private String repoGitLink;
 	private String repoService;
 	
 	private String botName;
 	private String botPassword;
 	private String botEmail;
 	private String botToken;
-	private String forkApiLink;
-	private String forkGitLink;
 	private String analysisService;
 	private String analysisServiceProjectKey;
 	private Integer maxAmountRequests;
@@ -24,22 +20,6 @@ public class GitConfigurationDTO {
 	
 	public void setRepoName(String repoName) {
 		this.repoName = repoName;
-	}
-	
-	public String getRepoApiLink() {
-		return repoApiLink;
-	}
-	
-	public void setRepoApiLink(String repoApiLink) {
-		this.repoApiLink = repoApiLink;
-	}
-
-	public String getRepoGitLink() {
-		return repoGitLink;
-	}
-
-	public void setRepoGitLink(String repoGitLink) {
-		this.repoGitLink = repoGitLink;
 	}
 
 	public String getRepoOwner() {
@@ -80,22 +60,6 @@ public class GitConfigurationDTO {
 
 	public void setBotToken(String botToken) {
 		this.botToken = botToken;
-	}
-
-	public String getForkApiLink() {
-		return forkApiLink;
-	}
-
-	public void setForkApiLink(String forkApiLink) {
-		this.forkApiLink = forkApiLink;
-	}
-
-	public String getForkGitLink() {
-		return forkGitLink;
-	}
-
-	public void setForkGitLink(String forkGitLink) {
-		this.forkGitLink = forkGitLink;
 	}
 
 	public Integer getMaxAmountRequests() {
