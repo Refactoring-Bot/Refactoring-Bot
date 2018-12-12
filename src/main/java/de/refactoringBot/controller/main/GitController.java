@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.model.exceptions.BotRefactoringException;
 
 /**
  * This class uses git programmicaly with JGIT.
@@ -174,7 +175,7 @@ public class GitController {
 				git.close();
 			}
 			logger.error(r.getMessage(), r);
-			throw new Exception(
+			throw new BotRefactoringException(
 					"Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
 		} catch (Exception e) {
 			// Close git if possible

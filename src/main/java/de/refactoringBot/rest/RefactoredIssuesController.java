@@ -5,8 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,7 +36,7 @@ public class RefactoredIssuesController {
 	 * 
 	 * @return allIssues
 	 */
-	@RequestMapping(value = "/getAllIssues", method = RequestMethod.GET, produces = "application/json")
+	@GetMapping(value = "/getAllIssues", produces = "application/json")
 	@ApiOperation(value = "Get all refactored issues.")
 	public ResponseEntity<?> getAllIssues() {
 		Iterable<RefactoredIssue> allIssues;
@@ -54,7 +55,7 @@ public class RefactoredIssuesController {
 	 * 
 	 * @return allIssues
 	 */
-	@RequestMapping(value = "/getAllServiceIssues", method = RequestMethod.GET, produces = "application/json")
+	@GetMapping(value = "/getAllServiceIssues", produces = "application/json")
 	@ApiOperation(value = "Get all refactored issues from a specific filehoster.")
 	public ResponseEntity<?> getAllServiceIssues(
 			@RequestParam(value = "repoService", required = true, defaultValue = "github") String repoService) {
@@ -75,7 +76,7 @@ public class RefactoredIssuesController {
 	 * 
 	 * @return allIssues
 	 */
-	@RequestMapping(value = "/getAllUserIssues", method = RequestMethod.GET, produces = "application/json")
+	@GetMapping(value = "/getAllUserIssues", produces = "application/json")
 	@ApiOperation(value = "Get all refactored issues of a specific user from a specific filehoster.")
 	public ResponseEntity<?> getAllUserIssues(
 			@RequestParam(value = "repoService", required = true, defaultValue = "github") String repoService,
@@ -96,7 +97,7 @@ public class RefactoredIssuesController {
 	 * 
 	 * @return feedback
 	 */
-	@RequestMapping(value = "/deleteAllIssues", method = RequestMethod.DELETE, produces = "application/json")
+	@DeleteMapping(value = "/deleteAllIssues", produces = "application/json")
 	@ApiOperation(value = "This method deletes all refactored issues from the database (for testing purposes).")
 	public ResponseEntity<?> deleteAllRefactoredIssues() {
 		try {

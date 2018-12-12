@@ -10,8 +10,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -59,7 +61,7 @@ public class ConfigurationController {
 	 * @param repoService
 	 * @return
 	 */
-	@RequestMapping(value = "/createConfig", method = RequestMethod.POST, produces = "application/json")
+	@PostMapping(value = "/createConfig", produces = "application/json")
 	@ApiOperation(value = "Create Git-Konfiguration")
 	public ResponseEntity<?> add(
 			@RequestParam(value = "repoService", required = true, defaultValue = "Github") String repoService,
@@ -155,7 +157,7 @@ public class ConfigurationController {
 	 * @param repoService
 	 * @return {feedbackString}
 	 */
-	@RequestMapping(value = "/deleteConfig", method = RequestMethod.DELETE, produces = "application/json")
+	@DeleteMapping(value = "/deleteConfig", produces = "application/json")
 	@ApiOperation(value = "Delete Git-Konfiguration")
 	public ResponseEntity<?> deleteConfig(
 			@RequestParam(value = "configurationId", required = true) Long configurationId) {
@@ -210,7 +212,7 @@ public class ConfigurationController {
 	 * 
 	 * @return allConfigs
 	 */
-	@RequestMapping(value = "/getAllConfigs", method = RequestMethod.GET, produces = "application/json")
+	@GetMapping(value = "/getAllConfigs", produces = "application/json")
 	@ApiOperation(value = "Get all Git-Configurations")
 	public ResponseEntity<?> getAllConfigs() {
 		Iterable<GitConfiguration> allConfigs;
