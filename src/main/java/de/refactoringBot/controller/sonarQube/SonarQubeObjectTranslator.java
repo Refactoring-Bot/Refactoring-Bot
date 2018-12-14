@@ -54,6 +54,9 @@ public class SonarQubeObjectTranslator {
 			translatedPath = translatedPath.substring(1);
 			
 			botIssue.setFilePath(translatedPath);
+                        
+                        // Set creation date to determine the age of the issue
+                        botIssue.setCreationDate(issue.getCreationDate());
 
 			// Fill object
 			botIssue.setLine(issue.getLine());
@@ -71,6 +74,10 @@ public class SonarQubeObjectTranslator {
 				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
+                        case "squid:CommentedOutCodeLine":
+                                botIssue.setRefactoringOperation(operations.REMOVE_COMMENTED_OUT_CODE);
+                                botIssues.add(botIssue);
+                                break;
 			default:
 				botIssue.setRefactoringOperation(operations.UNKNOWN);
 				break;
