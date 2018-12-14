@@ -81,9 +81,17 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
         for (Comment comment : comments) {
             if ((currentLine >= comment.getBegin().get().line) && (currentLine <= comment.getEnd().get().line)) {
                 if (comment.isLineComment()) {
+                    
+                    System.out.println(comment.getContent());
+                    // Current comment does not contain code -> Stop
+                    if ((currentLine != start) && !isCommentedOutCode(comment.getContent())){
+                        break;
+                    }
+                    
                     // Trying to find more line comments below since Sonarqube only reports the first
                     end = comment.getBegin().get().line;
                     currentLine++;
+                    
                 } else {
                     // The comment is a multi-line comment, so we remove the entire thing right away
                     start = comment.getBegin().get().line;
@@ -123,6 +131,19 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
         inputFile.delete();
         tempFile.renameTo(inputFile);
 
+    }
+    
+    private boolean isCommentedOutCode(String line){
+        
+        if (line.matches("[a-zA-Z]+\\.[a-zA-Z] +\\(.*\\)")){
+            return true;
+        } else if (line.matches("(if\\s*\\(.*)| (while\\s*\\(.*)")) {
+            return true;
+        } else if (line.trim().endsWith(";")){
+            return true;
+        }
+        
+        return false;
     }
 
 }
