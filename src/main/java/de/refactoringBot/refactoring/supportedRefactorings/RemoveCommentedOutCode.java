@@ -53,6 +53,7 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
         line = issue.getLine();
 
         // Check and see if the commented out code is old enough to be removed. Newer code may still be in use
+        // TODO: Don't perform a refactoring on newer code
         int minAgeInDays = 7;
 
         LocalDate localDate = LocalDate.now();
@@ -74,24 +75,23 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
         // Start and end line of the comment(s) that we want to remove
         int start = line;
         int end = line;
-        
+
         // Remembering the current line to find a block of comments
         int currentLine = line;
-        
+
         for (Comment comment : comments) {
             if ((currentLine >= comment.getBegin().get().line) && (currentLine <= comment.getEnd().get().line)) {
                 if (comment.isLineComment()) {
-                    
-                    System.out.println(comment.getContent());
+
                     // Current comment does not contain code -> Stop
-                    if ((currentLine != start) && !isCommentedOutCode(comment.getContent())){
+                    if ((currentLine != start) && !isCommentedOutCode(comment.getContent())) {
                         break;
                     }
-                    
+
                     // Trying to find more line comments below since Sonarqube only reports the first
                     end = comment.getBegin().get().line;
                     currentLine++;
-                    
+
                 } else {
                     // The comment is a multi-line comment, so we remove the entire thing right away
                     start = comment.getBegin().get().line;
@@ -102,12 +102,27 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
         }
 
         removeLinesFromFile(start, end, path);
-        
+
         // Return commit message
         return "Removed commented out code at line " + line;
     }
-   
+    
+    /**
+     * We have to manually edit the file, since Javaparser doesn't let you
+     * remove comments when using the LexicalPreservingPrinter
+     * 
+     * @param start The starting line of the comment block to remove
+     * @param end The end line of the comment block
+     * @param path The path of the .java file to edit
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
+
     private void removeLinesFromFile(int start, int end, String path) throws FileNotFoundException, IOException {
+
+        // TODO: Figure it out based on input file
+        System.setProperty("line.separator", "\n");
+
         File inputFile = new File(path);
         File tempFile = new File(inputFile.getParent() + File.separator + "temp.java");
 
@@ -115,15 +130,28 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
         BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
 
         String currentLine;
+        // Default: UNIX style line endings
+        String lineSeparator = "\n";
         int lineNumber = 0;
 
         while ((currentLine = reader.readLine()) != null) {
+            if (lineNumber == 0){
+                if (currentLine.contains("\r\n")){
+                    // DOS style line endings
+                    lineSeparator = "\r\n";
+                }
+            }
+            
             lineNumber++;
 
             if ((lineNumber >= start) && (lineNumber <= end)) {
+                // If the line also contains regular code before the comment, preserve it
+                if (!currentLine.trim().startsWith("//")){
+                    writer.write(currentLine.substring(currentLine.indexOf("//")) + lineSeparator);
+                }
                 continue;
             }
-            writer.write(currentLine + System.getProperty("line.separator"));
+            writer.write(currentLine + lineSeparator);
         }
 
         writer.close();
@@ -132,17 +160,30 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
         tempFile.renameTo(inputFile);
 
     }
+
+    /**
+     * Since sonarqube only provides one line per comment block,
+     * this method is used to determine if the following comments also contain code
+     * 
+     * @param line The content of the comment
+     * @return Whether or not the comment contains code
+     */
     
-    private boolean isCommentedOutCode(String line){
-        
-        if (line.matches("[a-zA-Z]+\\.[a-zA-Z] +\\(.*\\)")){
+    private boolean isCommentedOutCode(String line) {
+
+        // Method call
+        if (line.matches("[a-zA-Z]+\\.[a-zA-Z] +\\(.*\\)")) {
             return true;
+        // if or while statement
         } else if (line.matches("(if\\s*\\(.*)| (while\\s*\\(.*)")) {
             return true;
-        } else if (line.trim().endsWith(";")){
+        } else if ((line.trim().endsWith(";"))||line.trim().equals("")) {
+            return true;
+        // Single brackets (from methods or if statements)
+        } else if ((line.trim().equals("{"))||line.trim().equals("}")){
             return true;
         }
-        
+
         return false;
     }
 
