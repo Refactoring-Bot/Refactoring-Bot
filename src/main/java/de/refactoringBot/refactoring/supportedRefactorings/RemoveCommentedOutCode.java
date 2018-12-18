@@ -60,9 +60,9 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
         LocalDate issueDate = LocalDate.parse(issue.getCreationDate().substring(0, 10));
 
         if (Period.between(issueDate, localDate).getDays() > minAgeInDays) {
-            System.out.println("Issue is old enough.");
+            System.out.println("Issue is old enough (" + Period.between(issueDate, localDate).getDays() + " days)");
         } else {
-            System.out.println("Issue is not old enough.");
+            System.out.println("Issue is not old enough (" + Period.between(issueDate, localDate).getDays() + " days)");
         }
 
         // Read file
@@ -147,7 +147,7 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
             if ((lineNumber >= start) && (lineNumber <= end)) {
                 // If the line also contains regular code before the comment, preserve it
                 if (!currentLine.trim().startsWith("//")){
-                    writer.write(currentLine.substring(currentLine.indexOf("//")) + lineSeparator);
+                    writer.write(currentLine.substring(0, currentLine.indexOf("//")) + lineSeparator);
                 }
                 continue;
             }

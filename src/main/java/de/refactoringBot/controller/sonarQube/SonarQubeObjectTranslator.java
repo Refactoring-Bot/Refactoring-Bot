@@ -48,6 +48,7 @@ public class SonarQubeObjectTranslator {
 			
 			// Create full path for sonar issue
 			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3) + sonarIssuePath;
+                        //sonarIssuePath = sonarIssuePath.replace("javaparser-core\\", "");
 			// Cut path outside the repository
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 			// Remove leading '/'
