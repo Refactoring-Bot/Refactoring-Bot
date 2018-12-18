@@ -134,7 +134,7 @@ public class ConfigurationController {
 
 	@PutMapping(path = "/{configurationId}", consumes = "application/json", produces = "application/json")
 	@ApiOperation(value = "Update Git-Configuration with configuration id")
-	public ResponseEntity<?> add(
+	public ResponseEntity<?> update(
 			@RequestBody GitConfigurationDTO newConfiguration,
 			@PathVariable(name = "configurationId") Long configurationId) {
 		// Check if configuration exists
