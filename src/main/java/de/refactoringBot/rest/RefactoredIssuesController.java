@@ -22,7 +22,7 @@ import io.swagger.annotations.ApiOperation;
  *
  */
 @RestController
-@RequestMapping(path = "/refactoredIssues")
+@RequestMapping(path = "/refactored-issues")
 public class RefactoredIssuesController {
 
 	@Autowired
@@ -32,72 +32,40 @@ public class RefactoredIssuesController {
     private static final Logger logger = LoggerFactory.getLogger(RefactoredIssuesController.class);
 
 	/**
-	 * This method returns all refactored issues from the database.
-	 * 
-	 * @return allIssues
-	 */
-	@GetMapping(value = "/getAllIssues", produces = "application/json")
-	@ApiOperation(value = "Get all refactored issues.")
-	public ResponseEntity<?> getAllIssues() {
-		Iterable<RefactoredIssue> allIssues;
-		try {
-			allIssues = repo.findAll();
-		} catch (Exception e) {
-			// Print exception and abort if database error occurs
-			logger.error(e.getMessage(), e);
-			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-		return new ResponseEntity<Iterable<RefactoredIssue>>(allIssues, HttpStatus.OK);
-	}
-
-	/**
-	 * This method returns all refactored issues of a filehoster from the database.
-	 * 
-	 * @return allIssues
-	 */
-	@GetMapping(value = "/getAllServiceIssues", produces = "application/json")
-	@ApiOperation(value = "Get all refactored issues from a specific filehoster.")
-	public ResponseEntity<?> getAllServiceIssues(
-			@RequestParam(value = "repoService", required = true, defaultValue = "github") String repoService) {
-		Iterable<RefactoredIssue> allIssues;
-		try {
-			allIssues = repo.getAllServiceRefactorings(repoService);
-		} catch (Exception e) {
-			// Print exception and abort if database error occurs
-			logger.error(e.getMessage(), e);
-			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-		return new ResponseEntity<Iterable<RefactoredIssue>>(allIssues, HttpStatus.OK);
-	}
-
-	/**
 	 * This methor returns all refactored issues of a specific user from a specific
 	 * filehoster.
 	 * 
 	 * @return allIssues
 	 */
-	@GetMapping(value = "/getAllUserIssues", produces = "application/json")
-	@ApiOperation(value = "Get all refactored issues of a specific user from a specific filehoster.")
-	public ResponseEntity<?> getAllUserIssues(
-			@RequestParam(value = "repoService", required = true, defaultValue = "github") String repoService,
-			@RequestParam(value = "ownerName", required = true, defaultValue = "LHommeDeBat") String repoOwner) {
+
+	@GetMapping(produces = "application/json")
+	@ApiOperation(value = "Get all refactored issues. Can filter for filehoster and repository owner")
+	public ResponseEntity<?> getAllIssues(
+			@RequestParam(value = "repoService", required = false) String repoService,
+			@RequestParam(value = "ownerName", required = false) String repoOwner) {
 		Iterable<RefactoredIssue> allIssues;
 		try {
-			allIssues = repo.getAllUserIssues(repoService, repoOwner);
+			if (repoService == null) {
+				allIssues = repo.findAll();
+			} else if (repoOwner == null) {
+				allIssues = repo.getAllServiceRefactorings(repoService);
+			} else {
+				allIssues = repo.getAllUserIssues(repoService, repoOwner);
+			}
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
 			logger.error(e.getMessage(), e);
-			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		return new ResponseEntity<Iterable<RefactoredIssue>>(allIssues, HttpStatus.OK);
+		return new ResponseEntity<>(allIssues, HttpStatus.OK);
 	}
 
 	/**
-	 * This methor deletes all refactored issues from the database.
+	 * This method deletes all refactored issues from the database.
 	 * 
 	 * @return feedback
 	 */
-	@DeleteMapping(value = "/deleteAllIssues", produces = "application/json")
+	@DeleteMapping(produces = "application/json")
 	@ApiOperation(value = "This method deletes all refactored issues from the database (for testing purposes).")
 	public ResponseEntity<?> deleteAllRefactoredIssues() {
 		try {
@@ -105,8 +73,8 @@ public class RefactoredIssuesController {
 		} catch (Exception e) {
 			// Print exception and abort if database error occurs
 			logger.error(e.getMessage(), e);
-			return new ResponseEntity<String>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		return new ResponseEntity<String>("All refactored issues deleted!", HttpStatus.OK);
+		return new ResponseEntity<>("All refactored issues deleted!", HttpStatus.OK);
 	}
 }
