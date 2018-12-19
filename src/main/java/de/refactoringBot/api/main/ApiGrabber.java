@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.naming.OperationNotSupportedException;
 
+import de.refactoringBot.model.configuration.GitConfigurationDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequest;
 import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequests;
 import de.refactoringBot.model.outputModel.botPullRequestComment.BotPullRequestComment;
 import de.refactoringBot.model.sonarQube.SonarQubeIssues;
+import java.util.ArrayList;
 
 /**
  * This class transfers all Rest-Requests to correct APIs and returns all
@@ -161,31 +163,28 @@ public class ApiGrabber {
 	 * @return gitConfig
 	 * @throws Exception
 	 */
-	public GitConfiguration createConfigurationForRepo(String repoName, String repoOwner, String repoService,
-			String botUsername, String botPassword, String botEmail, String botToken, String analysisService,
-			String analysisServiceProjectKey, Integer maxAmountRequests) throws Exception {
+	public GitConfiguration createConfigurationForRepo(GitConfigurationDTO configuration) throws Exception {
 
 		// Init object
 		GitConfiguration gitConfig = null;
 
 		// Check analysis service data
-		checkAnalysisService(analysisService, analysisServiceProjectKey);
+		checkAnalysisService(configuration.getAnalysisService(), configuration.getAnalysisServiceProjectKey());
 
 		// Pick filehoster
-		switch (repoService.toLowerCase()) {
+		switch (configuration.getRepoService().toLowerCase()) {
 		case "github":
 			// Check repository
-			githubGrabber.checkRepository(repoName, repoOwner);
+			githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner());
 
 			// Check bot user and bot token
-			githubGrabber.checkGithubUser(botUsername, botToken, botEmail);
+			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(), configuration.getBotEmail());
 
 			// Create git configuration and a fork
-			gitConfig = githubTranslator.createConfiguration(repoName, repoOwner, botUsername, botPassword, botEmail,
-					botToken, repoService, analysisService, analysisServiceProjectKey, maxAmountRequests);
+			gitConfig = githubTranslator.createConfiguration(configuration);
 			return gitConfig;
 		default:
-			throw new Exception("Filehoster " + "'" + repoService + "' is not supported!");
+			throw new Exception("Filehoster " + "'" + configuration.getRepoService() + "' is not supported!");
 		}
 	}
 
@@ -234,8 +233,11 @@ public class ApiGrabber {
 		switch (gitConfig.getAnalysisService()) {
 		case "sonarqube":
 			// Get issues and translate them
-			SonarQubeIssues issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
-			List<BotIssue> botIssues = sonarQubeTranslator.translateSonarIssue(issues, gitConfig);
+			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
+                        List<BotIssue> botIssues = new ArrayList<>();
+                        for (SonarQubeIssues i: issues){
+                            botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
+                        }
 			return botIssues;
 		default:
 			return null;

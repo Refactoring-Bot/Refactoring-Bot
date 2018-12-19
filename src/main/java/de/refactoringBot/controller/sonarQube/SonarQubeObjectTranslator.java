@@ -13,6 +13,7 @@ import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.sonarQube.SonarQubeIssues;
 import de.refactoringBot.refactoring.RefactoringOperations;
 import de.refactoringBot.model.sonarQube.SonarIssue;
+import java.io.File;
 
 /**
  * This class translates SonarCube Objects into Bot-Objects.
@@ -41,7 +42,7 @@ public class SonarQubeObjectTranslator {
 			// Create bot issue
 			BotIssue botIssue = new BotIssue();
 
-			// Create filepath
+                        // Create filepath
 			String project = issue.getProject();
 			String component = issue.getComponent();
 			String sonarIssuePath = Paths.get(component.substring(project.length() + 1, component.length())).toString();
@@ -54,13 +55,13 @@ public class SonarQubeObjectTranslator {
 			translatedPath = translatedPath.substring(1);
 			
 			botIssue.setFilePath(translatedPath);
-                        
-                        // Set creation date to determine the age of the issue
-                        botIssue.setCreationDate(issue.getCreationDate());
 
 			// Fill object
 			botIssue.setLine(issue.getLine());
 			botIssue.setCommentServiceID(issue.getKey());
+
+                        // Set creation date to determine the age of the issue
+                        botIssue.setCreationDate(issue.getCreationDate());
 
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
