@@ -1,23 +1,17 @@
+[![Build Status](https://travis-ci.org/Refactoring-Bot/Refactoring-Bot.svg?branch=master)](https://travis-ci.org/Refactoring-Bot/Refactoring-Bot)
+
 # Refactoring-Bot
-Implementation of a bot, that does automatic refactorings based on the result of a static code analysis from analysis-services like SonarCloud or from comments within pull-requests of filehosting-services like GitHub. After a successful refactoring the bot creates/updates a pull-request with the changes.
 
-## Requirements for using this bot
-1. [MySQL](https://www.mysql.com/de/products/community/) must be installed, configured and running.
-2. [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) must be installed.
+Implementation of a bot that performs automatic refactorings based on the results of static code analysis or comments in pull requests. The changes are made available to the developers as pull requests for easy review.
 
-## Requirements for the project you would like to refactor with comments from pull-requests
-1. Project is in a public filehoster repository (only GitHub is supported at the moment).
-2. User account of the specific filehoster with an API token (you can create yourself a bot user and generate a token for hin on GitHub for example).
+Learn more about the bot and how to use it in the [wiki](https://github.com/Refactoring-Bot/Refactoring-Bot/wiki).
 
-## Requirements for refactoring with analysis-services like SonarCube
-1. Project needs to be publicaly hosted on a analysis-service (only sonarcloud is supported at the moment).
-2. Unique ProjectKey of the hosted project for the API access of the analysis-service.
+## Developer Usage Instructions
 
-## How to use this bot
-1. Install MySQL and configure it. (Create a MySQL Connection and a user who can access it)
-2. Import the project as maven project to your IDE.
-3. In your IDE, copy the application_example.yml file, rename it to application.yml and fill the example values with your own.
-4. Run the project as Spring-Project. If you use Eclipse, *run as maven build...* and add ``spring-boot:run`` to the goals.
-5. Either your browser will open the Swagger-UI (automated GUI) automatically or visit 'http://localhost:YOUR_PORT/swagger-ui.html'.
-6. Go to the Configuration-Controller and create a configuration.
-7. If successful, go to the Refactoring-Controller and perform refactorings with comments from pull-requests of GitHub or from a static code analysis of SonarCube. You will have to chose the configuration you want to use with the Configuration-ID.
+Before you can use the bot locally, the following steps need to be executed.
+
+1. The bot needs access to a MySQL DB instance to save its data. Use an existing one, download MySQL for your OS, or create a docker container via `docker run --name refactoring-bot-db -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -d mysql:latest`.
+2. In this MySQL instance, you need to create a schema with the name `refactoringbot_db` and make sure the user for the bot has access rights to this schema.
+3. Copy the configuration file `src/main/resources/application_example.yml` and rename it to `src/main/resources/application.yml`. In this new file, potentially change the `datasource` attributes depending on your MySQL instance.
+4. Execute the command `mvn install` to create the executable JAR file for the bot.
+5. Run the created JAR file via `java -jar ./target/RefactoringBot-0.0.1-SNAPSHOT.jar`. The API should now be available at `http://localhost:8808` and the SwaggerUI will open in the browser.
