@@ -15,11 +15,9 @@ import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDate;
@@ -84,6 +82,7 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
         for (Comment comment : comments) {
             if ((currentLine >= comment.getBegin().get().line) && (currentLine <= comment.getEnd().get().line)) {
                 if (comment.isLineComment()) {
+
                     // Current comment does not contain code -> Stop
                     if ((currentLine != start) && !isCommentedOutCode(comment.getContent())) {
                         break;
@@ -134,6 +133,7 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
 
         while ((currentLine = reader.readLine()) != null) {
 
+
             lineNumber++;
 
             if ((lineNumber >= start) && (lineNumber <= end)) {
@@ -149,6 +149,7 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
             }
 
             sb.append(currentLine);
+
         }
 
         reader.close();

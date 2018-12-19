@@ -13,7 +13,6 @@ import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.sonarQube.SonarQubeIssues;
 import de.refactoringBot.refactoring.RefactoringOperations;
 import de.refactoringBot.model.sonarQube.SonarIssue;
-import java.io.File;
 
 /**
  * This class translates SonarCube Objects into Bot-Objects.
@@ -49,6 +48,7 @@ public class SonarQubeObjectTranslator {
 			
 			// Create full path for sonar issue
 			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3) + sonarIssuePath;
+                        //sonarIssuePath = sonarIssuePath.replace("javaparser-core\\", "");
 			// Cut path outside the repository
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 			// Remove leading '/'
