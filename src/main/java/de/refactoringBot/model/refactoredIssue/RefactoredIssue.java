@@ -22,6 +22,7 @@ public class RefactoredIssue {
 	private String analysisService;
 	private String analysisServiceProjectKey;
 	private String refactoringOperation;
+	private String status;
 	
 	public Long getIssueId() {
 		return issueId;
@@ -89,6 +90,14 @@ public class RefactoredIssue {
 
 	public void setAnalysisServiceProjectKey(String analysisServiceProjectKey) {
 		this.analysisServiceProjectKey = analysisServiceProjectKey;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
 	}
 	
 }

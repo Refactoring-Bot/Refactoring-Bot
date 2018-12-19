@@ -5,6 +5,10 @@ import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import de.refactoringBot.model.configuration.GitConfigurationDTO;
+import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +41,12 @@ public class GithubObjectTranslator {
 	GithubDataGrabber grabber;
 	@Autowired
 	BotConfiguration botConfig;
+	@Autowired
+	ModelMapper modelMapper;
 
+	// Logger
+	private static final Logger logger = LoggerFactory.getLogger(GithubObjectTranslator.class);
+	
 	/**
 	 * This method creates a GitConfiguration from GitHub data.
 	 * 
@@ -48,31 +57,20 @@ public class GithubObjectTranslator {
 	 * @param projectRootFolder
 	 * @return
 	 */
-	public GitConfiguration createConfiguration(String repoName, String repoOwner, String botUsername,
-			String botPassword, String botEmail, String botToken, String repoService, String analysisService,
-			String analysusServiceProjectKey, Integer maxAmountRequests) {
+	public GitConfiguration createConfiguration(GitConfigurationDTO configuration) {
 		// Create Configuration
 		GitConfiguration config = new GitConfiguration();
 
+		modelMapper.map(configuration, config);
 		// Fill object
-		config.setRepoApiLink("https://api.github.com/repos/" + repoOwner + "/" + repoName);
-		config.setRepoGitLink("https://github.com/" + repoOwner + "/" + repoName + ".git");
-		config.setForkApiLink("https://api.github.com/repos/" + botUsername + "/" + repoName);
-		config.setForkGitLink("https://github.com/" + botUsername + "/" + repoName + ".git");
-		config.setRepoName(repoName);
-		config.setRepoOwner(repoOwner);
-		config.setRepoService(repoService.toLowerCase());
-		config.setBotName(botUsername);
-		config.setBotPassword(botPassword);
-		config.setBotEmail(botEmail);
-		
-		if (analysisService != null) {
-			config.setAnalysisService(analysisService.toLowerCase());
-		}
+		config.setRepoApiLink("https://api.github.com/repos/" + configuration.getRepoOwner() + "/" + configuration.getRepoName());
+		config.setRepoGitLink("https://github.com/" + configuration.getRepoOwner() + "/" + configuration.getRepoName() + ".git");
+		config.setForkApiLink("https://api.github.com/repos/" + configuration.getBotName() + "/" + configuration.getRepoName());
+		config.setForkGitLink("https://github.com/" + configuration.getBotName() + "/" + configuration.getRepoName() + ".git");
 
-		config.setAnalysisServiceProjectKey(analysusServiceProjectKey);
-		config.setMaxAmountRequests(maxAmountRequests);
-		config.setBotToken(botToken);
+		if (configuration.getAnalysisService() != null) {
+			config.setAnalysisService(configuration.getAnalysisService().toLowerCase());
+		}
 
 		return config;
 	}
@@ -113,6 +111,7 @@ public class GithubObjectTranslator {
 			try {
 				commentUri = new URI(githubRequest.getReviewCommentsUrl());
 			} catch (URISyntaxException e) {
+				logger.error(e.getMessage(), e);
 				throw new Exception("Could not build comment URI!");
 			}
 
@@ -199,7 +198,8 @@ public class GithubObjectTranslator {
 
 		// Fill object with data
 		createRequest.setTitle("Bot Pull-Request Refactoring for PullRequest #" + refactoredRequest.getRequestNumber());
-		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + " for PullRequest " + refactoredRequest.getRequestLink() + ".");
+		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + " for PullRequest "
+				+ refactoredRequest.getRequestLink() + ".");
 		createRequest.setHead(gitConfig.getBotName() + ":" + botBranchName);
 		createRequest.setBase(refactoredRequest.getBranchName());
 		createRequest.setMaintainer_can_modify(true);
@@ -266,6 +266,27 @@ public class GithubObjectTranslator {
 			comment.setBody("Refactored by " + gitConfig.getBotName() + " on " + date + ".");
 		}
 
+		return comment;
+	}
+
+	/**
+	 * This method creates a reply comment for a failed refactoring that was
+	 * triggered by a comment of a pull request.
+	 * 
+	 * @param comment
+	 * @param errorMessage
+	 * @return
+	 */
+	public ReplyComment createFailureReply(BotPullRequestComment replyTo, String errorMessage) {
+		// Create objcet
+		ReplyComment comment = new ReplyComment();
+
+		// Fill with data
+		comment.setIn_reply_to(replyTo.getCommentID());
+		
+		// Set error message
+		comment.setBody(errorMessage);
+		
 		return comment;
 	}
 

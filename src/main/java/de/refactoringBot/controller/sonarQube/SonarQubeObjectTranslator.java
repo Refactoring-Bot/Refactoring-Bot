@@ -63,9 +63,13 @@ public class SonarQubeObjectTranslator {
 			switch (issue.getRule()) {
 			case "squid:S1161":
 				botIssue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
+				// Add bot issue to list
+				botIssues.add(botIssue);
 				break;
 			case "squid:ModifiersOrderCheck":
 				botIssue.setRefactoringOperation(operations.REORDER_MODIFIER);
+				// Add bot issue to list
+				botIssues.add(botIssue);
 				break;
 			case "squid:S138":
 				botIssue.setRefactoringOperation(operations.EXTRACT_METHOD);
@@ -74,9 +78,6 @@ public class SonarQubeObjectTranslator {
 				botIssue.setRefactoringOperation(operations.UNKNOWN);
 				break;
 			}
-
-			// Add bot issue to list
-			botIssues.add(botIssue);
 		}
 
 		return botIssues;

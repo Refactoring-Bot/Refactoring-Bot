@@ -1,8 +1,5 @@
 package de.refactoringBot.refactoring;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 
@@ -22,8 +19,7 @@ public interface RefactoringImpl {
 	 * @param issue
 	 * @param gitConfig
 	 * @return commitMessage
-	 * @throws FileNotFoundException 
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws FileNotFoundException, IOException;
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception;
 }

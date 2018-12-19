@@ -7,6 +7,8 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import de.refactoringBot.model.botIssue.BotIssue;
@@ -24,16 +26,18 @@ import de.refactoringBot.model.refactoredIssue.RefactoredIssue;
  */
 @Component
 public class BotController {
+	
+	// Logger
+	private static final Logger logger = LoggerFactory.getLogger(BotController.class);
 
 	/**
-	 * This method checks if the maximal amount of pull requests created by the bot
-	 * is reached.
+	 * This method returns the maximal amount of pull requests created by the bot.
 	 * 
 	 * @param requests
 	 * @param gitConfig
 	 * @throws Exception
 	 */
-	public void checkAmountOfBotRequests(BotPullRequests requests, GitConfiguration gitConfig) throws Exception {
+	public Integer getAmountOfBotRequests(BotPullRequests requests, GitConfiguration gitConfig) {
 
 		// Init counter
 		int counter = 0;
@@ -44,12 +48,8 @@ public class BotController {
 				counter++;
 			}
 		}
-
-		// Check if max amount is reached
-		if (counter >= gitConfig.getMaxAmountRequests()) {
-			throw new Exception("Maximal amount of requests reached." + "(Maximum = " + gitConfig.getMaxAmountRequests()
-					+ "; Currently = " + counter + " bot requests are open)");
-		}
+		
+		return counter;
 	}
 
 	/**
@@ -78,6 +78,12 @@ public class BotController {
 		refactoredIssue.setAnalysisService(gitConfig.getAnalysisService());
 		refactoredIssue.setAnalysisServiceProjectKey(gitConfig.getAnalysisServiceProjectKey());
 		refactoredIssue.setRefactoringOperation(issue.getRefactoringOperation());
+		
+		if (issue.getCommitMessage() != null && issue.getErrorMessage() == null) {
+			refactoredIssue.setStatus("SUCCESSFUL");
+		} else  {
+			refactoredIssue.setStatus("FAILED");
+		}
 
 		return refactoredIssue;
 	}
@@ -141,6 +147,7 @@ public class BotController {
 		}
 		
 		// If no src-folder found
+		logger.error("No src-folder found inside this java-project!");
 		throw new Exception("No src-folder found inside this java-project!");
 	}
 }

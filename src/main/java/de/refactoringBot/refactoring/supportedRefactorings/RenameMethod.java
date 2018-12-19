@@ -3,7 +3,6 @@ package de.refactoringBot.refactoring.supportedRefactorings;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +28,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeS
 
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.model.exceptions.BotRefactoringException;
 import de.refactoringBot.model.javaparser.ParserRefactoring;
 import de.refactoringBot.model.javaparser.ParserRefactoringCollection;
 import de.refactoringBot.refactoring.RefactoringImpl;
@@ -47,10 +47,10 @@ public class RenameMethod implements RefactoringImpl {
 	 * @param issue
 	 * @param gitConfig
 	 * @return commitMessage
-	 * @throws IOException
+	 * @throws Exception 
 	 */
 	@Override
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws IOException {
+	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
 
 		// Init Refactorings
 		ParserRefactoringCollection allRefactorings = new ParserRefactoringCollection();
@@ -124,7 +124,7 @@ public class RenameMethod implements RefactoringImpl {
 
 		// If refactor-method not found
 		if (methodToRefactor == null) {
-			return null;
+			throw new BotRefactoringException("Could not find specified method! Automated refactoring failed.");
 		}
 
 		// Add class to the TO-DO list
@@ -296,10 +296,10 @@ public class RenameMethod implements RefactoringImpl {
 	 * @param allJavaFiles
 	 * @param currentJavaFile
 	 * @return
-	 * @throws FileNotFoundException
+	 * @throws Exception 
 	 */
 	private ParserRefactoringCollection getSuperTree(ParserRefactoringCollection allRefactorings,
-			List<String> allJavaFiles, String currentJavaFile) throws FileNotFoundException {
+			List<String> allJavaFiles, String currentJavaFile) throws Exception {
 
 		// Init variable
 		String classSignature = null;
@@ -325,6 +325,7 @@ public class RenameMethod implements RefactoringImpl {
 					try {
 						allRefactorings.addToDoClass(impl.get(i).resolve().getQualifiedName());
 					} catch (Exception e) {
+						throw new BotRefactoringException("Method to rename might override a method from a external project");
 					}
 				}
 				// Add all extends signatures to list
@@ -332,6 +333,7 @@ public class RenameMethod implements RefactoringImpl {
 					try {
 						allRefactorings.addToDoClass(ext.get(i).resolve().getQualifiedName());
 					} catch (Exception e) {
+						throw new BotRefactoringException("Method to rename might override a method from a external project");
 					}
 				}
 			}
@@ -366,10 +368,10 @@ public class RenameMethod implements RefactoringImpl {
 	 * @param allJavaFiles
 	 * @param currentJavaFile
 	 * @return
-	 * @throws FileNotFoundException
+	 * @throws Exception 
 	 */
 	private ParserRefactoringCollection addSubTree(ParserRefactoringCollection allRefactorings,
-			List<String> allJavaFiles, String currentJavaFile) throws FileNotFoundException {
+			List<String> allJavaFiles, String currentJavaFile) throws Exception {
 		// parse a file
 		FileInputStream filepath = new FileInputStream(currentJavaFile);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
@@ -391,6 +393,7 @@ public class RenameMethod implements RefactoringImpl {
 							allRefactorings.addToDoClass(currentClass.resolve().getQualifiedName());
 						}
 					} catch (Exception e) {
+						throw new BotRefactoringException("Method to rename might override a method from a external project");
 					}
 				}
 				// If class extends of one of the done classes
@@ -400,7 +403,7 @@ public class RenameMethod implements RefactoringImpl {
 							allRefactorings.addToDoClass(currentClass.resolve().getQualifiedName());
 						}
 					} catch (Exception e) {
-
+						throw new BotRefactoringException("Method to rename might override a method from a external project");
 					}
 				}
 			}
@@ -425,11 +428,11 @@ public class RenameMethod implements RefactoringImpl {
 	 * @param javaFile
 	 * @param allJavaFiles
 	 * @return
-	 * @throws FileNotFoundException
+	 * @throws Exception 
 	 */
 	private ParserRefactoringCollection createRefactoringObjects(ParserRefactoringCollection allRefactorings,
 			String methodSignature, String classSignature, String javaFile, List<String> allJavaFiles)
-			throws FileNotFoundException {
+			throws Exception {
 
 		// parse a file
 		FileInputStream filepath = new FileInputStream(javaFile);
@@ -478,10 +481,10 @@ public class RenameMethod implements RefactoringImpl {
 	 * 
 	 * @param javafile
 	 * @param methodSignature
-	 * @throws FileNotFoundException
+	 * @throws Exception 
 	 */
 	private ParserRefactoringCollection createRefactoringsForMethodCalls(ParserRefactoringCollection refactorings,
-			String javafile, String methodSignature) throws FileNotFoundException {
+			String javafile, String methodSignature) throws Exception {
 		// parse a file
 		FileInputStream callMethodPath = new FileInputStream(javafile);
 		CompilationUnit renameMethodCallUnit = LexicalPreservingPrinter.setup(JavaParser.parse(callMethodPath));
@@ -500,6 +503,7 @@ public class RenameMethod implements RefactoringImpl {
 					validCalls.add(checkMethodCall(methodCall, methodSignature));
 				}
 			} catch (Exception e) {
+				throw new BotRefactoringException("Method to rename might override a method from a external project");
 			}
 		}
 

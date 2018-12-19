@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.naming.OperationNotSupportedException;
 
+import de.refactoringBot.model.configuration.GitConfigurationDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +18,6 @@ import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.githubModels.pullRequest.GithubCreateRequest;
 import de.refactoringBot.model.githubModels.pullRequest.GithubPullRequest;
 import de.refactoringBot.model.githubModels.pullRequest.GithubPullRequests;
-import de.refactoringBot.model.githubModels.pullRequest.GithubUpdateRequest;
 import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequest;
 import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequests;
 import de.refactoringBot.model.outputModel.botPullRequestComment.BotPullRequestComment;
@@ -63,30 +63,25 @@ public class ApiGrabber {
 			GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
 			// Translate github object
 			botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
-			// Check if max amount of requests reached
-			botController.checkAmountOfBotRequests(botRequests, gitConfig);
 			break;
 		}
 		return botRequests;
 	}
 
 	/**
-	 * This method updates a pull request of a specific filehoster.
+	 * This method replies to User inside a Pull-Request that belongs to a Bot if
+	 * the refactoring was successful.
 	 * 
 	 * @param request
 	 * @param gitConfig
 	 * @throws Exception
 	 * @throws OperationNotSupportedException
 	 */
-	public void makeUpdateRequest(BotPullRequest request, BotPullRequestComment comment, GitConfiguration gitConfig)
-			throws Exception {
+	public void replyToUserInsideBotRequest(BotPullRequest request, BotPullRequestComment comment,
+			GitConfiguration gitConfig) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case "github":
-			// Create updateRequest
-			GithubUpdateRequest updateRequest = githubTranslator.makeUpdateRequest(request, gitConfig);
-			// Update Request
-			githubGrabber.updatePullRequest(updateRequest, gitConfig, request.getRequestNumber());
 			// Reply to comment
 			githubGrabber.responseToBotComment(githubTranslator.createReplyComment(comment, gitConfig, null), gitConfig,
 					request.getRequestNumber());
@@ -119,6 +114,42 @@ public class ApiGrabber {
 	}
 
 	/**
+	 * Reply to comment if refactoring failed.
+	 * 
+	 * @param request
+	 * @param gitConfig
+	 * @throws Exception
+	 */
+	public void replyToUserForFailedRefactoring(BotPullRequest request, BotPullRequestComment comment,
+			GitConfiguration gitConfig, String errorMessage) throws Exception {
+		// Pick filehoster
+		switch (gitConfig.getRepoService()) {
+		case "github":
+			// Reply to comment
+			githubGrabber.responseToBotComment(githubTranslator.createFailureReply(comment, errorMessage), gitConfig,
+					request.getRequestNumber());
+			break;
+		}
+	}
+
+	/**
+	 * Check if Branch exists on repository.
+	 * 
+	 * @param request
+	 * @param gitConfig
+	 * @throws Exception
+	 */
+	public void checkBranch(GitConfiguration gitConfig, String branchName) throws Exception {
+		// Pick filehoster
+		switch (gitConfig.getRepoService()) {
+		case "github":
+			// Reply to comment
+			githubGrabber.checkBranch(gitConfig, branchName);
+			break;
+		}
+	}
+
+	/**
 	 * This method checks the user input and creates a git configuration.
 	 * 
 	 * @param repoName
@@ -131,31 +162,28 @@ public class ApiGrabber {
 	 * @return gitConfig
 	 * @throws Exception
 	 */
-	public GitConfiguration createConfigurationForRepo(String repoName, String repoOwner, String repoService,
-			String botUsername, String botPassword, String botEmail, String botToken, String analysisService,
-			String analysisServiceProjectKey, Integer maxAmountRequests) throws Exception {
+	public GitConfiguration createConfigurationForRepo(GitConfigurationDTO configuration) throws Exception {
 
 		// Init object
 		GitConfiguration gitConfig = null;
 
 		// Check analysis service data
-		checkAnalysisService(analysisService, analysisServiceProjectKey);
+		checkAnalysisService(configuration.getAnalysisService(), configuration.getAnalysisServiceProjectKey());
 
 		// Pick filehoster
-		switch (repoService.toLowerCase()) {
+		switch (configuration.getRepoService().toLowerCase()) {
 		case "github":
 			// Check repository
-			githubGrabber.checkRepository(repoName, repoOwner);
+			githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner());
 
 			// Check bot user and bot token
-			githubGrabber.checkGithubUser(botUsername, botToken, botEmail);
+			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(), configuration.getBotEmail());
 
 			// Create git configuration and a fork
-			gitConfig = githubTranslator.createConfiguration(repoName, repoOwner, botUsername, botPassword, botEmail,
-					botToken, repoService, analysisService, analysisServiceProjectKey, maxAmountRequests);
+			gitConfig = githubTranslator.createConfiguration(configuration);
 			return gitConfig;
 		default:
-			throw new Exception("Filehoster " + "'" + repoService + "' is not supported!");
+			throw new Exception("Filehoster " + "'" + configuration.getRepoService() + "' is not supported!");
 		}
 	}
 

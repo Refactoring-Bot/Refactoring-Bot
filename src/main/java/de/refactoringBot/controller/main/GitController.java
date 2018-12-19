@@ -6,15 +6,19 @@ import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RemoteAddCommand;
 import org.eclipse.jgit.api.errors.RefAlreadyExistsException;
+import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.model.exceptions.BotRefactoringException;
 
 /**
  * This class uses git programmicaly with JGIT.
@@ -27,6 +31,9 @@ public class GitController {
 
 	@Autowired
 	BotConfiguration botConfig;
+
+	// Logger
+	private static final Logger logger = LoggerFactory.getLogger(GitController.class);
 
 	/**
 	 * This method initialises the workspace.
@@ -60,7 +67,7 @@ public class GitController {
 			git.close();
 		} catch (Exception e) {
 			git.close();
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not add as remote " + "'" + gitConfig.getRepoGitLink() + "' successfully!");
 		}
 	}
@@ -80,8 +87,11 @@ public class GitController {
 			git.fetch().setRemote("upstream").call();
 			git.close();
 		} catch (Exception e) {
-			git.close();
-			e.printStackTrace();
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not fetch data from 'upstream'!");
 		}
 	}
@@ -101,8 +111,11 @@ public class GitController {
 			git.stashApply().call();
 			git.close();
 		} catch (Exception e) {
-			git.close();
-			e.printStackTrace();
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+			logger.error(e.getMessage(), e);
 			throw new Exception("Faild to stash changes!");
 		}
 	}
@@ -122,7 +135,12 @@ public class GitController {
 					.call();
 			git.close();
 		} catch (Exception e) {
-			git.close();
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+
+			logger.error(e.getMessage(), e);
 			throw new Exception("Faild to clone " + "'" + gitConfig.getForkGitLink() + "' successfully!");
 		}
 	}
@@ -136,7 +154,8 @@ public class GitController {
 	 * @param id
 	 * @throws Exception
 	 */
-	public void createBranch(GitConfiguration gitConfig, String branchName, String newBranch) throws Exception {
+	public void createBranch(GitConfiguration gitConfig, String branchName, String newBranch, String origin)
+			throws Exception {
 		Git git = null;
 		try {
 			// Open git folder
@@ -145,18 +164,25 @@ public class GitController {
 			@SuppressWarnings("unused")
 			Ref ref = git.checkout().setCreateBranch(true).setName(newBranch)
 					.setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
-					.setStartPoint("upstream/" + branchName).call();
+					.setStartPoint(origin + "/" + branchName).call();
 			// Pull data
 			git.pull();
 			git.close();
 			// If branch already exists
 		} catch (RefAlreadyExistsException r) {
-			git.close();
-			// Switch to branch
-			switchBranch(gitConfig, newBranch);
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+			logger.error(r.getMessage(), r);
+			throw new BotRefactoringException(
+					"Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
 		} catch (Exception e) {
-			git.close();
-			e.printStackTrace();
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+			logger.error(e.getMessage(), e);
 			throw new Exception("Branch with the name " + "'" + newBranch + "' could not be created!");
 		}
 	}
@@ -167,7 +193,6 @@ public class GitController {
 	 * @param branchName
 	 * @throws Exception
 	 */
-
 	public void switchBranch(GitConfiguration gitConfig, String branchName) throws Exception {
 		Git git = null;
 		try {
@@ -177,9 +202,20 @@ public class GitController {
 			@SuppressWarnings("unused")
 			Ref ref = git.checkout().setName(branchName).call();
 			git.close();
+			// If branch does not exist localy anymore
+		} catch (RefNotFoundException r) {
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+			// Recreate branch with current branch data from remote origin
+			createBranch(gitConfig, branchName, branchName, "origin");
 		} catch (Exception e) {
-			git.close();
-			e.printStackTrace();
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not switch to the branch with the name " + "'" + branchName + "'!");
 		}
 	}
@@ -204,11 +240,19 @@ public class GitController {
 							new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotPassword()))
 					.call();
 			git.close();
-		} catch (TransportException t) { 
-			git.close();
+		} catch (TransportException t) {
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+			logger.error(t.getMessage(), t);
 			throw new Exception("Wrong bot password!");
 		} catch (Exception e) {
-			git.close();
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not successfully perform 'git push'!");
 		}
 	}
