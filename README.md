@@ -6,7 +6,7 @@ Implementation of a bot that performs automatic refactorings based on the result
 
 Learn more about the bot and how to use it in the [wiki](https://github.com/Refactoring-Bot/Refactoring-Bot/wiki).
 
-## Developer Usage Instruction
+## Developer Usage Instructions
 
 Before you can use the bot locally, the following steps need to be executed.
 
