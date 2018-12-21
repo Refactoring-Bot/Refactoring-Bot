@@ -9,6 +9,7 @@ public class BotIssue {
 	private String refactorString;
 	private String errorMessage;
 	private String commitMessage;
+        private String creationDate;
 	
 	public String getRefactoringOperation() {
 		return refactoringOperation;
@@ -65,5 +66,13 @@ public class BotIssue {
 	public void setCommitMessage(String commitMessage) {
 		this.commitMessage = commitMessage;
 	}
+        
+        public String getCreationDate() {
+                 return creationDate;
+        }
+
+        public void setCreationDate(String creationDate) {
+                this.creationDate = creationDate;
+        }
 	
 }

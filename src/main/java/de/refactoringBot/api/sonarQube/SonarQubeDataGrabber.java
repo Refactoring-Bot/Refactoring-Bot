@@ -13,6 +13,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import de.refactoringBot.model.sonarQube.SonarQubeIssues;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class gets all kinds of data from SonarCube.
@@ -35,13 +37,20 @@ public class SonarQubeDataGrabber {
 	 * @return allIssues
 	 * @throws Exception
 	 */
-	public SonarQubeIssues getIssues(String sonarQubeProjectKey) throws Exception {
+	public List<SonarQubeIssues> getIssues(String sonarQubeProjectKey) throws Exception {
+                int page = 1;
+            
+                List<SonarQubeIssues> issues = new ArrayList<>();
+                
+                while (page < 500){
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("sonarcloud.io")
 				.path("api/issues/search");
 
 		apiUriBuilder.queryParam("componentRoots", sonarQubeProjectKey);
 		apiUriBuilder.queryParam("statuses", "OPEN,REOPENED");
+                apiUriBuilder.queryParam("ps", 500);
+		apiUriBuilder.queryParam("p", page);
 
 		URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
 
@@ -54,11 +63,22 @@ public class SonarQubeDataGrabber {
 
 		// Send request
 		try {
-			return rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody();
+                        issues.add(rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody());
+                        page++;
 		} catch (RestClientException e) {
-			logger.error(e.getMessage(), e);
-			throw new Exception("Could not access SonarCube API!");
+                        if (page == 1){
+                            logger.error(e.getMessage(), e);
+                            throw new Exception("Could not access SonarCube API!");
+                        }
+                        
+                        break;
+			
 		}
+                
+                }
+                
+                return issues;
+                
 	}
 
 	/**

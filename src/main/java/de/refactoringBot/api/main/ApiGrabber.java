@@ -22,6 +22,7 @@ import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequest;
 import de.refactoringBot.model.outputModel.botPullRequest.BotPullRequests;
 import de.refactoringBot.model.outputModel.botPullRequestComment.BotPullRequestComment;
 import de.refactoringBot.model.sonarQube.SonarQubeIssues;
+import java.util.ArrayList;
 
 /**
  * This class transfers all Rest-Requests to correct APIs and returns all
@@ -232,8 +233,11 @@ public class ApiGrabber {
 		switch (gitConfig.getAnalysisService()) {
 		case "sonarqube":
 			// Get issues and translate them
-			SonarQubeIssues issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
-			List<BotIssue> botIssues = sonarQubeTranslator.translateSonarIssue(issues, gitConfig);
+			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
+                        List<BotIssue> botIssues = new ArrayList<>();
+                        for (SonarQubeIssues i: issues){
+                            botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
+                        }
 			return botIssues;
 		default:
 			return null;
