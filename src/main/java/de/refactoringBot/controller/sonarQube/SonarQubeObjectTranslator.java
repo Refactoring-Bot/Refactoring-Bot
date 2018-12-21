@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.model.sonarQube.SonarIssue;
 import de.refactoringBot.model.sonarQube.SonarQubeIssues;
 import de.refactoringBot.refactoring.RefactoringOperations;
-import de.refactoringBot.model.sonarQube.SonarIssue;
 
 /**
  * This class translates SonarCube Objects into Bot-Objects.
@@ -22,7 +22,7 @@ import de.refactoringBot.model.sonarQube.SonarIssue;
  */
 @Component
 public class SonarQubeObjectTranslator {
-	
+
 	@Autowired
 	RefactoringOperations operations;
 
@@ -41,27 +41,28 @@ public class SonarQubeObjectTranslator {
 			// Create bot issue
 			BotIssue botIssue = new BotIssue();
 
-                        // Create filepath
+			// Create filepath
 			String project = issue.getProject();
 			String component = issue.getComponent();
 			String sonarIssuePath = Paths.get(component.substring(project.length() + 1, component.length())).toString();
-			
+
 			// Create full path for sonar issue
-			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3) + sonarIssuePath;
-                        //sonarIssuePath = sonarIssuePath.replace("javaparser-core\\", "");
+			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3)
+					+ sonarIssuePath;
+
 			// Cut path outside the repository
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 			// Remove leading '/'
 			translatedPath = translatedPath.substring(1);
-			
+
 			botIssue.setFilePath(translatedPath);
 
 			// Fill object
 			botIssue.setLine(issue.getLine());
 			botIssue.setCommentServiceID(issue.getKey());
 
-                        // Set creation date to determine the age of the issue
-                        botIssue.setCreationDate(issue.getCreationDate());
+			// Set creation date to determine the age of the issue
+			botIssue.setCreationDate(issue.getCreationDate());
 
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
@@ -75,10 +76,10 @@ public class SonarQubeObjectTranslator {
 				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
-                        case "squid:CommentedOutCodeLine":
-                                botIssue.setRefactoringOperation(operations.REMOVE_COMMENTED_OUT_CODE);
-                                botIssues.add(botIssue);
-                                break;
+			case "squid:CommentedOutCodeLine":
+				botIssue.setRefactoringOperation(operations.REMOVE_COMMENTED_OUT_CODE);
+				botIssues.add(botIssue);
+				break;
 			default:
 				botIssue.setRefactoringOperation(operations.UNKNOWN);
 				break;

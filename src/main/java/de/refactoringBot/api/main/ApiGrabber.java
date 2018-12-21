@@ -178,7 +178,8 @@ public class ApiGrabber {
 			githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner());
 
 			// Check bot user and bot token
-			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(), configuration.getBotEmail());
+			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
+					configuration.getBotEmail());
 
 			// Create git configuration and a fork
 			gitConfig = githubTranslator.createConfiguration(configuration);
@@ -234,10 +235,10 @@ public class ApiGrabber {
 		case "sonarqube":
 			// Get issues and translate them
 			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
-                        List<BotIssue> botIssues = new ArrayList<>();
-                        for (SonarQubeIssues i: issues){
-                            botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
-                        }
+			List<BotIssue> botIssues = new ArrayList<>();
+			for (SonarQubeIssues i : issues) {
+				botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
+			}
 			return botIssues;
 		default:
 			return null;

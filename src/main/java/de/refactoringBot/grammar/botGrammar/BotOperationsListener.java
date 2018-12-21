@@ -1,5 +1,6 @@
 // Generated from botGrammer\BotOperations.g4 by ANTLR 4.7.1
 package de.refactoringBot.grammar.botGrammar;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
@@ -9,12 +10,17 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
 public interface BotOperationsListener extends ParseTreeListener {
 	/**
 	 * Enter a parse tree produced by {@link BotOperationsParser#botCommand}.
-	 * @param ctx the parse tree
+	 * 
+	 * @param ctx
+	 *            the parse tree
 	 */
 	void enterBotCommand(BotOperationsParser.BotCommandContext ctx);
+
 	/**
 	 * Exit a parse tree produced by {@link BotOperationsParser#botCommand}.
-	 * @param ctx the parse tree
+	 * 
+	 * @param ctx
+	 *            the parse tree
 	 */
 	void exitBotCommand(BotOperationsParser.BotCommandContext ctx);
 }

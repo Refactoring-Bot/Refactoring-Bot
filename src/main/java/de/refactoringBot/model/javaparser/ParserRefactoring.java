@@ -10,13 +10,13 @@ public class ParserRefactoring {
 
 	private CompilationUnit unit;
 	private List<MethodCallExpr> methodCalls;
-    private MethodDeclaration method;
+	private MethodDeclaration method;
 	private String javaFile;
-	
+
 	public CompilationUnit getUnit() {
 		return unit;
 	}
-	
+
 	public void setUnit(CompilationUnit unit) {
 		this.unit = unit;
 	}
@@ -28,7 +28,7 @@ public class ParserRefactoring {
 	public void setMethodCall(List<MethodCallExpr> methodCalls) {
 		this.methodCalls = methodCalls;
 	}
-	
+
 	public void addMethodCall(MethodCallExpr methodCall) {
 		this.methodCalls.add(methodCall);
 	}
@@ -48,5 +48,5 @@ public class ParserRefactoring {
 	public void setJavaFile(String javaFile) {
 		this.javaFile = javaFile;
 	}
-	
+
 }

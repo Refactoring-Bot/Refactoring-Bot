@@ -9,28 +9,28 @@ public class BotIssue {
 	private String refactorString;
 	private String errorMessage;
 	private String commitMessage;
-        private String creationDate;
-	
+	private String creationDate;
+
 	public String getRefactoringOperation() {
 		return refactoringOperation;
 	}
-	
+
 	public void setRefactoringOperation(String refactoringOperation) {
 		this.refactoringOperation = refactoringOperation;
 	}
-	
+
 	public String getFilePath() {
 		return filePath;
 	}
-	
+
 	public void setFilePath(String filePath) {
 		this.filePath = filePath;
 	}
-	
+
 	public Integer getLine() {
 		return line;
 	}
-	
+
 	public void setLine(Integer line) {
 		this.line = line;
 	}
@@ -66,13 +66,13 @@ public class BotIssue {
 	public void setCommitMessage(String commitMessage) {
 		this.commitMessage = commitMessage;
 	}
-        
-        public String getCreationDate() {
-                 return creationDate;
-        }
 
-        public void setCreationDate(String creationDate) {
-                this.creationDate = creationDate;
-        }
-	
+	public String getCreationDate() {
+		return creationDate;
+	}
+
+	public void setCreationDate(String creationDate) {
+		this.creationDate = creationDate;
+	}
+
 }

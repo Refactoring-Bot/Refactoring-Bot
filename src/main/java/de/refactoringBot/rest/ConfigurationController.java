@@ -15,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
 import de.refactoringBot.api.main.ApiGrabber;
 import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.controller.github.GithubObjectTranslator;
@@ -48,13 +47,12 @@ public class ConfigurationController {
 	GitController gitController;
 	@Autowired
 	BotController botController;
-	
+
 	// Logger
-    private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
+	private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
 
 	@Autowired
 	ModelMapper modelMapper;
-
 
 	/**
 	 * This method creates an git configuration with the user inputs.
@@ -67,11 +65,10 @@ public class ConfigurationController {
 
 	@PostMapping(consumes = "application/json", produces = "application/json")
 	@ApiOperation(value = "Create Git-Konfiguration")
-	public ResponseEntity<Object> add(
-			@RequestBody GitConfigurationDTO newConfiguration) {
-	    GitConfiguration savedConfig = null;
+	public ResponseEntity<Object> add(@RequestBody GitConfigurationDTO newConfiguration) {
+		GitConfiguration savedConfig = null;
 		try {
-            savedConfig = grabber.createConfigurationForRepo(newConfiguration);
+			savedConfig = grabber.createConfigurationForRepo(newConfiguration);
 			try {
 				// Try to save the new configuration
 				savedConfig = repo.save(savedConfig);
@@ -134,8 +131,7 @@ public class ConfigurationController {
 
 	@PutMapping(path = "/{configurationId}", consumes = "application/json", produces = "application/json")
 	@ApiOperation(value = "Update Git-Configuration with configuration id")
-	public ResponseEntity<?> update(
-			@RequestBody GitConfigurationDTO newConfiguration,
+	public ResponseEntity<?> update(@RequestBody GitConfigurationDTO newConfiguration,
 			@PathVariable(name = "configurationId") Long configurationId) {
 		// Check if configuration exists
 		Optional<GitConfiguration> existsConfig;
@@ -147,7 +143,6 @@ public class ConfigurationController {
 			logger.error(e.getMessage(), e);
 			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-
 
 		// unwrap optional
 		GitConfiguration savedConfig = existsConfig.get();
@@ -202,8 +197,7 @@ public class ConfigurationController {
 
 	@DeleteMapping(path = "/{configurationId}", produces = "application/json")
 	@ApiOperation(value = "Delete Git-Configuration with configuration id")
-	public ResponseEntity<?> deleteConfig(
-			@PathVariable("configurationId") Long configurationId) {
+	public ResponseEntity<?> deleteConfig(@PathVariable("configurationId") Long configurationId) {
 		// Check if configuration exists
 		Optional<GitConfiguration> existsConfig;
 		try {
@@ -272,8 +266,7 @@ public class ConfigurationController {
 
 	@GetMapping(path = "/{configurationId}", produces = "application/json")
 	@ApiOperation(value = "Get Git-Configuration with configuration id")
-	public ResponseEntity<?> getAllConfigs(
-			@PathVariable("configurationId") Long configurationId) {
+	public ResponseEntity<?> getAllConfigs(@PathVariable("configurationId") Long configurationId) {
 		Optional<GitConfiguration> existsConfig;
 		try {
 			// Try to get the Git-Configuration with the given ID

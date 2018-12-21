@@ -48,7 +48,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @param issue
 	 * @param gitConfig
 	 * @return commitMessage
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
@@ -159,7 +159,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		}
 
 		removeParameter(allRefactorings, allJavaFiles, issue.getRefactorString(), paramPosition);
-		
+
 		return "Removed method parameter '" + issue.getRefactorString() + "' of method '" + oldMethodName + "'";
 	}
 
@@ -216,7 +216,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 					}
 				}
 			}
-			
+
 			// If javafile was edited
 			if (fileEdited) {
 				// Save changes to file

@@ -20,7 +20,8 @@ public class ScheduledOperations {
 	Integer port;
 
 	/**
-	 * This method opens the Swagger-UI in the browser on startup of the application.
+	 * This method opens the Swagger-UI in the browser on startup of the
+	 * application.
 	 */
 	@PostConstruct
 	public void startSwaggerUI() {

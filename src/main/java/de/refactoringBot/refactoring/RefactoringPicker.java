@@ -23,7 +23,7 @@ public class RefactoringPicker {
 
 	@Autowired
 	RefactoringOperations operations;
-	
+
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
 
@@ -48,7 +48,8 @@ public class RefactoringPicker {
 			if (refactoringClass != null) {
 				Constructor<?> ctor = refactoringClass.getConstructor();
 				Object object = ctor.newInstance(new Object[] {});
-				return (String) refactoringClass.getMethod("performRefactoring", BotIssue.class, GitConfiguration.class).invoke(object, issue, gitConfig);
+				return (String) refactoringClass.getMethod("performRefactoring", BotIssue.class, GitConfiguration.class)
+						.invoke(object, issue, gitConfig);
 			} else {
 				throw new BotRefactoringException("Bot does not support specified refactoring yet!");
 			}
@@ -60,7 +61,7 @@ public class RefactoringPicker {
 				logger.error(e.getMessage(), e);
 				throw new BotRefactoringException(e.getMessage());
 			}
-			
+
 		}
 	}
 }

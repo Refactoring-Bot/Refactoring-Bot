@@ -19,7 +19,7 @@ public class RefactoringOperations {
 	public final String ADD_OVERRIDE_ANNOTATION = "Add Override Annotation";
 	public final String RENAME_METHOD = "Rename Method";
 	public final String REORDER_MODIFIER = "Reorder Modifier";
-        public final String REMOVE_COMMENTED_OUT_CODE = "Remove Commented Out Code";
+	public final String REMOVE_COMMENTED_OUT_CODE = "Remove Commented Out Code";
 	public final String REMOVE_PARAMETER = "Remove Parameter";
 	public final String UNKNOWN = "Unknown Refactoring";
 
@@ -34,7 +34,7 @@ public class RefactoringOperations {
 		ruleToClassMapping.put(ADD_OVERRIDE_ANNOTATION, AddOverrideAnnotation.class);
 		ruleToClassMapping.put(REORDER_MODIFIER, ReorderModifier.class);
 		ruleToClassMapping.put(RENAME_METHOD, RenameMethod.class);
-                ruleToClassMapping.put(REMOVE_COMMENTED_OUT_CODE, RemoveCommentedOutCode.class);
+		ruleToClassMapping.put(REMOVE_COMMENTED_OUT_CODE, RemoveCommentedOutCode.class);
 		ruleToClassMapping.put(REMOVE_PARAMETER, RemoveMethodParameter.class);
 
 		return ruleToClassMapping;

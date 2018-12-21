@@ -26,7 +26,7 @@ import de.refactoringBot.model.refactoredIssue.RefactoredIssue;
  */
 @Component
 public class BotController {
-	
+
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(BotController.class);
 
@@ -48,7 +48,7 @@ public class BotController {
 				counter++;
 			}
 		}
-		
+
 		return counter;
 	}
 
@@ -78,10 +78,10 @@ public class BotController {
 		refactoredIssue.setAnalysisService(gitConfig.getAnalysisService());
 		refactoredIssue.setAnalysisServiceProjectKey(gitConfig.getAnalysisServiceProjectKey());
 		refactoredIssue.setRefactoringOperation(issue.getRefactoringOperation());
-		
+
 		if (issue.getCommitMessage() != null && issue.getErrorMessage() == null) {
 			refactoredIssue.setStatus("SUCCESSFUL");
-		} else  {
+		} else {
 			refactoredIssue.setStatus("FAILED");
 		}
 
@@ -130,7 +130,7 @@ public class BotController {
 	 * 
 	 * @param repoFolder
 	 * @return rootFolder
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public String findSrcFolder(String repoFolder) throws Exception {
 		// Get root folder of project
@@ -145,7 +145,7 @@ public class BotController {
 				return srcPath;
 			}
 		}
-		
+
 		// If no src-folder found
 		logger.error("No src-folder found inside this java-project!");
 		throw new Exception("No src-folder found inside this java-project!");

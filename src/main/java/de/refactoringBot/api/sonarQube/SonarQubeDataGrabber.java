@@ -38,47 +38,47 @@ public class SonarQubeDataGrabber {
 	 * @throws Exception
 	 */
 	public List<SonarQubeIssues> getIssues(String sonarQubeProjectKey) throws Exception {
-                int page = 1;
-            
-                List<SonarQubeIssues> issues = new ArrayList<>();
-                
-                while (page < 500){
-		// Build URI
-		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("sonarcloud.io")
-				.path("api/issues/search");
+		int page = 1;
 
-		apiUriBuilder.queryParam("componentRoots", sonarQubeProjectKey);
-		apiUriBuilder.queryParam("statuses", "OPEN,REOPENED");
-                apiUriBuilder.queryParam("ps", 500);
-		apiUriBuilder.queryParam("p", page);
+		List<SonarQubeIssues> issues = new ArrayList<>();
 
-		URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
+		while (page < 500) {
+			// Build URI
+			UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https")
+					.host("sonarcloud.io").path("api/issues/search");
 
-		// Create REST-Template
-		RestTemplate rest = new RestTemplate();
-		// Build Header
-		HttpHeaders headers = new HttpHeaders();
-		headers.set("User-Agent", USER_AGENT);
-		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+			apiUriBuilder.queryParam("componentRoots", sonarQubeProjectKey);
+			apiUriBuilder.queryParam("statuses", "OPEN,REOPENED");
+			apiUriBuilder.queryParam("ps", 500);
+			apiUriBuilder.queryParam("p", page);
 
-		// Send request
-		try {
-                        issues.add(rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody());
-                        page++;
-		} catch (RestClientException e) {
-                        if (page == 1){
-                            logger.error(e.getMessage(), e);
-                            throw new Exception("Could not access SonarCube API!");
-                        }
-                        
-                        break;
-			
+			URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
+
+			// Create REST-Template
+			RestTemplate rest = new RestTemplate();
+			// Build Header
+			HttpHeaders headers = new HttpHeaders();
+			headers.set("User-Agent", USER_AGENT);
+			HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+
+			// Send request
+			try {
+				issues.add(rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody());
+				page++;
+			} catch (RestClientException e) {
+				if (page == 1) {
+					logger.error(e.getMessage(), e);
+					throw new Exception("Could not access SonarCube API!");
+				}
+
+				break;
+
+			}
+
 		}
-                
-                }
-                
-                return issues;
-                
+
+		return issues;
+
 	}
 
 	/**

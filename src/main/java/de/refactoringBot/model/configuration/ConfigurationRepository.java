@@ -20,7 +20,7 @@ public interface ConfigurationRepository extends CrudRepository<GitConfiguration
 	@Query("SELECT a FROM GitConfiguration a WHERE a.repoName=:repoName and a.repoOwner=:repoOwner")
 	public Optional<GitConfiguration> getConfigByName(@Param("repoName") String repoName,
 			@Param("repoOwner") String repoOwner);
-	
+
 	@Query("SELECT a FROM GitConfiguration a WHERE a.repoName=:repoName and a.botName=:botName")
 	public Optional<GitConfiguration> getConfigByFork(@Param("repoName") String repoName,
 			@Param("botName") String botName);
