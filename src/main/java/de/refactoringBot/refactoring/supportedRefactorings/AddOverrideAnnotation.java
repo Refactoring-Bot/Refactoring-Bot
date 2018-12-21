@@ -30,7 +30,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 	 * @param issue
 	 * @param gitConfig
 	 * @return commitMessage
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {

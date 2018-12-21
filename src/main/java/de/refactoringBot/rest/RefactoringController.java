@@ -61,9 +61,9 @@ public class RefactoringController {
 	RefactoringPicker refactoring;
 	@Autowired
 	SonarQubeObjectTranslator sonarTranslator;
-	
+
 	// Logger
-    private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
+	private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
 
 	/**
 	 * This method performs refactorings with comments within Pull-Requests of a
@@ -267,8 +267,7 @@ public class RefactoringController {
 		}
 		// If analysis service data is missing
 		if (gitConfig.get().getAnalysisService() == null || gitConfig.get().getAnalysisServiceProjectKey() == null) {
-			return new ResponseEntity<>("Configuration is missing analysis service data!",
-					HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<>("Configuration is missing analysis service data!", HttpStatus.BAD_REQUEST);
 		}
 
 		try {

@@ -47,7 +47,7 @@ public class GithubDataGrabber {
 	ObjectMapper mapper;
 	@Autowired
 	BotConfiguration botConfig;
-	
+
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GithubDataGrabber.class);
 
@@ -167,13 +167,14 @@ public class GithubDataGrabber {
 		try {
 			// If branch found -> error
 			rest.exchange(pullsUri, HttpMethod.GET, entity, String.class).getBody();
-			throw new BotRefactoringException("Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
+			throw new BotRefactoringException(
+					"Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
 		} catch (RestClientException e) {
 			// If branch does not exist -> return
-		    if (e.getMessage().equals("404 Not Found")) {
-		    	return;
-		    }
-		    logger.error(e.getMessage(), e);
+			if (e.getMessage().equals("404 Not Found")) {
+				return;
+			}
+			logger.error(e.getMessage(), e);
 			throw new Exception("Could not get Branch from Github!");
 		}
 	}

@@ -27,9 +27,9 @@ public class RefactoredIssuesController {
 
 	@Autowired
 	RefactoredIssueRepository repo;
-	
+
 	// Logger
-    private static final Logger logger = LoggerFactory.getLogger(RefactoredIssuesController.class);
+	private static final Logger logger = LoggerFactory.getLogger(RefactoredIssuesController.class);
 
 	/**
 	 * This methor returns all refactored issues of a specific user from a specific
@@ -40,8 +40,7 @@ public class RefactoredIssuesController {
 
 	@GetMapping(produces = "application/json")
 	@ApiOperation(value = "Get all refactored issues. Can filter for filehoster and repository owner")
-	public ResponseEntity<?> getAllIssues(
-			@RequestParam(value = "repoService", required = false) String repoService,
+	public ResponseEntity<?> getAllIssues(@RequestParam(value = "repoService", required = false) String repoService,
 			@RequestParam(value = "ownerName", required = false) String repoOwner) {
 		Iterable<RefactoredIssue> allIssues;
 		try {

@@ -46,7 +46,7 @@ public class GithubObjectTranslator {
 
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GithubObjectTranslator.class);
-	
+
 	/**
 	 * This method creates a GitConfiguration from GitHub data.
 	 * 
@@ -63,10 +63,14 @@ public class GithubObjectTranslator {
 
 		modelMapper.map(configuration, config);
 		// Fill object
-		config.setRepoApiLink("https://api.github.com/repos/" + configuration.getRepoOwner() + "/" + configuration.getRepoName());
-		config.setRepoGitLink("https://github.com/" + configuration.getRepoOwner() + "/" + configuration.getRepoName() + ".git");
-		config.setForkApiLink("https://api.github.com/repos/" + configuration.getBotName() + "/" + configuration.getRepoName());
-		config.setForkGitLink("https://github.com/" + configuration.getBotName() + "/" + configuration.getRepoName() + ".git");
+		config.setRepoApiLink(
+				"https://api.github.com/repos/" + configuration.getRepoOwner() + "/" + configuration.getRepoName());
+		config.setRepoGitLink(
+				"https://github.com/" + configuration.getRepoOwner() + "/" + configuration.getRepoName() + ".git");
+		config.setForkApiLink(
+				"https://api.github.com/repos/" + configuration.getBotName() + "/" + configuration.getRepoName());
+		config.setForkGitLink(
+				"https://github.com/" + configuration.getBotName() + "/" + configuration.getRepoName() + ".git");
 
 		if (configuration.getAnalysisService() != null) {
 			config.setAnalysisService(configuration.getAnalysisService().toLowerCase());
@@ -283,10 +287,10 @@ public class GithubObjectTranslator {
 
 		// Fill with data
 		comment.setIn_reply_to(replyTo.getCommentID());
-		
+
 		// Set error message
 		comment.setBody(errorMessage);
-		
+
 		return comment;
 	}
 

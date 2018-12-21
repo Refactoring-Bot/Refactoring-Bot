@@ -22,7 +22,7 @@ import de.refactoringBot.model.sonarQube.SonarIssue;
  */
 @Component
 public class SonarQubeObjectTranslator {
-	
+
 	@Autowired
 	RefactoringOperations operations;
 
@@ -45,14 +45,15 @@ public class SonarQubeObjectTranslator {
 			String project = issue.getProject();
 			String component = issue.getComponent();
 			String sonarIssuePath = Paths.get(component.substring(project.length() + 1, component.length())).toString();
-			
+
 			// Create full path for sonar issue
-			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3) + sonarIssuePath;
+			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3)
+					+ sonarIssuePath;
 			// Cut path outside the repository
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 			// Remove leading '/'
 			translatedPath = translatedPath.substring(1);
-			
+
 			botIssue.setFilePath(translatedPath);
 
 			// Fill object

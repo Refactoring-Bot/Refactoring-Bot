@@ -26,10 +26,10 @@ import de.refactoringBot.refactoring.RefactoringOperations;
  */
 @Component
 public class GrammarController {
-	
+
 	@Autowired
 	RefactoringOperations operations;
-	
+
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GrammarController.class);
 
@@ -71,7 +71,7 @@ public class GrammarController {
 	 * 
 	 * @param comment
 	 * @return issue
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public BotIssue createIssueFromComment(BotPullRequestComment comment) throws Exception {
 		try {
@@ -118,7 +118,7 @@ public class GrammarController {
 				// Add line/position
 				issue.setLine(Integer.valueOf(commentArr[4]));
 			}
-			
+
 			// Remove operations
 			if (commentArr[1].equals("REMOVE")) {
 				// Remove method parameter

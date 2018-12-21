@@ -47,7 +47,7 @@ public class RenameMethod implements RefactoringImpl {
 	 * @param issue
 	 * @param gitConfig
 	 * @return commitMessage
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
@@ -175,7 +175,7 @@ public class RenameMethod implements RefactoringImpl {
 	 * @throws FileNotFoundException
 	 */
 	public List<String> findJavaRoots(List<String> allJavaFiles, String repoFolder) throws FileNotFoundException {
-		
+
 		// Init roots list
 		List<String> javaRoots = new ArrayList<String>();
 
@@ -296,7 +296,7 @@ public class RenameMethod implements RefactoringImpl {
 	 * @param allJavaFiles
 	 * @param currentJavaFile
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private ParserRefactoringCollection getSuperTree(ParserRefactoringCollection allRefactorings,
 			List<String> allJavaFiles, String currentJavaFile) throws Exception {
@@ -325,7 +325,8 @@ public class RenameMethod implements RefactoringImpl {
 					try {
 						allRefactorings.addToDoClass(impl.get(i).resolve().getQualifiedName());
 					} catch (Exception e) {
-						throw new BotRefactoringException("Method to rename might override a method from a external project");
+						throw new BotRefactoringException(
+								"Method to rename might override a method from a external project");
 					}
 				}
 				// Add all extends signatures to list
@@ -333,7 +334,8 @@ public class RenameMethod implements RefactoringImpl {
 					try {
 						allRefactorings.addToDoClass(ext.get(i).resolve().getQualifiedName());
 					} catch (Exception e) {
-						throw new BotRefactoringException("Method to rename might override a method from a external project");
+						throw new BotRefactoringException(
+								"Method to rename might override a method from a external project");
 					}
 				}
 			}
@@ -368,7 +370,7 @@ public class RenameMethod implements RefactoringImpl {
 	 * @param allJavaFiles
 	 * @param currentJavaFile
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private ParserRefactoringCollection addSubTree(ParserRefactoringCollection allRefactorings,
 			List<String> allJavaFiles, String currentJavaFile) throws Exception {
@@ -393,7 +395,8 @@ public class RenameMethod implements RefactoringImpl {
 							allRefactorings.addToDoClass(currentClass.resolve().getQualifiedName());
 						}
 					} catch (Exception e) {
-						throw new BotRefactoringException("Method to rename might override a method from a external project");
+						throw new BotRefactoringException(
+								"Method to rename might override a method from a external project");
 					}
 				}
 				// If class extends of one of the done classes
@@ -403,7 +406,8 @@ public class RenameMethod implements RefactoringImpl {
 							allRefactorings.addToDoClass(currentClass.resolve().getQualifiedName());
 						}
 					} catch (Exception e) {
-						throw new BotRefactoringException("Method to rename might override a method from a external project");
+						throw new BotRefactoringException(
+								"Method to rename might override a method from a external project");
 					}
 				}
 			}
@@ -428,7 +432,7 @@ public class RenameMethod implements RefactoringImpl {
 	 * @param javaFile
 	 * @param allJavaFiles
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private ParserRefactoringCollection createRefactoringObjects(ParserRefactoringCollection allRefactorings,
 			String methodSignature, String classSignature, String javaFile, List<String> allJavaFiles)
@@ -481,7 +485,7 @@ public class RenameMethod implements RefactoringImpl {
 	 * 
 	 * @param javafile
 	 * @param methodSignature
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private ParserRefactoringCollection createRefactoringsForMethodCalls(ParserRefactoringCollection refactorings,
 			String javafile, String methodSignature) throws Exception {
