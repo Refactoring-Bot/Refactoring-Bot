@@ -13,16 +13,16 @@ public class GitConfiguration {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long configurationId;
-	
+
 	private String repoName;
 	private String repoOwner;
 	private String repoApiLink;
 	private String repoGitLink;
 	private String repoService;
-	
+
 	private String repoFolder;
 	private String srcFolder;
-	
+
 	private String botName;
 	private String botPassword;
 	private String botEmail;
@@ -32,23 +32,23 @@ public class GitConfiguration {
 	private String analysisService;
 	private String analysisServiceProjectKey;
 	private Integer maxAmountRequests;
-	
+
 	public Long getConfigurationId() {
 		return configurationId;
 	}
-	
+
 	public String getRepoName() {
 		return repoName;
 	}
-	
+
 	public void setRepoName(String repoName) {
 		this.repoName = repoName;
 	}
-	
+
 	public String getRepoApiLink() {
 		return repoApiLink;
 	}
-	
+
 	public void setRepoApiLink(String repoApiLink) {
 		this.repoApiLink = repoApiLink;
 	}
@@ -164,5 +164,5 @@ public class GitConfiguration {
 	public void setSrcFolder(String srcFolder) {
 		this.srcFolder = srcFolder;
 	}
-	
+
 }

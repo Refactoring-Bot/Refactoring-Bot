@@ -5,7 +5,7 @@ public class GitConfigurationDTO {
 	private String repoName;
 	private String repoOwner;
 	private String repoService;
-	
+
 	private String botName;
 	private String botPassword;
 	private String botEmail;
@@ -13,11 +13,11 @@ public class GitConfigurationDTO {
 	private String analysisService;
 	private String analysisServiceProjectKey;
 	private Integer maxAmountRequests;
-	
+
 	public String getRepoName() {
 		return repoName;
 	}
-	
+
 	public void setRepoName(String repoName) {
 		this.repoName = repoName;
 	}
@@ -93,5 +93,5 @@ public class GitConfigurationDTO {
 	public void setBotEmail(String botEmail) {
 		this.botEmail = botEmail;
 	}
-	
+
 }

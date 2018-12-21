@@ -41,7 +41,7 @@ public class SonarQubeObjectTranslator {
 			// Create bot issue
 			BotIssue botIssue = new BotIssue();
 
-                        // Create filepath
+			// Create filepath
 			String project = issue.getProject();
 			String component = issue.getComponent();
 			String sonarIssuePath = Paths.get(component.substring(project.length() + 1, component.length())).toString();
@@ -61,8 +61,8 @@ public class SonarQubeObjectTranslator {
 			botIssue.setLine(issue.getLine());
 			botIssue.setCommentServiceID(issue.getKey());
 
-                        // Set creation date to determine the age of the issue
-                        botIssue.setCreationDate(issue.getCreationDate());
+			// Set creation date to determine the age of the issue
+			botIssue.setCreationDate(issue.getCreationDate());
 
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
@@ -76,10 +76,10 @@ public class SonarQubeObjectTranslator {
 				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
-                        case "squid:CommentedOutCodeLine":
-                                botIssue.setRefactoringOperation(operations.REMOVE_COMMENTED_OUT_CODE);
-                                botIssues.add(botIssue);
-                                break;
+			case "squid:CommentedOutCodeLine":
+				botIssue.setRefactoringOperation(operations.REMOVE_COMMENTED_OUT_CODE);
+				botIssues.add(botIssue);
+				break;
 			default:
 				botIssue.setRefactoringOperation(operations.UNKNOWN);
 				break;
