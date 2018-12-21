@@ -5,7 +5,7 @@ import java.util.List;
 
 public class ParserRefactoringCollection {
 
-	private List<ParserRefactoring> refactorings = new ArrayList<ParserRefactoring>();
+	private List<ParserRefactoring> refactorings = new ArrayList<>();
 	private List<String> doneClasses = new ArrayList<String>();
 	private List<String> toDoClasses = new ArrayList<String>();
 

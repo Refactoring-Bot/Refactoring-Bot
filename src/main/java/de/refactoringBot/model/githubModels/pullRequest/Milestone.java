@@ -3,6 +3,7 @@ package de.refactoringBot.model.githubModels.pullRequest;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -64,7 +65,7 @@ public class Milestone {
     @JsonProperty("due_on")
     private String dueOn;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("url")
     public String getUrl() {

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BotPullRequestComments {
-	List<BotPullRequestComment> comments = new ArrayList<BotPullRequestComment>();
+	List<BotPullRequestComment> comments = new ArrayList<>();
 
 	public List<BotPullRequestComment> getComments() {
 		return comments;

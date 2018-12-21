@@ -5,7 +5,7 @@ import java.util.List;
 
 public class GithubPullRequests {
 
-	List<GithubPullRequest> allPullRequests = new ArrayList<GithubPullRequest>();
+	List<GithubPullRequest> allPullRequests = new ArrayList<>();
 
 	public List<GithubPullRequest> getAllPullRequests() {
 		return allPullRequests;

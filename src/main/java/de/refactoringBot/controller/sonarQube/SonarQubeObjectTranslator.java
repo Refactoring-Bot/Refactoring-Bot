@@ -34,7 +34,7 @@ public class SonarQubeObjectTranslator {
 	 */
 	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) {
 		// Create empty list of bot issues
-		List<BotIssue> botIssues = new ArrayList<BotIssue>();
+		List<BotIssue> botIssues = new ArrayList<>();
 
 		// Iterate all SonarCube issues
 		for (SonarIssue issue : issues.getIssues()) {

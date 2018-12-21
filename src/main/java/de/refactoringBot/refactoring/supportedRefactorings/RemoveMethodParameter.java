@@ -57,7 +57,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		ParserRefactoringCollection allRefactorings = new ParserRefactoringCollection();
 
 		// Init all java files path-list
-		List<String> allJavaFiles = new ArrayList<String>();
+		List<String> allJavaFiles = new ArrayList<>();
 
 		// Init needed variables
 		String issueFilePath = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
@@ -416,7 +416,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 		// Create refactoring
 		ParserRefactoring refactoring = new ParserRefactoring();
-		List<MethodCallExpr> validCalls = new ArrayList<MethodCallExpr>();
+		List<MethodCallExpr> validCalls = new ArrayList<>();
 
 		// Rename all suitable method calls
 		for (MethodCallExpr methodCall : methodCalls) {

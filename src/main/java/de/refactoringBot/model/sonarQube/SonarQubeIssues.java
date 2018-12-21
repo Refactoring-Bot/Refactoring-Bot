@@ -4,6 +4,7 @@ package de.refactoringBot.model.sonarQube;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -34,7 +35,7 @@ public class SonarQubeIssues {
 	@JsonProperty("facets")
 	private List<Object> facets = null;
 	@JsonIgnore
-	private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+	private Map<String, Object> additionalProperties = new HashMap<>();
 
 	@JsonProperty("total")
 	public Integer getTotal() {

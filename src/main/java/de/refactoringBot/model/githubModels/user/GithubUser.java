@@ -3,6 +3,7 @@ package de.refactoringBot.model.githubModels.user;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -130,7 +131,7 @@ public class GithubUser {
     @JsonProperty("plan")
     private Plan plan;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("login")
     public String getLogin() {
