@@ -5,7 +5,7 @@ import java.util.List;
 
 public class GitHubPullRequestComments {
 
-	List<PullRequestComment> comments = new ArrayList<PullRequestComment>();
+	List<PullRequestComment> comments = new ArrayList<>();
 
 	public List<PullRequestComment> getComments() {
 		return comments;

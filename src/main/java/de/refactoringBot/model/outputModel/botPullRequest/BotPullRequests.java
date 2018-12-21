@@ -5,7 +5,7 @@ import java.util.List;
 
 public class BotPullRequests {
 
-	List<BotPullRequest> allPullRequests = new ArrayList<BotPullRequest>();
+	List<BotPullRequest> allPullRequests = new ArrayList<>();
 
 	public List<BotPullRequest> getAllPullRequests() {
 		return allPullRequests;

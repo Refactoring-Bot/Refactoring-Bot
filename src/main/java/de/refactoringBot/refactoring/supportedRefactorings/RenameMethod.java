@@ -56,7 +56,7 @@ public class RenameMethod implements RefactoringImpl {
 		ParserRefactoringCollection allRefactorings = new ParserRefactoringCollection();
 
 		// Init all java files path-list
-		List<String> allJavaFiles = new ArrayList<String>();
+		List<String> allJavaFiles = new ArrayList<>();
 
 		// Init needed variables
 		String issueFilePath = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
@@ -177,7 +177,7 @@ public class RenameMethod implements RefactoringImpl {
 	public List<String> findJavaRoots(List<String> allJavaFiles, String repoFolder) throws FileNotFoundException {
 
 		// Init roots list
-		List<String> javaRoots = new ArrayList<String>();
+		List<String> javaRoots = new ArrayList<>();
 
 		for (String javaFile : allJavaFiles) {
 			// parse a file
@@ -497,7 +497,7 @@ public class RenameMethod implements RefactoringImpl {
 
 		// Create refactoring
 		ParserRefactoring refactoring = new ParserRefactoring();
-		List<MethodCallExpr> validCalls = new ArrayList<MethodCallExpr>();
+		List<MethodCallExpr> validCalls = new ArrayList<>();
 
 		// Rename all suitable method calls
 		for (MethodCallExpr methodCall : methodCalls) {

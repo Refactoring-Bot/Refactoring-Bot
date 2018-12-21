@@ -19,7 +19,7 @@ public class BotPullRequest {
 	private String branchCreator;
 	private String mergeBranchName;
 	private String repoName;
-	private List<BotPullRequestComment> allComments = new ArrayList<BotPullRequestComment>(); 
+	private List<BotPullRequestComment> allComments = new ArrayList<>(); 
 	
 	public String getRequestName() {
 		return requestName;
