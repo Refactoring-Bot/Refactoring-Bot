@@ -13,6 +13,7 @@ public class ParserRefactoringNew {
 	private List<MethodDeclaration> methods = new ArrayList<>();
 	private List<MethodCallExpr> methodCalls = new ArrayList<>();
 	private List<String> methodSignatures = new ArrayList<>();
+	private String warning = "";
 	
 	public List<String> getClasses() {
 		return classes;
@@ -72,6 +73,14 @@ public class ParserRefactoringNew {
 	
 	public void addMethodSignature(String methodSignature) {
 		this.methodSignatures.add(methodSignature);
+	}
+
+	public String getWarning() {
+		return warning;
+	}
+
+	public void setWarning(String warning) {
+		this.warning = warning;
 	}
 	
 }

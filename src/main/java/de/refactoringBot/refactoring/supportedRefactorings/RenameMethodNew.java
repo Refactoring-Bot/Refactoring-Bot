@@ -155,9 +155,10 @@ public class RenameMethodNew implements RefactoringImpl {
 		// Rename method declarations and their calls
 		renameFindings(refactoring, issue.getRefactorString());
 
-		return "Renamed method '" + oldMethodName + "' to '" + issue.getRefactorString() + "'";
+		return "Renamed method '" + oldMethodName + "' to '" + issue.getRefactorString() + "'."
+				+ refactoring.getWarning();
 	}
-	
+
 	/**
 	 * This method scanns all java files for classes that could be subclasses in our
 	 * AST-Tree.
@@ -166,9 +167,10 @@ public class RenameMethodNew implements RefactoringImpl {
 	 * @param allJavaFiles
 	 * @return refactoring
 	 * @throws FileNotFoundException
+	 * @throws BotRefactoringException
 	 */
 	private ParserRefactoringNew addSubClasses(ParserRefactoringNew refactoring, List<String> allJavaFiles)
-			throws FileNotFoundException {
+			throws FileNotFoundException, BotRefactoringException {
 
 		// Search all Java-Files
 		for (String javaFile : allJavaFiles) {
@@ -185,7 +187,14 @@ public class RenameMethodNew implements RefactoringImpl {
 				boolean isSubClass = false;
 
 				// Get all Super-Classes
-				List<ResolvedReferenceType> ancestors = currentClass.resolve().getAllAncestors();
+				List<ResolvedReferenceType> ancestors = null;
+				try {
+					ancestors = currentClass.resolve().getAllAncestors();
+				} catch (Exception e) {
+					refactoring.setWarning(
+							" WARNING: Project hast external dependencies! Check manually if renamed methods DO NOT override external method before merging!");
+					continue;
+				}
 
 				for (ResolvedReferenceType ancestor : ancestors) {
 					// Collect all Signatures of Super-Classes
@@ -212,7 +221,7 @@ public class RenameMethodNew implements RefactoringImpl {
 				}
 			}
 		}
-		
+
 		return refactoring;
 	}
 
@@ -278,7 +287,14 @@ public class RenameMethodNew implements RefactoringImpl {
 			List<MethodCallExpr> methodCalls = compilationUnit.findAll(MethodCallExpr.class);
 
 			for (MethodCallExpr methodCall : methodCalls) {
-				ResolvedMethodDeclaration calledMethod = methodCall.resolve();
+
+				ResolvedMethodDeclaration calledMethod = null;
+				try {
+					calledMethod = methodCall.resolve();
+				} catch (Exception e) {
+					continue;
+				}
+
 				if (refactoring.getMethodSignatures().contains(calledMethod.getQualifiedSignature())) {
 					refactoring.addMethodCall(methodCall);
 
