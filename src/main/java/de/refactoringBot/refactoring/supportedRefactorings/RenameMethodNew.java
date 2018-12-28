@@ -170,7 +170,7 @@ public class RenameMethodNew implements RefactoringImpl {
 	 * @throws BotRefactoringException
 	 */
 	private ParserRefactoringNew addSubClasses(ParserRefactoringNew refactoring, List<String> allJavaFiles)
-			throws FileNotFoundException, BotRefactoringException {
+			throws FileNotFoundException {
 
 		// Search all Java-Files
 		for (String javaFile : allJavaFiles) {
