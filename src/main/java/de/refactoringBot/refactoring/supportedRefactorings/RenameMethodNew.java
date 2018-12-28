@@ -19,6 +19,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
+import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
@@ -114,7 +115,9 @@ public class RenameMethodNew implements RefactoringImpl {
 					refactoring.addClass(currentClass.resolve().getQualifiedName());
 
 					// Get all super classes
-					List<ResolvedReferenceType> ancestors = currentClass.resolve().getAllAncestors();
+					// List<ResolvedReferenceType> ancestors =
+					// currentClass.resolve().getAllAncestors();
+					List<ResolvedReferenceType> ancestors = getAllAncestors(currentClass.resolve());
 
 					// Add all super classes to All-To-Refactor classes
 					for (ResolvedReferenceType ancestor : ancestors) {
@@ -189,8 +192,10 @@ public class RenameMethodNew implements RefactoringImpl {
 				// Get all Super-Classes
 				List<ResolvedReferenceType> ancestors = null;
 				try {
-					ancestors = currentClass.resolve().getAllAncestors();
+					// ancestors = currentClass.resolve().getAllAncestors();
+					ancestors = getAllAncestors(currentClass.resolve());
 				} catch (Exception e) {
+					System.out.println("Warning: " + currentClass.resolve().getQualifiedName());
 					refactoring.setWarning(
 							" WARNING: Project hast external dependencies! Check manually if renamed methods DO NOT override external method before merging!");
 					continue;
@@ -472,5 +477,29 @@ public class RenameMethodNew implements RefactoringImpl {
 	 */
 	private void performRenameMethodCall(MethodCallExpr methodCall, String newName) {
 		methodCall.setName(newName);
+	}
+
+	/**
+	 * This method gets all direct and indirect Ancestors of a given class if
+	 * possible. (If ancestor is not a external dependency for example)
+	 * 
+	 * @param currentClass
+	 * @return ancestors
+	 */
+	private List<ResolvedReferenceType> getAllAncestors(ResolvedReferenceTypeDeclaration currentClass) {
+		List<ResolvedReferenceType> ancestors = new ArrayList<>();
+
+		if (!(Object.class.getCanonicalName().equals(currentClass.getQualifiedName()))) {
+			for (ResolvedReferenceType ancestor : currentClass.getAncestors(true)) {
+				ancestors.add(ancestor);
+				for (ResolvedReferenceType inheritedAncestor : getAllAncestors(ancestor.getTypeDeclaration())) {
+					if (!ancestors.contains(inheritedAncestor)) {
+						ancestors.add(inheritedAncestor);
+					}
+				}
+			}
+		}
+		return ancestors;
+
 	}
 }
