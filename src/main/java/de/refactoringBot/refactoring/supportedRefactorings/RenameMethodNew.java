@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -115,9 +116,17 @@ public class RenameMethodNew implements RefactoringImpl {
 					refactoring.addClass(currentClass.resolve().getQualifiedName());
 
 					// Get all super classes
-					// List<ResolvedReferenceType> ancestors =
-					// currentClass.resolve().getAllAncestors();
-					List<ResolvedReferenceType> ancestors = getAllAncestors(currentClass.resolve());
+					List<ResolvedReferenceType> ancestors = null;
+					try {
+						ancestors = currentClass.resolve().getAllAncestors();
+					} catch (InvalidPathException i) {
+						ancestors = getAllAncestors(currentClass.resolve());
+						refactoring.setWarning(
+								" Refactored classes might extend/implement external project! Check if overriden method was NOT renamed!");
+					} catch (Exception e) {
+						throw new BotRefactoringException(
+								"Javaparser can NOT parse interface with generic interface ancestors at the moment!");
+					}
 
 					// Add all super classes to All-To-Refactor classes
 					for (ResolvedReferenceType ancestor : ancestors) {
@@ -188,16 +197,16 @@ public class RenameMethodNew implements RefactoringImpl {
 			for (ClassOrInterfaceDeclaration currentClass : classes) {
 				List<String> classAncestors = new ArrayList<String>();
 				boolean isSubClass = false;
+				boolean hasExternalDep = false;
 
 				// Get all Super-Classes
 				List<ResolvedReferenceType> ancestors = null;
 				try {
-					// ancestors = currentClass.resolve().getAllAncestors();
+					ancestors = currentClass.resolve().getAllAncestors();
+				} catch (InvalidPathException i) {
 					ancestors = getAllAncestors(currentClass.resolve());
+					hasExternalDep = true;
 				} catch (Exception e) {
-					System.out.println("Warning: " + currentClass.resolve().getQualifiedName());
-					refactoring.setWarning(
-							" WARNING: Project hast external dependencies! Check manually if renamed methods DO NOT override external method before merging!");
 					continue;
 				}
 
@@ -222,6 +231,11 @@ public class RenameMethodNew implements RefactoringImpl {
 						if (!refactoring.getClasses().contains(classAncestor)) {
 							refactoring.getClasses().add(classAncestor);
 						}
+					}
+					// Add warning
+					if (hasExternalDep) {
+						refactoring.setWarning(
+								" Refactored classes might extend/implement external project! Check if overriden method was NOT renamed!");
 					}
 				}
 			}
@@ -421,12 +435,21 @@ public class RenameMethodNew implements RefactoringImpl {
 	 * @param methodDeclaration
 	 * @param position
 	 * @return
+	 * @throws BotRefactoringException
 	 */
-	private String getFullMethodSignature(MethodDeclaration methodDeclaration, Integer position) {
+	private String getFullMethodSignature(MethodDeclaration methodDeclaration, Integer position)
+			throws BotRefactoringException {
 		// If method is at the refactored position
-		if (position == methodDeclaration.getName().getBegin().get().line) {
-			ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
-			return resolvedMethod.getQualifiedSignature();
+		if (methodDeclaration.getName().getBegin().isPresent()) {
+			if (position == methodDeclaration.getName().getBegin().get().line) {
+				try {
+					ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
+					return resolvedMethod.getQualifiedSignature();
+				} catch (Exception e) {
+					throw new BotRefactoringException("Method '" + methodDeclaration.getSignature().asString()
+							+ "' can't be resolved. It might have parameters from external projects/libraries!");
+				}
+			}
 		}
 		return null;
 	}
@@ -452,8 +475,10 @@ public class RenameMethodNew implements RefactoringImpl {
 	 */
 	private String getMethodDeclarationAsString(MethodDeclaration methodDeclaration, Integer position) {
 		// If method is at the refactored position
-		if (position == methodDeclaration.getName().getBegin().get().line) {
-			return methodDeclaration.getSignature().asString();
+		if (methodDeclaration.getName().getBegin().isPresent()) {
+			if (position == methodDeclaration.getName().getBegin().get().line) {
+				return methodDeclaration.getSignature().asString();
+			}
 		}
 		return null;
 	}
@@ -487,11 +512,16 @@ public class RenameMethodNew implements RefactoringImpl {
 	 * @return ancestors
 	 */
 	private List<ResolvedReferenceType> getAllAncestors(ResolvedReferenceTypeDeclaration currentClass) {
+		// Init ancestor list
 		List<ResolvedReferenceType> ancestors = new ArrayList<>();
 
+		// Check class
 		if (!(Object.class.getCanonicalName().equals(currentClass.getQualifiedName()))) {
+			// Get all direct ancestors that can be resolved
 			for (ResolvedReferenceType ancestor : currentClass.getAncestors(true)) {
+				// Add them to list
 				ancestors.add(ancestor);
+				// Get indirect ancestors recursively
 				for (ResolvedReferenceType inheritedAncestor : getAllAncestors(ancestor.getTypeDeclaration())) {
 					if (!ancestors.contains(inheritedAncestor)) {
 						ancestors.add(inheritedAncestor);
@@ -499,7 +529,7 @@ public class RenameMethodNew implements RefactoringImpl {
 				}
 			}
 		}
-		return ancestors;
 
+		return ancestors;
 	}
 }

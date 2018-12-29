@@ -3,7 +3,6 @@ package de.refactoringBot.refactoring.supportedRefactorings;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.EnumSet;
 
 import org.springframework.stereotype.Component;
 
@@ -11,6 +10,7 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 
@@ -64,7 +64,7 @@ public class ReorderModifier extends ModifierVisitor<Void> implements Refactorin
 	 * This method reorders the modifiers.
 	 */
 	public Node visit(FieldDeclaration declarator, Void args) {
-		EnumSet<Modifier> modifiers = declarator.getModifiers();
+		NodeList<Modifier> modifiers = declarator.getModifiers();
 		declarator.setModifiers(modifiers);
 		return declarator;
 	}
