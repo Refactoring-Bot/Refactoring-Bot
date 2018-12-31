@@ -1,52 +1,86 @@
 package de.refactoringBot.model.javaparser;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.MethodCallExpr;
 
 public class ParserRefactoring {
 
-	private CompilationUnit unit;
-	private List<MethodCallExpr> methodCalls;
-	private MethodDeclaration method;
-	private String javaFile;
-
-	public CompilationUnit getUnit() {
-		return unit;
+	private List<String> classes = new ArrayList<>();
+	private List<String> javaFiles = new ArrayList<>();
+	private List<MethodDeclaration> methods = new ArrayList<>();
+	private List<MethodCallExpr> methodCalls = new ArrayList<>();
+	private List<String> methodSignatures = new ArrayList<>();
+	private String warning = "";
+	
+	public List<String> getClasses() {
+		return classes;
 	}
-
-	public void setUnit(CompilationUnit unit) {
-		this.unit = unit;
+	
+	public void setClasses(List<String> classes) {
+		this.classes = classes;
 	}
-
-	public List<MethodCallExpr> getMethodCall() {
+	
+	public void addClass(String newClass) {
+		this.classes.add(newClass);
+	}
+	
+	public List<String> getJavaFiles() {
+		return javaFiles;
+	}
+	
+	public void setJavaFiles(List<String> javaFiles) {
+		this.javaFiles = javaFiles;
+	}
+	
+	public void addJavaFile(String javaFile) {
+		this.javaFiles.add(javaFile);
+	}
+	
+	public List<MethodDeclaration> getMethods() {
+		return methods;
+	}
+	
+	public void setMethods(List<MethodDeclaration> methods) {
+		this.methods = methods;
+	}
+	
+	public void addMethod(MethodDeclaration method) {
+		this.methods.add(method);
+	}
+	
+	public List<MethodCallExpr> getMethodCalls() {
 		return methodCalls;
 	}
-
-	public void setMethodCall(List<MethodCallExpr> methodCalls) {
+	
+	public void setMethodCalls(List<MethodCallExpr> methodCalls) {
 		this.methodCalls = methodCalls;
 	}
-
+	
 	public void addMethodCall(MethodCallExpr methodCall) {
 		this.methodCalls.add(methodCall);
 	}
 
-	public MethodDeclaration getMethod() {
-		return method;
+	public List<String> getMethodSignatures() {
+		return methodSignatures;
 	}
 
-	public void setMethod(MethodDeclaration method) {
-		this.method = method;
+	public void setMethodSignatures(List<String> methodSignatures) {
+		this.methodSignatures = methodSignatures;
+	}
+	
+	public void addMethodSignature(String methodSignature) {
+		this.methodSignatures.add(methodSignature);
 	}
 
-	public String getJavaFile() {
-		return javaFile;
+	public String getWarning() {
+		return warning;
 	}
 
-	public void setJavaFile(String javaFile) {
-		this.javaFile = javaFile;
+	public void setWarning(String warning) {
+		this.warning = warning;
 	}
-
+	
 }

@@ -33,7 +33,7 @@ public class RefactoringOperations {
 		HashMap<String, Class<?>> ruleToClassMapping = new HashMap<>();
 		ruleToClassMapping.put(ADD_OVERRIDE_ANNOTATION, AddOverrideAnnotation.class);
 		ruleToClassMapping.put(REORDER_MODIFIER, ReorderModifier.class);
-		ruleToClassMapping.put(RENAME_METHOD, RenameMethodNew.class);
+		ruleToClassMapping.put(RENAME_METHOD, RenameMethod.class);
 		ruleToClassMapping.put(REMOVE_COMMENTED_OUT_CODE, RemoveCommentedOutCode.class);
 		ruleToClassMapping.put(REMOVE_PARAMETER, RemoveMethodParameter.class);
 
