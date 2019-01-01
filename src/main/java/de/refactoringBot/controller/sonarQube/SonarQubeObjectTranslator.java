@@ -80,6 +80,11 @@ public class SonarQubeObjectTranslator {
 				botIssue.setRefactoringOperation(operations.REMOVE_COMMENTED_OUT_CODE);
 				botIssues.add(botIssue);
 				break;
+			case "squid:S1172":
+				botIssue.setRefactoringOperation(operations.REMOVE_PARAMETER);
+				botIssue.setRefactorString(getParameterName(issue));
+				botIssues.add(botIssue);
+				break;
 			default:
 				botIssue.setRefactoringOperation(operations.UNKNOWN);
 				break;
@@ -87,5 +92,25 @@ public class SonarQubeObjectTranslator {
 		}
 
 		return botIssues;
+	}
+
+	/**
+	 * This method scans the message of a "RemoveParameter" issue of
+	 * SonarCloud/SonarQube and returns the parameter name of the unused parameter.
+	 * 
+	 * @param issue
+	 * @return parameterName
+	 */
+	public String getParameterName(SonarIssue issue) {
+		String message = issue.getMessage();
+		String[] splitMessage = message.split(" ");
+		String paramPartOfMessage = "";
+		for (int i = 0; i < splitMessage.length; i++) {
+			if (splitMessage[i].equals("parameter") && i < splitMessage.length - 1) {
+				paramPartOfMessage = splitMessage[i + 1];
+			}
+		}
+		String parameterName = paramPartOfMessage.substring(1, paramPartOfMessage.length() - 2);
+		return parameterName;
 	}
 }
