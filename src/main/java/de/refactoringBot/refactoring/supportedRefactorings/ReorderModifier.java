@@ -1,8 +1,13 @@
 package de.refactoringBot.refactoring.supportedRefactorings;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -45,22 +50,22 @@ public class ReorderModifier implements RefactoringImpl {
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
 		// Get filepath
-		String path = issue.getFilePath();
+		String filepath = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
 
 		// Read file
-		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
+		FileInputStream in = new FileInputStream(filepath);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
 
 		// Visit place in the code that needs refactoring
 		List<FieldDeclaration> declarators = compilationUnit.findAll(FieldDeclaration.class);
 
 		// Perform reordering
-		performReordering(declarators);
+		performReordering(declarators, filepath);
 
-		// Save changes to file
-		PrintWriter out = new PrintWriter(gitConfig.getRepoFolder() + "/" + path);
-		out.println(LexicalPreservingPrinter.print(compilationUnit));
-		out.close();
+		// // Save changes to file
+		// PrintWriter out = new PrintWriter(filepath);
+		// out.println(LexicalPreservingPrinter.print(compilationUnit));
+		// out.close();
 
 		// Return commit message
 		return "Reordered modifier";
@@ -71,10 +76,12 @@ public class ReorderModifier implements RefactoringImpl {
 	 * exception if there is nothing to reorder.
 	 * 
 	 * @param declarators
+	 * @param filepath
 	 * @throws BotRefactoringException
+	 * @throws IOException
 	 */
-	private List<FieldDeclaration> performReordering(List<FieldDeclaration> declarators)
-			throws BotRefactoringException {
+	private List<FieldDeclaration> performReordering(List<FieldDeclaration> declarators, String filepath)
+			throws Exception {
 
 		// Helper variable
 		boolean reorderingNeccessary = false;
@@ -83,36 +90,48 @@ public class ReorderModifier implements RefactoringImpl {
 		for (FieldDeclaration declarator : declarators) {
 			// Get modifiers
 			NodeList<Modifier> modifiers = declarator.getModifiers();
-			// Reorderd modifiers
+			// Create list for reverted order
+			NodeList<Modifier> revertedModifiers = new NodeList<Modifier>();
+			// Create list for correct ordered modifiers
 			NodeList<Modifier> reorderedModifiers = new NodeList<Modifier>();
-			// Init empty enumset
+			// Init empty enumset with string list for modifiers
 			EnumSet<Keyword> keywords = EnumSet.noneOf(Keyword.class);
+			List<String> modifierString = new ArrayList<String>();
 
-			// Fill enum set
+			// Fill enum set and fill reverted modifiers
 			for (Modifier modifier : modifiers) {
+				revertedModifiers.addFirst(modifier);
+				// Keywords are correctly ordered here
 				keywords.add(modifier.getKeyword());
 			}
 
-			// Reorder modifiers
+			// Iterate correctly ordered keywords
 			for (Keyword keyword : keywords) {
+				// For each modifier
 				for (Modifier modifier : modifiers) {
+					// If modifier = keyword
 					if (keyword.equals(modifier.getKeyword())) {
+						// Add to reordered list
 						reorderedModifiers.add(modifier);
+						// Add modifier string in reverted order
+						modifierString.add(0, keyword.asString());
 					}
 				}
 			}
 
-			// Trigger helper variable
+			// If order needs to be changed
 			if (!modifiers.equals(reorderedModifiers)) {
+				// Trigger helper variable
 				reorderingNeccessary = true;
-			}
-
-			// Delete all modifiers
-			declarator.setModifiers(new NodeList<Modifier>());
-
-			// Add them in correct order
-			for (Modifier modifier : reorderedModifiers) {
-				declarator.addModifier(modifier.getKeyword());
+				// Iterate reverted modifiers
+				for (int i = 0; i < revertedModifiers.size(); i++) {
+					// Refactor them with correct ordered modifier
+					if (revertedModifiers.get(i).getBegin().isPresent()
+							&& revertedModifiers.get(i).getEnd().isPresent()) {
+						reorderManually(revertedModifiers.get(i).getBegin().get().line, modifierString.get(i),
+								revertedModifiers.get(i).getKeyword().asString(), filepath);
+					}
+				}
 			}
 		}
 
@@ -120,7 +139,55 @@ public class ReorderModifier implements RefactoringImpl {
 		if (!reorderingNeccessary) {
 			throw new BotRefactoringException("All modifiers are in correct order! Nothing to refactor.");
 		}
-		
+
 		return declarators;
+	}
+
+	/**
+	 * This method reorders the modifiers manually since the
+	 * LexicalPreservingPrinter has issues with reordering them automatically with
+	 * the compulation unit in the newer version of the Javaparser (which is needed
+	 * for the newest features and bugfixes)
+	 * 
+	 * @param lineStart
+	 * @param newModifier
+	 * @param oldModifier
+	 * @param filePath
+	 * @throws IOException
+	 */
+	private void reorderManually(Integer lineStart, String newModifier, String oldModifier, String filePath)
+			throws IOException {
+
+		File inputFile = new File(filePath);
+		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+		StringBuilder sb = new StringBuilder();
+
+		// Default: UNIX style line endings
+		System.setProperty("line.separator", "\r\n");
+
+		String currentLine;
+		Integer lineNumber = 0;
+
+		// Iterate all line inside the javafile
+		while ((currentLine = reader.readLine()) != null) {
+			lineNumber++;
+
+			// Line of Declaration
+			if (lineNumber == lineStart) {
+				// Reorder
+				currentLine = currentLine.replaceFirst(oldModifier, newModifier);
+			}
+
+			if (lineNumber != 1) {
+				sb.append(System.getProperty("line.separator"));
+			}
+
+			sb.append(currentLine);
+		}
+
+		reader.close();
+		PrintWriter out = new PrintWriter(filePath);
+		out.println(sb.toString());
+		out.close();
 	}
 }
