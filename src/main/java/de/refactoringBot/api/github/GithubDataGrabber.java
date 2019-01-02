@@ -62,10 +62,12 @@ public class GithubDataGrabber {
 	 * @return {Repository-File}
 	 * @throws Exception
 	 */
-	public void checkRepository(String repoName, String repoOwner) throws Exception {
+	public void checkRepository(String repoName, String repoOwner, String botToken) throws Exception {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("api.github.com")
 				.path("/repos/" + repoOwner + "/" + repoName);
+		
+		apiUriBuilder.queryParam("access_token", botToken);
 
 		URI githubURI = apiUriBuilder.build().encode().toUri();
 
@@ -81,7 +83,7 @@ public class GithubDataGrabber {
 			rest.exchange(githubURI, HttpMethod.GET, entity, GithubRepository.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Repository does not exist on Github!");
+			throw new Exception("Repository does not exist on Github or invalid Bot-Token!");
 		}
 	}
 

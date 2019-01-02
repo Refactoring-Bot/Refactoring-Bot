@@ -175,7 +175,8 @@ public class ApiGrabber {
 		switch (configuration.getRepoService().toLowerCase()) {
 		case "github":
 			// Check repository
-			githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner());
+			githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
+					configuration.getBotToken());
 
 			// Check bot user and bot token
 			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
