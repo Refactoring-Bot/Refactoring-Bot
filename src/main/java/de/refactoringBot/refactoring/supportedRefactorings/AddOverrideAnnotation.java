@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
 import de.refactoringBot.model.botIssue.BotIssue;
@@ -77,17 +78,27 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 	 * @param declaration
 	 * @param line
 	 * @return methodName
+	 * @throws BotRefactoringException
 	 */
-	public String addAnnotation(MethodDeclaration declaration, Integer line) {
+	public String addAnnotation(MethodDeclaration declaration, Integer line) throws BotRefactoringException {
+		// Get all method Annotations
+		List<AnnotationExpr> annotations = declaration.getAnnotations();
+		for (AnnotationExpr annotation : annotations) {
+			// If Override-Annotation already exists
+			if (annotation.getNameAsString().equals("Override")) {
+				throw new BotRefactoringException("Method is already annotated with 'Override'!");
+			}
+		}
 		// If method declaration = method that needs refactoring
-		if (line == declaration.getName().getBegin().get().line) {
-			// Add annotation
-			declaration.addMarkerAnnotation("Override");
+		if (declaration.getName().getBegin().isPresent()) {
+			if (line == declaration.getName().getBegin().get().line) {
+				// Add annotation
+				declaration.addMarkerAnnotation("Override");
 
-			// return method name
-			return declaration.getNameAsString();
+				// return method name
+				return declaration.getNameAsString();
+			}
 		}
 		return null;
 	}
-
 }
