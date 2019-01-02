@@ -145,7 +145,16 @@ public class ConfigurationController {
 		}
 
 		// unwrap optional
-		GitConfiguration savedConfig = existsConfig.get();
+		GitConfiguration savedConfig = null;
+		try {
+			if (existsConfig.isPresent()) {
+				savedConfig = existsConfig.get();
+			}
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
 		// Init database config
 		modelMapper.map(newConfiguration, savedConfig);
 

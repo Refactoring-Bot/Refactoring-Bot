@@ -128,39 +128,37 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
 			throws FileNotFoundException, IOException {
 
 		File inputFile = new File(path);
-
-		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-
 		StringBuilder sb = new StringBuilder();
 
-		String currentLine;
-		// Default: UNIX style line endings
-		System.setProperty("line.separator", "\r\n");
-		int lineNumber = 0;
+		try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
 
-		while ((currentLine = reader.readLine()) != null) {
+			String currentLine;
+			// Default: UNIX style line endings
+			System.setProperty("line.separator", "\r\n");
+			int lineNumber = 0;
 
-			lineNumber++;
+			while ((currentLine = reader.readLine()) != null) {
 
-			if ((lineNumber >= start) && (lineNumber <= end)) {
-				// If the line also contains regular code before the comment, preserve it
-				if ((!currentLine.trim().startsWith("//")) && isLineComments) {
-					sb.append(currentLine.substring(0, currentLine.indexOf("//")))
-							.append(System.getProperty("line.separator"));
-					// writer.write(currentLine.substring(0, currentLine.indexOf("//")) +
-					// lineSeparator);
+				lineNumber++;
+
+				if ((lineNumber >= start) && (lineNumber <= end)) {
+					// If the line also contains regular code before the comment, preserve it
+					if ((!currentLine.trim().startsWith("//")) && isLineComments) {
+						sb.append(currentLine.substring(0, currentLine.indexOf("//")))
+								.append(System.getProperty("line.separator"));
+						// writer.write(currentLine.substring(0, currentLine.indexOf("//")) +
+						// lineSeparator);
+					}
+					continue;
 				}
-				continue;
-			}
-			if (lineNumber != 1) {
-				sb.append(System.getProperty("line.separator"));
-			}
+				if (lineNumber != 1) {
+					sb.append(System.getProperty("line.separator"));
+				}
 
-			sb.append(currentLine);
+				sb.append(currentLine);
 
+			}
 		}
-
-		reader.close();
 
 		PrintWriter out = new PrintWriter(path);
 		out.println(sb.toString());

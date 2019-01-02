@@ -62,11 +62,6 @@ public class ReorderModifier implements RefactoringImpl {
 		// Perform reordering
 		performReordering(declarators, filepath);
 
-		// // Save changes to file
-		// PrintWriter out = new PrintWriter(filepath);
-		// out.println(LexicalPreservingPrinter.print(compilationUnit));
-		// out.close();
-
 		// Return commit message
 		return "Reordered modifier";
 	}
@@ -158,34 +153,35 @@ public class ReorderModifier implements RefactoringImpl {
 	private void reorderManually(Integer lineStart, String newModifier, String oldModifier, String filePath)
 			throws IOException {
 
-		File inputFile = new File(filePath);
-		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 		StringBuilder sb = new StringBuilder();
+		File inputFile = new File(filePath);
+		
+		try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
+			// Default: UNIX style line endings
+			System.setProperty("line.separator", "\r\n");
 
-		// Default: UNIX style line endings
-		System.setProperty("line.separator", "\r\n");
+			String currentLine;
+			Integer lineNumber = 0;
 
-		String currentLine;
-		Integer lineNumber = 0;
+			// Iterate all line inside the javafile
+			while ((currentLine = reader.readLine()) != null) {
+				lineNumber++;
 
-		// Iterate all line inside the javafile
-		while ((currentLine = reader.readLine()) != null) {
-			lineNumber++;
+				// Line of Declaration
+				if (lineNumber == lineStart) {
+					// Reorder
+					currentLine = currentLine.replaceFirst(oldModifier, newModifier);
+				}
 
-			// Line of Declaration
-			if (lineNumber == lineStart) {
-				// Reorder
-				currentLine = currentLine.replaceFirst(oldModifier, newModifier);
+				if (lineNumber != 1) {
+					sb.append(System.getProperty("line.separator"));
+				}
+
+				sb.append(currentLine);
 			}
 
-			if (lineNumber != 1) {
-				sb.append(System.getProperty("line.separator"));
-			}
-
-			sb.append(currentLine);
 		}
-
-		reader.close();
+		
 		PrintWriter out = new PrintWriter(filePath);
 		out.println(sb.toString());
 		out.close();
