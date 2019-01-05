@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import de.refactoringBot.controller.main.FileController;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.sonarQube.SonarIssue;
@@ -25,6 +26,8 @@ public class SonarQubeObjectTranslator {
 
 	@Autowired
 	RefactoringOperations operations;
+	@Autowired
+	FileController fileController;
 
 	/**
 	 * This method translates all SonarCubeIssues to BotIssues.
@@ -32,7 +35,7 @@ public class SonarQubeObjectTranslator {
 	 * @param issue
 	 * @return botIssue
 	 */
-	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) {
+	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) throws Exception {
 		// Create empty list of bot issues
 		List<BotIssue> botIssues = new ArrayList<>();
 
@@ -45,6 +48,11 @@ public class SonarQubeObjectTranslator {
 			String project = issue.getProject();
 			String component = issue.getComponent();
 			String sonarIssuePath = Paths.get(component.substring(project.length() + 1, component.length())).toString();
+
+			// Set all Java-Files and Java-Roots
+			List<String> allJavaFiles = fileController.getAllJavaFiles(gitConfig.getRepoFolder());
+			botIssue.setAllJavaFiles(allJavaFiles);
+			botIssue.setJavaRoots(fileController.findJavaRoots(allJavaFiles, gitConfig.getRepoFolder()));
 
 			// Create full path for sonar issue
 			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3)

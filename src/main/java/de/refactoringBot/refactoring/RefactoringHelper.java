@@ -1,6 +1,5 @@
 package de.refactoringBot.refactoring;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.nio.file.InvalidPathException;
@@ -12,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -25,71 +23,18 @@ import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import de.refactoringBot.model.exceptions.BotRefactoringException;
 import de.refactoringBot.model.javaparser.ParserRefactoring;
 
+/**
+ * This class contains many methods that can be used by multiple
+ * Refactoring-Classes.
+ * 
+ * @author Stefan Basaric
+ *
+ */
 public class RefactoringHelper {
-	
+
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
 
-	/**
-	 * This method returns all root-folders of java files (like the src folder or
-	 * the src/main/java folder from maven projects)
-	 * 
-	 * @param allJavaFiles
-	 * @param repoFolder
-	 * @return javaRoots
-	 * @throws FileNotFoundException
-	 */
-	public List<String> findJavaRoots(List<String> allJavaFiles, String repoFolder) throws FileNotFoundException {
-
-		// Init roots list
-		List<String> javaRoots = new ArrayList<>();
-
-		for (String javaFile : allJavaFiles) {
-			// parse a file
-			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-
-			// Get all Classes
-			List<PackageDeclaration> packageDeclarations = compilationUnit.findAll(PackageDeclaration.class);
-
-			// If javafile has no package
-			if (packageDeclarations.isEmpty()) {
-				// Get javafile
-				File rootlessFile = new File(javaFile);
-				// Add parent of file to root
-				if (!javaRoots.contains(rootlessFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
-					javaRoots.add(rootlessFile.getParentFile().getAbsolutePath());
-				}
-			} else {
-				// Only 1 package declaration for each file
-				PackageDeclaration packageDeclaration = packageDeclarations.get(0);
-				String rootPackage = null;
-
-				if (packageDeclaration.getNameAsString().split("\\.").length == 1) {
-					rootPackage = packageDeclaration.getNameAsString();
-				} else {
-					rootPackage = packageDeclaration.getNameAsString().split("\\.")[0];
-				}
-
-				// Get javafile
-				File currentFile = new File(javaFile);
-
-				// Until finding the root package
-				while (!currentFile.isDirectory() || !currentFile.getName().equals(rootPackage)) {
-					currentFile = currentFile.getParentFile();
-				}
-
-				// Add parent of rootPackage as java root
-				if (!javaRoots.contains(currentFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
-					javaRoots.add(currentFile.getParentFile().getAbsolutePath());
-				}
-			}
-
-		}
-
-		return javaRoots;
-	}
-	
 	/**
 	 * This method scanns all java files for method calls that need to be renamed.
 	 * 
@@ -132,7 +77,7 @@ public class RefactoringHelper {
 
 		return refactoring;
 	}
-	
+
 	/**
 	 * This method scanns all java files for methods that need to be renamed.
 	 * 
@@ -174,7 +119,7 @@ public class RefactoringHelper {
 
 		return refactoring;
 	}
-	
+
 	/**
 	 * This method scanns all java files for classes that could be subclasses in our
 	 * AST-Tree.
@@ -248,7 +193,7 @@ public class RefactoringHelper {
 
 		return refactoring;
 	}
-	
+
 	/**
 	 * This method returns the global signature of a method as a string.
 	 * 
@@ -260,7 +205,7 @@ public class RefactoringHelper {
 		ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
 		return resolvedMethod.getQualifiedSignature();
 	}
-	
+
 	/**
 	 * This method returns the local signature of a method as a string.
 	 * 
@@ -277,7 +222,7 @@ public class RefactoringHelper {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * This method gets all direct and indirect Ancestors of a given class if
 	 * possible. (If ancestor is not a external dependency for example)

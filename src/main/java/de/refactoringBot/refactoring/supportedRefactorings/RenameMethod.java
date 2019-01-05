@@ -1,15 +1,11 @@
 package de.refactoringBot.refactoring.supportedRefactorings;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.nio.file.InvalidPathException;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.springframework.stereotype.Component;
 
 import com.github.javaparser.JavaParser;
@@ -55,9 +51,6 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 		// Init Refactorings
 		ParserRefactoring refactoring = new ParserRefactoring();
 
-		// Init all java files path-list
-		List<String> allJavaFiles = new ArrayList<>();
-
 		// Init needed variables
 		String issueFilePath = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
 		String globalMethodSignature = null;
@@ -65,23 +58,10 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 		String oldMethodName = null;
 		MethodDeclaration methodToRefactor = null;
 
-		// Get root folder of project
-		File dir = new File(gitConfig.getRepoFolder());
-
-		// Get paths to all java files of the project
-		List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
-		for (File file : files) {
-			if (file.getCanonicalPath().endsWith(".java")) {
-				allJavaFiles.add(file.getCanonicalPath());
-			}
-		}
-
-		List<String> javaRoots = findJavaRoots(allJavaFiles, gitConfig.getRepoFolder());
-
 		// Configure solver for the project
 		CombinedTypeSolver typeSolver = new CombinedTypeSolver();
 		// Add java-roots
-		for (String javaRoot : javaRoots) {
+		for (String javaRoot : issue.getJavaRoots()) {
 			typeSolver.add(new JavaParserTypeSolver(javaRoot));
 		}
 		typeSolver.add(new ReflectionTypeSolver());
@@ -158,7 +138,7 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 		// Add all Subclasses and their Superclasses to AST-Tree
 		while (true) {
 			int before = refactoring.getClasses().size();
-			refactoring = addSubClasses(refactoring, allJavaFiles);
+			refactoring = addSubClasses(refactoring, issue.getAllJavaFiles());
 			int after = refactoring.getClasses().size();
 			// Break if all classes found
 			if (before == after) {
@@ -167,8 +147,8 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 		}
 
 		// Find all Methods and Method-Calls for renaming
-		refactoring = findMethods(refactoring, allJavaFiles, localMethodSignature);
-		refactoring = findMethodCalls(refactoring, allJavaFiles);
+		refactoring = findMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
+		refactoring = findMethodCalls(refactoring, issue.getAllJavaFiles());
 
 		// Rename method declarations and their calls
 		renameFindings(refactoring, issue.getRefactorString());

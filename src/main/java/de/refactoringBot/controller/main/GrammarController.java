@@ -1,5 +1,7 @@
 package de.refactoringBot.controller.main;
 
+import java.util.List;
+
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
@@ -14,6 +16,7 @@ import de.refactoringBot.grammar.botGrammar.BotOperationsBaseListener;
 import de.refactoringBot.grammar.botGrammar.BotOperationsLexer;
 import de.refactoringBot.grammar.botGrammar.BotOperationsParser;
 import de.refactoringBot.model.botIssue.BotIssue;
+import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.outputModel.botPullRequestComment.BotPullRequestComment;
 import de.refactoringBot.refactoring.RefactoringOperations;
 
@@ -29,6 +32,8 @@ public class GrammarController {
 
 	@Autowired
 	RefactoringOperations operations;
+	@Autowired
+	FileController fileController;
 
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GrammarController.class);
@@ -73,7 +78,7 @@ public class GrammarController {
 	 * @return issue
 	 * @throws Exception
 	 */
-	public BotIssue createIssueFromComment(BotPullRequestComment comment) throws Exception {
+	public BotIssue createIssueFromComment(BotPullRequestComment comment, GitConfiguration gitConfig) throws Exception {
 		try {
 			// Create object
 			BotIssue issue = new BotIssue();
@@ -85,6 +90,11 @@ public class GrammarController {
 			issue.setCommentServiceID(comment.getCommentID().toString());
 			issue.setLine(comment.getPosition());
 			issue.setFilePath(comment.getFilepath());
+			
+			// Set all Java-Files and Java-Roots
+			List<String> allJavaFiles = fileController.getAllJavaFiles(gitConfig.getRepoFolder());
+			issue.setAllJavaFiles(allJavaFiles);
+			issue.setJavaRoots(fileController.findJavaRoots(allJavaFiles, gitConfig.getRepoFolder()));
 
 			// Add operations
 			if (commentArr[1].equals("ADD")) {
