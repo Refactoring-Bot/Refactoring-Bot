@@ -14,13 +14,12 @@ import org.springframework.stereotype.Component;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
+import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
@@ -31,6 +30,7 @@ import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.exceptions.BotRefactoringException;
 import de.refactoringBot.model.javaparser.ParserRefactoring;
+import de.refactoringBot.refactoring.RefactoringHelper;
 import de.refactoringBot.refactoring.RefactoringImpl;
 
 /**
@@ -39,7 +39,7 @@ import de.refactoringBot.refactoring.RefactoringImpl;
  * @author Stefan Basaric
  */
 @Component
-public class RenameMethod implements RefactoringImpl {
+public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 
 	/**
 	 * This method performs the refactoring and returns the a commit message.
@@ -119,13 +119,14 @@ public class RenameMethod implements RefactoringImpl {
 					List<ResolvedReferenceType> ancestors = null;
 					try {
 						ancestors = currentClass.resolve().getAllAncestors();
-					} catch (InvalidPathException i) {
+					} catch (UnsolvedSymbolException u) {
 						ancestors = getAllAncestors(currentClass.resolve());
 						refactoring.setWarning(
 								" Refactored classes might extend/implement external project! Check if overriden method was NOT renamed!");
+					} catch (InvalidPathException i) {
+						throw new BotRefactoringException("Javaparser could not parse file: " + i.getMessage());
 					} catch (Exception e) {
-						throw new BotRefactoringException(
-								"Javaparser can NOT parse interface with generic interface ancestors at the moment!");
+						throw new BotRefactoringException("Error while resolving superclasses occured!");
 					}
 
 					// Add all super classes to All-To-Refactor classes
@@ -148,7 +149,7 @@ public class RenameMethod implements RefactoringImpl {
 		if (methodToRefactor == null) {
 			throw new BotRefactoringException("Could not find specified method! Automated refactoring failed.");
 		}
-		
+
 		// If new name equals old
 		if (oldMethodName != null && oldMethodName.equals(issue.getRefactorString())) {
 			throw new BotRefactoringException("New method name must differ from the current one!");
@@ -174,223 +175,6 @@ public class RenameMethod implements RefactoringImpl {
 
 		return "Renamed method '" + oldMethodName + "' to '" + issue.getRefactorString() + "'."
 				+ refactoring.getWarning();
-	}
-
-	/**
-	 * This method scanns all java files for classes that could be subclasses in our
-	 * AST-Tree.
-	 * 
-	 * @param refactoring
-	 * @param allJavaFiles
-	 * @return refactoring
-	 * @throws FileNotFoundException
-	 * @throws BotRefactoringException
-	 */
-	private ParserRefactoring addSubClasses(ParserRefactoring refactoring, List<String> allJavaFiles)
-			throws FileNotFoundException {
-
-		// Search all Java-Files
-		for (String javaFile : allJavaFiles) {
-			// parse a file
-			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-
-			// Get all Classes
-			List<ClassOrInterfaceDeclaration> classes = compilationUnit.findAll(ClassOrInterfaceDeclaration.class);
-
-			// Search all Classes
-			for (ClassOrInterfaceDeclaration currentClass : classes) {
-				List<String> classAncestors = new ArrayList<String>();
-				boolean isSubClass = false;
-				boolean hasExternalDep = false;
-
-				// Get all Super-Classes
-				List<ResolvedReferenceType> ancestors = null;
-				try {
-					ancestors = currentClass.resolve().getAllAncestors();
-				} catch (InvalidPathException i) {
-					ancestors = getAllAncestors(currentClass.resolve());
-					hasExternalDep = true;
-				} catch (Exception e) {
-					continue;
-				}
-
-				for (ResolvedReferenceType ancestor : ancestors) {
-					// Collect all Signatures of Super-Classes
-					if (!ancestor.getQualifiedName().equals("java.lang.Object")) {
-						classAncestors.add(ancestor.getQualifiedName());
-					}
-
-					// If Super-Class belongs to AST-Tree
-					if (refactoring.getClasses().contains(ancestor.getQualifiedName())
-							&& !refactoring.getClasses().contains(currentClass.resolve().getQualifiedName())) {
-						// Add class to AST-Tree
-						refactoring.getClasses().add(currentClass.resolve().getQualifiedName());
-						isSubClass = true;
-					}
-				}
-
-				// Add all Super-Classes of Class to AST-Tree
-				if (isSubClass) {
-					for (String classAncestor : classAncestors) {
-						if (!refactoring.getClasses().contains(classAncestor)) {
-							refactoring.getClasses().add(classAncestor);
-						}
-					}
-					// Add warning
-					if (hasExternalDep) {
-						refactoring.setWarning(
-								" Refactored classes might extend/implement external project! Check if overriden method was NOT renamed!");
-					}
-				}
-			}
-		}
-
-		return refactoring;
-	}
-
-	/**
-	 * This method scanns all java files for method calls that need to be renamed.
-	 * 
-	 * @param refactoring
-	 * @param allJavaFiles
-	 * @return
-	 * @throws FileNotFoundException
-	 */
-	private ParserRefactoring findMethods(ParserRefactoring refactoring, List<String> allJavaFiles,
-			String methodSignature) throws FileNotFoundException {
-
-		// Iterate all Java-Files
-		for (String javaFile : allJavaFiles) {
-			// parse a file
-			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-
-			// Get all Classes
-			List<ClassOrInterfaceDeclaration> classes = compilationUnit.findAll(ClassOrInterfaceDeclaration.class);
-			// Iterate all Classes
-			for (ClassOrInterfaceDeclaration currentClass : classes) {
-
-				// If class is sub/or superclass
-				if (refactoring.getClasses().contains(currentClass.resolve().getQualifiedName())) {
-					// Get all methods
-					List<MethodDeclaration> methods = currentClass.getMethods();
-					// Search methods
-					for (MethodDeclaration method : methods) {
-						if (method.getSignature().asString().equals(methodSignature)) {
-							refactoring.addMethod(method);
-							refactoring.addMethodSignature(getFullMethodSignature(method));
-							if (!refactoring.getJavaFiles().contains(javaFile)) {
-								refactoring.addJavaFile(javaFile);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return refactoring;
-	}
-
-	/**
-	 * This method scanns all java files for methods that need to be renamed.
-	 * 
-	 * @param refactoring
-	 * @param allJavaFiles
-	 * @return
-	 * @throws FileNotFoundException
-	 */
-	private ParserRefactoring findMethodCalls(ParserRefactoring refactoring, List<String> allJavaFiles)
-			throws FileNotFoundException {
-
-		for (String javaFile : allJavaFiles) {
-			// parse a file
-			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-
-			List<MethodCallExpr> methodCalls = compilationUnit.findAll(MethodCallExpr.class);
-
-			for (MethodCallExpr methodCall : methodCalls) {
-
-				ResolvedMethodDeclaration calledMethod = null;
-				try {
-					calledMethod = methodCall.resolve();
-				} catch (Exception e) {
-					continue;
-				}
-
-				if (refactoring.getMethodSignatures().contains(calledMethod.getQualifiedSignature())) {
-					refactoring.addMethodCall(methodCall);
-
-					if (!refactoring.getJavaFiles().contains(javaFile)) {
-						refactoring.addJavaFile(javaFile);
-					}
-				}
-			}
-
-		}
-
-		return refactoring;
-	}
-
-	/**
-	 * This method returns all root-folders of java files (like the src folder or
-	 * the src/main/java folder from maven projects)
-	 * 
-	 * @param allJavaFiles
-	 * @param repoFolder
-	 * @return javaRoots
-	 * @throws FileNotFoundException
-	 */
-	public List<String> findJavaRoots(List<String> allJavaFiles, String repoFolder) throws FileNotFoundException {
-
-		// Init roots list
-		List<String> javaRoots = new ArrayList<>();
-
-		for (String javaFile : allJavaFiles) {
-			// parse a file
-			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-
-			// Get all Classes
-			List<PackageDeclaration> packageDeclarations = compilationUnit.findAll(PackageDeclaration.class);
-
-			// If javafile has no package
-			if (packageDeclarations.isEmpty()) {
-				// Get javafile
-				File rootlessFile = new File(javaFile);
-				// Add parent of file to root
-				if (!javaRoots.contains(rootlessFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
-					javaRoots.add(rootlessFile.getParentFile().getAbsolutePath());
-				}
-			} else {
-				// Only 1 package declaration for each file
-				PackageDeclaration packageDeclaration = packageDeclarations.get(0);
-				String rootPackage = null;
-
-				if (packageDeclaration.getNameAsString().split("\\.").length == 1) {
-					rootPackage = packageDeclaration.getNameAsString();
-				} else {
-					rootPackage = packageDeclaration.getNameAsString().split("\\.")[0];
-				}
-
-				// Get javafile
-				File currentFile = new File(javaFile);
-
-				// Until finding the root package
-				while (!currentFile.isDirectory() || !currentFile.getName().equals(rootPackage)) {
-					currentFile = currentFile.getParentFile();
-				}
-
-				// Add parent of rootPackage as java root
-				if (!javaRoots.contains(currentFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
-					javaRoots.add(currentFile.getParentFile().getAbsolutePath());
-				}
-			}
-
-		}
-
-		return javaRoots;
 	}
 
 	/**
@@ -452,37 +236,9 @@ public class RenameMethod implements RefactoringImpl {
 					return resolvedMethod.getQualifiedSignature();
 				} catch (Exception e) {
 					throw new BotRefactoringException("Method '" + methodDeclaration.getSignature().asString()
-							+ "' can't be resolved. It might have parameters from external projects/libraries!");
+							+ "' can't be resolved. It might have parameters from external projects/libraries or method might be inside a class that extends a generic class! Error: "
+							+ e);
 				}
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * This method returns the global signature of a method as a string.
-	 * 
-	 * @param methodDeclaration
-	 * @param position
-	 * @return
-	 */
-	private String getFullMethodSignature(MethodDeclaration methodDeclaration) {
-		ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
-		return resolvedMethod.getQualifiedSignature();
-	}
-
-	/**
-	 * This method returns the local signature of a method as a string.
-	 * 
-	 * @param methodDeclaration
-	 * @param position
-	 * @return
-	 */
-	private String getMethodDeclarationAsString(MethodDeclaration methodDeclaration, Integer position) {
-		// If method is at the refactored position
-		if (methodDeclaration.getName().getBegin().isPresent()) {
-			if (position == methodDeclaration.getName().getBegin().get().line) {
-				return methodDeclaration.getSignature().asString();
 			}
 		}
 		return null;
@@ -507,34 +263,5 @@ public class RenameMethod implements RefactoringImpl {
 	 */
 	private void performRenameMethodCall(MethodCallExpr methodCall, String newName) {
 		methodCall.setName(newName);
-	}
-
-	/**
-	 * This method gets all direct and indirect Ancestors of a given class if
-	 * possible. (If ancestor is not a external dependency for example)
-	 * 
-	 * @param currentClass
-	 * @return ancestors
-	 */
-	private List<ResolvedReferenceType> getAllAncestors(ResolvedReferenceTypeDeclaration currentClass) {
-		// Init ancestor list
-		List<ResolvedReferenceType> ancestors = new ArrayList<>();
-
-		// Check class
-		if (!(Object.class.getCanonicalName().equals(currentClass.getQualifiedName()))) {
-			// Get all direct ancestors that can be resolved
-			for (ResolvedReferenceType ancestor : currentClass.getAncestors(true)) {
-				// Add them to list
-				ancestors.add(ancestor);
-				// Get indirect ancestors recursively
-				for (ResolvedReferenceType inheritedAncestor : getAllAncestors(ancestor.getTypeDeclaration())) {
-					if (!ancestors.contains(inheritedAncestor)) {
-						ancestors.add(inheritedAncestor);
-					}
-				}
-			}
-		}
-
-		return ancestors;
 	}
 }
