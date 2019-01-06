@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import de.refactoringBot.refactoring.supportedRefactorings.AddOverrideAnnotation;
 import de.refactoringBot.refactoring.supportedRefactorings.RemoveMethodParameter;
 import de.refactoringBot.refactoring.supportedRefactorings.RenameMethod;
-import de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod;
+import de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.ExtractMethod;
 import de.refactoringBot.refactoring.supportedRefactorings.ReorderModifier;
 
 /**

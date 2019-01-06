@@ -355,4 +355,62 @@ public class RefactoringController {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+
+	/**
+	 * This method performs test refactorings according to findings with an analysis
+	 * service like SonarCube without commiting the changes.
+	 *
+	 * @param configID
+	 * @return allRefactoredIssues
+	 */
+	@PostMapping(value = "/{configID}/TestRefactorWithAnalysisService", produces = "application/json")
+	@ApiOperation(value = "Perform test run for refactorings with analysis service.")
+	public ResponseEntity<?> testRefactor(@PathVariable Long configID) {
+
+		// Create empty list of refactored Issues
+		Integer amountBotRequests = 0;
+		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
+		Optional<GitConfiguration> gitConfig;
+		try {
+			// Try to get the Git-Configuration with the given ID
+			gitConfig = configRepo.getByID(configID);
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			logger.error(e.getMessage(), e);
+			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		// If configuration does not exist
+		if (!gitConfig.isPresent()) {
+			return new ResponseEntity<>("Configuration with the given ID does not exist!", HttpStatus.NOT_FOUND);
+		}
+		// If analysis service data is missing
+		if (gitConfig.get().getAnalysisService() == null || gitConfig.get().getAnalysisServiceProjectKey() == null) {
+			return new ResponseEntity<>("Configuration is missing analysis service data!",
+					HttpStatus.BAD_REQUEST);
+		}
+
+		try {
+			// Get issues from analysis service API
+			List<BotIssue> botIssues = grabber.getAnalysisServiceIssues(gitConfig.get());
+
+			// If analysis-service not supported
+			if (botIssues == null) {
+				return new ResponseEntity<>(
+						"Analysis-Service '" + gitConfig.get().getAnalysisService() + "' is not supported!",
+						HttpStatus.BAD_REQUEST);
+			}
+			// Iterate all issues
+			for (BotIssue botIssue : botIssues) {
+				try {
+					refactoring.pickAndRefactor(botIssue, gitConfig.get());
+				} catch (Exception e) {
+					logger.error(e.getMessage(), e);
+				}
+			}
+			return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 }

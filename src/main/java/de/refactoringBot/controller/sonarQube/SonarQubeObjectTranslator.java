@@ -73,6 +73,8 @@ public class SonarQubeObjectTranslator {
 				break;
 			case "squid:S138":
 				botIssue.setRefactoringOperation(operations.EXTRACT_METHOD);
+				// Add bot issue to list
+				botIssues.add(botIssue);
 				break;
 			default:
 				botIssue.setRefactoringOperation(operations.UNKNOWN);
