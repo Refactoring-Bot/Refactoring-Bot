@@ -55,7 +55,12 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 		exception.expect(BotRefactoringException.class);
 		testRemoveParameter(removeParameterTestClass.getLineOfMethodWithUnusedParameter(0, 0, 0), "d");
 	}
-	
+
+	@Test
+	public void testRemoveUnusedParameter2() throws Exception {
+		testRemoveParameter(removeParameterTestClass.getLineOfMethodWithUnusedParameter2(0), "a");
+	}
+
 	/**
 	 * Tries to remove the parameter with the given name from the method in the
 	 * given line. Checks if removal was successful and if the additional dummy
@@ -109,8 +114,8 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 		// assert that parameter has also been removed from the javadoc
 		List<JavadocBlockTag> javadocBlockTags = refactoredMethod.getJavadoc().get().getBlockTags();
 		for (JavadocBlockTag javadocBlockTag : javadocBlockTags) {
-			assertFalse(
-					javadocBlockTag.getTagName().equals("param") && javadocBlockTag.getName().get().equals(parameterName));
+			assertFalse(javadocBlockTag.getTagName().equals("param")
+					&& javadocBlockTag.getName().get().equals(parameterName));
 		}
 
 		// assert that dummy method is unchanged
