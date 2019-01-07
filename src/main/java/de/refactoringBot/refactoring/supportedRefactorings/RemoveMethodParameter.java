@@ -156,11 +156,48 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			}
 		}
 
+		// Check for method overloading
+		String postRefactoringSignature = getPostRefactoringSignature(refactoring, issue.getRefactorString());
+
+		// Check Overriden Methods
+		checkOverridenMethods(refactoring, postRefactoringSignature);
+
 		// Remove parameter from all methods/method calls
-		removeParameter(refactoring, issue.getRefactorString(), paramPosition);
+		removeParameter(refactoring, issue.getRefactorString(), paramPosition, postRefactoringSignature);
 
 		return "Removed method parameter '" + issue.getRefactorString() + "' of method '"
 				+ methodToRefactor.getSignature() + "'";
+	}
+
+	/**
+	 * This method checks all Java-Classes that will be refactored if they have a
+	 * method with the same signature as our 'to be refactored' method without the
+	 * 'to be removed parameter'.
+	 * 
+	 * @param refactoring
+	 * @param postRefactoringSignature
+	 * @throws Exception
+	 */
+	private void checkOverridenMethods(ParserRefactoring refactoring, String postRefactoringSignature)
+			throws Exception {
+
+		// Iterate all Javafiles
+		for (String javaFile : refactoring.getJavaFiles()) {
+			// Create compilation unit
+			FileInputStream methodPath = new FileInputStream(javaFile);
+			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
+
+			// Get all Methods and MethodCalls of File
+			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
+
+			// Check if class has an overriden method without the "to be removed" parameter
+			for (MethodDeclaration fileMethod : fileMethods) {
+				if (getMethodDeclarationAsString(fileMethod).equals(postRefactoringSignature)) {
+					throw new BotRefactoringException("File '" + javaFile
+							+ "' has a method with the same signature as our refactoring method without the 'to be removed' parameter!");
+				}
+			}
+		}
 	}
 
 	/**
@@ -169,12 +206,14 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 	 * 
 	 * @param refactoring
 	 * @param paramName
+	 * @param postRefactoringSignature
 	 * @throws FileNotFoundException
 	 */
-	private void removeParameter(ParserRefactoring refactoring, String paramName, Integer paramPosition)
-			throws FileNotFoundException {
+	private void removeParameter(ParserRefactoring refactoring, String paramName, Integer paramPosition,
+			String postRefactoringSignature) throws FileNotFoundException {
 
 		for (String javaFile : refactoring.getJavaFiles()) {
+
 			// Create compilation unit
 			FileInputStream methodPath = new FileInputStream(javaFile);
 			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
@@ -183,7 +222,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
 			List<MethodCallExpr> fileMethodCalls = compilationUnit.findAll(MethodCallExpr.class);
 
-			// Rename all Methods
+			// Rename all Methods if no overriden method exists
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
 					performRemoveMethodParameter(fileMethod, paramName);
@@ -262,6 +301,38 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 
 		// Parameter not used
 		return false;
+	}
+
+	/**
+	 * This method gets the Method signature that our methods will have without the
+	 * parameter.
+	 * 
+	 * @param refactoring
+	 * @param paramName
+	 * @return signature
+	 * @throws FileNotFoundException
+	 * @throws BotRefactoringException
+	 */
+	private String getPostRefactoringSignature(ParserRefactoring refactoring, String paramName)
+			throws FileNotFoundException, BotRefactoringException {
+		for (String javaFile : refactoring.getJavaFiles()) {
+			// Create compilation unit
+			FileInputStream methodPath = new FileInputStream(javaFile);
+			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
+
+			// Get all Methods and MethodCalls of File
+			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
+
+			// Rename all Methods
+			for (MethodDeclaration fileMethod : fileMethods) {
+				if (refactoring.getMethods().contains(fileMethod)) {
+					performRemoveMethodParameter(fileMethod, paramName);
+					return getMethodDeclarationAsString(fileMethod);
+				}
+			}
+
+		}
+		throw new BotRefactoringException("Error reading methods that need their parameter removed!");
 	}
 
 	/**

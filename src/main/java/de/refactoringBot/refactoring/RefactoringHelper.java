@@ -222,6 +222,18 @@ public class RefactoringHelper {
 		}
 		return null;
 	}
+	
+	/**
+	 * This method returns the local signature of a method as a string.
+	 * 
+	 * @param methodDeclaration
+	 * @param position
+	 * @return
+	 */
+	public String getMethodDeclarationAsString(MethodDeclaration methodDeclaration) {
+		// If method is at the refactored position
+		return methodDeclaration.getSignature().asString();
+	}
 
 	/**
 	 * This method gets all direct and indirect Ancestors of a given class if
