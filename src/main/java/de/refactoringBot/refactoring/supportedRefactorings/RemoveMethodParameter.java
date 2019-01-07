@@ -206,11 +206,9 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 	 * 
 	 * @param refactoring
 	 * @param paramName
-	 * @param postRefactoringSignature
 	 * @throws FileNotFoundException
 	 */
-	private void removeParameter(ParserRefactoring refactoring, String paramName, Integer paramPosition,
-			String postRefactoringSignature) throws FileNotFoundException {
+	private void removeParameter(ParserRefactoring refactoring, String paramName, Integer paramPosition) throws FileNotFoundException {
 
 		for (String javaFile : refactoring.getJavaFiles()) {
 
