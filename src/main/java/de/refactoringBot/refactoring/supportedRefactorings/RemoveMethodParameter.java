@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.nio.file.InvalidPathException;
+import java.util.LinkedList;
 import java.util.List;
 
 import com.github.javaparser.JavaParser;
@@ -15,6 +16,8 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.javadoc.Javadoc;
+import com.github.javaparser.javadoc.JavadocBlockTag;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
@@ -208,7 +211,8 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 	 * @param paramName
 	 * @throws FileNotFoundException
 	 */
-	private void removeParameter(ParserRefactoring refactoring, String paramName, Integer paramPosition) throws FileNotFoundException {
+	private void removeParameter(ParserRefactoring refactoring, String paramName, Integer paramPosition)
+			throws FileNotFoundException {
 
 		for (String javaFile : refactoring.getJavaFiles()) {
 
@@ -224,6 +228,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
 					performRemoveMethodParameter(fileMethod, paramName);
+					removeParamFromJavadoc(fileMethod, paramName);
 				}
 			}
 
@@ -363,6 +368,42 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 	private void performRemoveMethodParameter(MethodDeclaration methodDeclaration, String parameterName) {
 		if (methodDeclaration.getParameterByName(parameterName).isPresent()) {
 			methodDeclaration.getParameterByName(parameterName).get().remove();
+		}
+	}
+
+	/**
+	 * This method removes the removed parameter from the javadoc.
+	 * 
+	 * @param methodDeclaration
+	 */
+	private void removeParamFromJavadoc(MethodDeclaration methodDeclaration, String paramName) {
+		// Get JavaDoc if exists
+		if (methodDeclaration.getJavadoc().isPresent()) {
+			Javadoc methodJavadoc = methodDeclaration.getJavadoc().get();
+			// Current javadoc tags
+			List<JavadocBlockTag> javadocTags = methodJavadoc.getBlockTags();
+			// Empty tag-list
+			List<JavadocBlockTag> tagsToDelete = new LinkedList<JavadocBlockTag>();
+			// Find all Tags that should be deleted
+			for (JavadocBlockTag javadocTag : javadocTags) {
+				if (javadocTag.getTagName().equals("param") && javadocTag.getName().isPresent()
+						&& javadocTag.getName().get().equals(paramName)) {
+					tagsToDelete.add(javadocTag);
+				}
+			}
+
+			// Delete all javadocTags that need to be deleted
+			for (JavadocBlockTag javadocTag : tagsToDelete) {
+				javadocTags.remove(javadocTag);
+			}
+
+			// Create new javadoc
+			Javadoc newJavadoc = new Javadoc(methodJavadoc.getDescription());
+			for (JavadocBlockTag blockTag : javadocTags) {
+				newJavadoc.addBlockTag(blockTag);
+			}
+			// Add it to method
+			methodDeclaration.setJavadocComment(newJavadoc);
 		}
 	}
 
