@@ -163,7 +163,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 		checkOverridenMethods(refactoring, postRefactoringSignature);
 
 		// Remove parameter from all methods/method calls
-		removeParameter(refactoring, issue.getRefactorString(), paramPosition, postRefactoringSignature);
+		removeParameter(refactoring, issue.getRefactorString(), paramPosition);
 
 		return "Removed method parameter '" + issue.getRefactorString() + "' of method '"
 				+ methodToRefactor.getSignature() + "'";
@@ -220,7 +220,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
 			List<MethodCallExpr> fileMethodCalls = compilationUnit.findAll(MethodCallExpr.class);
 
-			// Rename all Methods if no overriden method exists
+			// Rename all Methods
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
 					performRemoveMethodParameter(fileMethod, paramName);
