@@ -194,7 +194,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (getMethodDeclarationAsString(fileMethod).equals(postRefactoringSignature)) {
 					throw new BotRefactoringException("File '" + javaFile
-							+ "' has a method with the same signature as our refactoring method without the 'to be removed' parameter!");
+							+ "' has a method with the same signature as our refactored method without the 'to be removed' parameter!");
 				}
 			}
 		}
