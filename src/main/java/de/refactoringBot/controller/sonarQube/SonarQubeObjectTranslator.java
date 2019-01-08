@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import de.refactoringBot.controller.main.FileController;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.model.sonarQube.SonarIssue;
@@ -25,6 +26,8 @@ public class SonarQubeObjectTranslator {
 
 	@Autowired
 	RefactoringOperations operations;
+	@Autowired
+	FileController fileController;
 
 	/**
 	 * This method translates all SonarCubeIssues to BotIssues.
@@ -32,7 +35,7 @@ public class SonarQubeObjectTranslator {
 	 * @param issue
 	 * @return botIssue
 	 */
-	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) {
+	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) throws Exception {
 		// Create empty list of bot issues
 		List<BotIssue> botIssues = new ArrayList<>();
 
@@ -45,6 +48,11 @@ public class SonarQubeObjectTranslator {
 			String project = issue.getProject();
 			String component = issue.getComponent();
 			String sonarIssuePath = Paths.get(component.substring(project.length() + 1, component.length())).toString();
+
+			// Set all Java-Files and Java-Roots
+			List<String> allJavaFiles = fileController.getAllJavaFiles(gitConfig.getRepoFolder());
+			botIssue.setAllJavaFiles(allJavaFiles);
+			botIssue.setJavaRoots(fileController.findJavaRoots(allJavaFiles, gitConfig.getRepoFolder()));
 
 			// Create full path for sonar issue
 			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3)
@@ -80,6 +88,11 @@ public class SonarQubeObjectTranslator {
 				botIssue.setRefactoringOperation(operations.REMOVE_COMMENTED_OUT_CODE);
 				botIssues.add(botIssue);
 				break;
+			case "squid:S1172":
+				botIssue.setRefactoringOperation(operations.REMOVE_PARAMETER);
+				botIssue.setRefactorString(getParameterName(issue));
+				botIssues.add(botIssue);
+				break;
 			default:
 				botIssue.setRefactoringOperation(operations.UNKNOWN);
 				break;
@@ -87,5 +100,25 @@ public class SonarQubeObjectTranslator {
 		}
 
 		return botIssues;
+	}
+
+	/**
+	 * This method scans the message of a "RemoveParameter" issue of
+	 * SonarCloud/SonarQube and returns the parameter name of the unused parameter.
+	 * 
+	 * @param issue
+	 * @return parameterName
+	 */
+	public String getParameterName(SonarIssue issue) {
+		String message = issue.getMessage();
+		String[] splitMessage = message.split(" ");
+		String paramPartOfMessage = "";
+		for (int i = 0; i < splitMessage.length; i++) {
+			if (splitMessage[i].equals("parameter") && i < splitMessage.length - 1) {
+				paramPartOfMessage = splitMessage[i + 1];
+			}
+		}
+		String parameterName = paramPartOfMessage.substring(1, paramPartOfMessage.length() - 2);
+		return parameterName;
 	}
 }

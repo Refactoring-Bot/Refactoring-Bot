@@ -1,5 +1,7 @@
 package de.refactoringBot.model.botIssue;
 
+import java.util.List;
+
 public class BotIssue {
 
 	private String refactoringOperation;
@@ -10,6 +12,8 @@ public class BotIssue {
 	private String errorMessage;
 	private String commitMessage;
 	private String creationDate;
+	private List<String> allJavaFiles;
+	private List<String> javaRoots;
 
 	public String getRefactoringOperation() {
 		return refactoringOperation;
@@ -73,6 +77,22 @@ public class BotIssue {
 
 	public void setCreationDate(String creationDate) {
 		this.creationDate = creationDate;
+	}
+
+	public List<String> getAllJavaFiles() {
+		return allJavaFiles;
+	}
+
+	public void setAllJavaFiles(List<String> allJavaFiles) {
+		this.allJavaFiles = allJavaFiles;
+	}
+
+	public List<String> getJavaRoots() {
+		return javaRoots;
+	}
+
+	public void setJavaRoots(List<String> javaRoots) {
+		this.javaRoots = javaRoots;
 	}
 
 }

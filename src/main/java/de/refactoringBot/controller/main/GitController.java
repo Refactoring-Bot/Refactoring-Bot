@@ -64,11 +64,14 @@ public class GitController {
 			remoteAddCommand.setName("upstream");
 			remoteAddCommand.setUri(new URIish(gitConfig.getRepoGitLink()));
 			remoteAddCommand.call();
-			git.close();
 		} catch (Exception e) {
-			git.close();
 			logger.error(e.getMessage(), e);
 			throw new Exception("Could not add as remote " + "'" + gitConfig.getRepoGitLink() + "' successfully!");
+		} finally {
+			// Close git if possible
+			if (git != null) {
+				git.close();
+			}
 		}
 	}
 
@@ -85,14 +88,14 @@ public class GitController {
 			git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()));
 			// Fetch data
 			git.fetch().setRemote("upstream").call();
-			git.close();
 		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+			throw new Exception("Could not fetch data from 'upstream'!");
+		} finally {
 			// Close git if possible
 			if (git != null) {
 				git.close();
 			}
-			logger.error(e.getMessage(), e);
-			throw new Exception("Could not fetch data from 'upstream'!");
 		}
 	}
 
@@ -109,14 +112,14 @@ public class GitController {
 			git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()));
 			// Stash changes
 			git.stashApply().call();
-			git.close();
 		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+			throw new Exception("Faild to stash changes!");
+		} finally {
 			// Close git if possible
 			if (git != null) {
 				git.close();
 			}
-			logger.error(e.getMessage(), e);
-			throw new Exception("Faild to stash changes!");
 		}
 	}
 
@@ -133,15 +136,14 @@ public class GitController {
 			git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
 					.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
 					.call();
-			git.close();
 		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+			throw new Exception("Faild to clone " + "'" + gitConfig.getForkGitLink() + "' successfully!");
+		} finally {
 			// Close git if possible
 			if (git != null) {
 				git.close();
 			}
-
-			logger.error(e.getMessage(), e);
-			throw new Exception("Faild to clone " + "'" + gitConfig.getForkGitLink() + "' successfully!");
 		}
 	}
 
@@ -167,23 +169,19 @@ public class GitController {
 					.setStartPoint(origin + "/" + branchName).call();
 			// Pull data
 			git.pull();
-			git.close();
 			// If branch already exists
 		} catch (RefAlreadyExistsException r) {
-			// Close git if possible
-			if (git != null) {
-				git.close();
-			}
 			logger.error(r.getMessage(), r);
 			throw new BotRefactoringException(
 					"Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
 		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+			throw new Exception("Branch with the name " + "'" + newBranch + "' could not be created!");
+		} finally {
 			// Close git if possible
 			if (git != null) {
 				git.close();
 			}
-			logger.error(e.getMessage(), e);
-			throw new Exception("Branch with the name " + "'" + newBranch + "' could not be created!");
 		}
 	}
 
@@ -201,22 +199,18 @@ public class GitController {
 			// Switch branch
 			@SuppressWarnings("unused")
 			Ref ref = git.checkout().setName(branchName).call();
-			git.close();
 			// If branch does not exist localy anymore
 		} catch (RefNotFoundException r) {
-			// Close git if possible
-			if (git != null) {
-				git.close();
-			}
 			// Recreate branch with current branch data from remote origin
 			createBranch(gitConfig, branchName, branchName, "origin");
 		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+			throw new Exception("Could not switch to the branch with the name " + "'" + branchName + "'!");
+		} finally {
 			// Close git if possible
 			if (git != null) {
 				git.close();
 			}
-			logger.error(e.getMessage(), e);
-			throw new Exception("Could not switch to the branch with the name " + "'" + branchName + "'!");
 		}
 	}
 
@@ -239,21 +233,17 @@ public class GitController {
 					.setCredentialsProvider(
 							new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotPassword()))
 					.call();
-			git.close();
 		} catch (TransportException t) {
-			// Close git if possible
-			if (git != null) {
-				git.close();
-			}
 			logger.error(t.getMessage(), t);
 			throw new Exception("Wrong bot password!");
 		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+			throw new Exception("Could not successfully perform 'git push'!");
+		} finally {
 			// Close git if possible
 			if (git != null) {
 				git.close();
 			}
-			logger.error(e.getMessage(), e);
-			throw new Exception("Could not successfully perform 'git push'!");
 		}
 	}
 }

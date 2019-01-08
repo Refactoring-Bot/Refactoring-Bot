@@ -133,7 +133,7 @@ public class RefactoringController {
 					// Create issue
 					BotIssue botIssue;
 					try {
-						botIssue = grammarController.createIssueFromComment(comment);
+						botIssue = grammarController.createIssueFromComment(comment, gitConfig.get());
 					} catch (Exception e) {
 						logger.error(e.getMessage(), e);
 						return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
