@@ -21,6 +21,7 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.javadoc.JavadocBlockTag;
@@ -126,11 +127,15 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 		// assert that caller method has been refactored as well
 		MethodDeclaration callerMethod = getMethodByName(callerMethodName, cu);
 		assertNotNull(callerMethod);
-		NodeList<Expression> callerMethodArguments = callerMethod.getBody().get().findAll(MethodCallExpr.class).get(0)
-				.getArguments();
-		assertEquals(2, callerMethodArguments.size());
-		assertEquals("1", callerMethodArguments.get(0).toString());
-		assertEquals("3", callerMethodArguments.get(1).toString());
+		for (MethodCallExpr methodCall : callerMethod.getBody().get().findAll(MethodCallExpr.class)) {
+			if (methodCall.getNameAsString().equals(refactoredMethod.getNameAsString())) {
+				NodeList<Expression> callerMethodArguments = methodCall.getArguments();
+				NodeList<Parameter> refactoredMethodParameters = refactoredMethod.getParameters();
+
+				assertEquals(refactoredMethodParameters.size(), callerMethodArguments.size());
+			}
+		}
+
 	}
 
 	/**

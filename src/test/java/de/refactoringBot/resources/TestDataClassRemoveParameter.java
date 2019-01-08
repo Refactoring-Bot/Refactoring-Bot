@@ -21,6 +21,7 @@ public class TestDataClassRemoveParameter {
 
 	public int getLineNumberOfCaller() {
 		getLineOfMethodWithUnusedParameter(1, 2, 3);
+		getLineOfMethodWithUnusedParameter2(1);
 		return 22;
 	}
 
@@ -34,7 +35,7 @@ public class TestDataClassRemoveParameter {
 	 */
 	public int getLineOfMethodWithUnusedParameter2(int a) {
 		getLineOfMethodWithUnusedParameter(1, 2, 3);
-		return 35;
+		return 36;
 	}
 
 }
