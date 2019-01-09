@@ -51,7 +51,7 @@ public abstract class AbstractRefactoringTests {
 	 * @return
 	 */
 	private String getTestResourcesAbsolutePath() {
-		File resourcesDirectory = new File("src/test/java/de/refactoringBot/resources");
+		File resourcesDirectory = new File("src/test/java/de/refactoringbot/resources");
 		return resourcesDirectory.getAbsolutePath();
 	}	
 
