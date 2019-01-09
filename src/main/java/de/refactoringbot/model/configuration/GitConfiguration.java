@@ -24,7 +24,6 @@ public class GitConfiguration {
 	private String srcFolder;
 
 	private String botName;
-	private String botPassword;
 	private String botEmail;
 	private String botToken;
 	private String forkApiLink;
@@ -83,14 +82,6 @@ public class GitConfiguration {
 
 	public void setBotName(String botName) {
 		this.botName = botName;
-	}
-
-	public String getBotPassword() {
-		return botPassword;
-	}
-
-	public void setBotPassword(String botPassword) {
-		this.botPassword = botPassword;
 	}
 
 	public String getBotToken() {

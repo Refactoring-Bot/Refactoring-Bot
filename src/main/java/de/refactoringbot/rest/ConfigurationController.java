@@ -100,11 +100,8 @@ public class ConfigurationController {
 
 			savedConfig = repo.save(savedConfig);
 
-			// Fetch target-Repository-Data and check bot password
+			// Fetch target-Repository-Data
 			gitController.fetchRemote(savedConfig);
-			String newBranch = "testCredentialsFor_" + savedConfig.getBotName();
-			gitController.createBranch(savedConfig, "master", newBranch, "upstream");
-			gitController.pushChanges(savedConfig, "Test bot password");
 
 			return new ResponseEntity<>(savedConfig, HttpStatus.CREATED);
 		} catch (Exception e) {
