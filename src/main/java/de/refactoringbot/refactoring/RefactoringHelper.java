@@ -203,7 +203,7 @@ public class RefactoringHelper {
 	 * @param postRefactoringSignature
 	 * @throws Exception
 	 */
-	public void checkMethodPostRefactoring(ParserRefactoring refactoring, String postRefactoringSignature)
+	public void checkForDuplicatedMethodSignatures(ParserRefactoring refactoring, String postRefactoringSignature)
 			throws Exception {
 
 		// Iterate all Javafiles

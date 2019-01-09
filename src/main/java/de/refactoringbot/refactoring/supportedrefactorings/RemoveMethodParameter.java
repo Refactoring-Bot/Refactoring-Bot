@@ -163,7 +163,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 		String postRefactoringSignature = getPostRefactoringSignature(refactoring, issue.getRefactorString());
 
 		// Check Overriden Methods
-		checkMethodPostRefactoring(refactoring, postRefactoringSignature);
+		checkForDuplicatedMethodSignatures(refactoring, postRefactoringSignature);
 
 		// Remove parameter from all methods/method calls
 		removeParameter(refactoring, issue.getRefactorString(), paramPosition);

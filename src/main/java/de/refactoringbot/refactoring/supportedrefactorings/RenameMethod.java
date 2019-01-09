@@ -154,7 +154,7 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 		String postRefactoringSignature = getPostRefactoringSignature(refactoring, issue.getRefactorString());
 
 		// Check Overriden Methods
-		checkMethodPostRefactoring(refactoring, postRefactoringSignature);
+		checkForDuplicatedMethodSignatures(refactoring, postRefactoringSignature);
 
 		// Rename method declarations and their calls
 		renameFindings(refactoring, issue.getRefactorString());
@@ -224,7 +224,7 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 			// Get all Methods and MethodCalls of File
 			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
 
-			// Rename all Methods
+			// Rename one method and return method signature
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
 					performRenameMethod(fileMethod, methodName);
