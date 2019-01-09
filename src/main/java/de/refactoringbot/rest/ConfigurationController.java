@@ -147,15 +147,15 @@ public class ConfigurationController {
 
 		// unwrap optional
 		GitConfiguration savedConfig = null;
-		try {
-			if (existsConfig.isPresent()) {
-				savedConfig = existsConfig.get();
-			}
-		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
-			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+
+		// Read configuration if possible
+		if (existsConfig.isPresent()) {
+			savedConfig = existsConfig.get();
+		} else {
+			return new ResponseEntity<>("Configuration with given ID does not exist in the database!",
+					HttpStatus.NOT_FOUND);
 		}
-		
+
 		// Init database config
 		modelMapper.map(newConfiguration, savedConfig);
 
