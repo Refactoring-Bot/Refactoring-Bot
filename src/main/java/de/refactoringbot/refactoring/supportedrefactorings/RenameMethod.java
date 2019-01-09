@@ -150,6 +150,12 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 		refactoring = findMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
 		refactoring = findMethodCalls(refactoring, issue.getAllJavaFiles());
 
+		// Get local method signature after rename
+		String postRefactoringSignature = getPostRefactoringSignature(refactoring, issue.getRefactorString());
+
+		// Check Overriden Methods
+		checkMethodPostRefactoring(refactoring, postRefactoringSignature);
+
 		// Rename method declarations and their calls
 		renameFindings(refactoring, issue.getRefactorString());
 
@@ -196,6 +202,38 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 			out.println(LexicalPreservingPrinter.print(compilationUnit));
 			out.close();
 		}
+	}
+
+	/**
+	 * This method gets the Method signature that our methods will have without the
+	 * parameter.
+	 * 
+	 * @param refactoring
+	 * @param paramName
+	 * @return signature
+	 * @throws FileNotFoundException
+	 * @throws BotRefactoringException
+	 */
+	private String getPostRefactoringSignature(ParserRefactoring refactoring, String methodName)
+			throws FileNotFoundException, BotRefactoringException {
+		for (String javaFile : refactoring.getJavaFiles()) {
+			// Create compilation unit
+			FileInputStream methodPath = new FileInputStream(javaFile);
+			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
+
+			// Get all Methods and MethodCalls of File
+			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
+
+			// Rename all Methods
+			for (MethodDeclaration fileMethod : fileMethods) {
+				if (refactoring.getMethods().contains(fileMethod)) {
+					performRenameMethod(fileMethod, methodName);
+					return getMethodDeclarationAsString(fileMethod);
+				}
+			}
+
+		}
+		throw new BotRefactoringException("Error reading methods that need their parameter removed!");
 	}
 
 	/**
