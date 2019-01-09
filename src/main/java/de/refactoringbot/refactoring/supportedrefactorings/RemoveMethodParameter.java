@@ -163,44 +163,13 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 		String postRefactoringSignature = getPostRefactoringSignature(refactoring, issue.getRefactorString());
 
 		// Check Overriden Methods
-		checkOverridenMethods(refactoring, postRefactoringSignature);
+		checkForDuplicatedMethodSignatures(refactoring, postRefactoringSignature);
 
 		// Remove parameter from all methods/method calls
 		removeParameter(refactoring, issue.getRefactorString(), paramPosition);
 
 		return "Removed method parameter '" + issue.getRefactorString() + "' of method '"
 				+ methodToRefactor.getSignature() + "'";
-	}
-
-	/**
-	 * This method checks all Java-Classes that will be refactored if they have a
-	 * method with the same signature as our 'to be refactored' method without the
-	 * 'to be removed parameter'.
-	 * 
-	 * @param refactoring
-	 * @param postRefactoringSignature
-	 * @throws Exception
-	 */
-	private void checkOverridenMethods(ParserRefactoring refactoring, String postRefactoringSignature)
-			throws Exception {
-
-		// Iterate all Javafiles
-		for (String javaFile : refactoring.getJavaFiles()) {
-			// Create compilation unit
-			FileInputStream methodPath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
-
-			// Get all Methods and MethodCalls of File
-			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
-
-			// Check if class has an overriden method without the "to be removed" parameter
-			for (MethodDeclaration fileMethod : fileMethods) {
-				if (getMethodDeclarationAsString(fileMethod).equals(postRefactoringSignature)) {
-					throw new BotRefactoringException("File '" + javaFile
-							+ "' has a method with the same signature as our refactored method without the 'to be removed' parameter!");
-				}
-			}
-		}
 	}
 
 	/**
