@@ -155,11 +155,6 @@ public class ConfigurationController {
 			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		
-		// Check if config = null
-		if (savedConfig == null) {
-			return new ResponseEntity<>("Configuration is 'null'!", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-		
 		// Init database config
 		modelMapper.map(newConfiguration, savedConfig);
 
