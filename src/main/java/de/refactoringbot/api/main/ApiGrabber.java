@@ -8,20 +8,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import de.refactoringbot.api.github.GithubDataGrabber;
-import de.refactoringbot.api.sonarQube.SonarQubeDataGrabber;
+import de.refactoringbot.api.sonarqube.SonarQubeDataGrabber;
 import de.refactoringbot.controller.github.GithubObjectTranslator;
 import de.refactoringbot.controller.main.BotController;
-import de.refactoringbot.controller.sonarQube.SonarQubeObjectTranslator;
-import de.refactoringbot.model.botIssue.BotIssue;
+import de.refactoringbot.controller.sonarqube.SonarQubeObjectTranslator;
+import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
-import de.refactoringbot.model.githubModels.pullRequest.GithubCreateRequest;
-import de.refactoringbot.model.githubModels.pullRequest.GithubPullRequest;
-import de.refactoringbot.model.githubModels.pullRequest.GithubPullRequests;
-import de.refactoringbot.model.outputModel.botPullRequest.BotPullRequest;
-import de.refactoringbot.model.outputModel.botPullRequest.BotPullRequests;
-import de.refactoringbot.model.outputModel.botPullRequestComment.BotPullRequestComment;
-import de.refactoringbot.model.sonarQube.SonarQubeIssues;
+import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
+import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
+import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
+import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
+import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
+import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
+import de.refactoringbot.model.sonarqube.SonarQubeIssues;
 
 import java.util.ArrayList;
 

@@ -4,7 +4,11 @@ import java.util.HashMap;
 
 import org.springframework.stereotype.Component;
 
-import de.refactoringbot.refactoring.supportedRefactorings.*;
+import de.refactoringbot.refactoring.supportedrefactorings.AddOverrideAnnotation;
+import de.refactoringbot.refactoring.supportedrefactorings.RemoveCommentedOutCode;
+import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
+import de.refactoringbot.refactoring.supportedrefactorings.RenameMethod;
+import de.refactoringbot.refactoring.supportedrefactorings.ReorderModifier;
 
 /**
  * This class holds all supported refactoring operations and maps them to a

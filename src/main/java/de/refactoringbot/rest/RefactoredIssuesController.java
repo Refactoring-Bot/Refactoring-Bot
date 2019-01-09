@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import de.refactoringbot.model.refactoredIssue.RefactoredIssue;
-import de.refactoringbot.model.refactoredIssue.RefactoredIssueRepository;
+import de.refactoringbot.model.refactoredissue.RefactoredIssue;
+import de.refactoringbot.model.refactoredissue.RefactoredIssueRepository;
 import io.swagger.annotations.ApiOperation;
 
 /**

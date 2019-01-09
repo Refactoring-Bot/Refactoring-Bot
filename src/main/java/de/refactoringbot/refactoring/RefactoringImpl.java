@@ -1,6 +1,6 @@
 package de.refactoringbot.refactoring;
 
-import de.refactoringbot.model.botIssue.BotIssue;
+import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 
 /**

@@ -13,20 +13,20 @@ import org.springframework.stereotype.Component;
 
 import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.configuration.BotConfiguration;
-import de.refactoringbot.model.botIssue.BotIssue;
+import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
-import de.refactoringbot.model.githubModels.pullRequest.GithubCreateRequest;
-import de.refactoringbot.model.githubModels.pullRequest.GithubPullRequest;
-import de.refactoringbot.model.githubModels.pullRequest.GithubPullRequests;
-import de.refactoringbot.model.githubModels.pullRequest.GithubUpdateRequest;
-import de.refactoringbot.model.githubModels.pullRequestComment.GitHubPullRequestComments;
-import de.refactoringbot.model.githubModels.pullRequestComment.PullRequestComment;
-import de.refactoringbot.model.githubModels.pullRequestComment.ReplyComment;
-import de.refactoringbot.model.outputModel.botPullRequest.BotPullRequest;
-import de.refactoringbot.model.outputModel.botPullRequest.BotPullRequests;
-import de.refactoringbot.model.outputModel.botPullRequestComment.BotPullRequestComment;
-import de.refactoringbot.model.outputModel.botPullRequestComment.BotPullRequestComments;
+import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
+import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
+import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
+import de.refactoringbot.model.github.pullrequest.GithubUpdateRequest;
+import de.refactoringbot.model.github.pullrequestcomment.GitHubPullRequestComments;
+import de.refactoringbot.model.github.pullrequestcomment.PullRequestComment;
+import de.refactoringbot.model.github.pullrequestcomment.ReplyComment;
+import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
+import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
+import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
+import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComments;
 
 /**
  * This class translates all kinds of objects from GitHub to Bot-Objects

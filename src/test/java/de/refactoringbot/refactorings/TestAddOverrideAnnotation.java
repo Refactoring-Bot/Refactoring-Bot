@@ -10,10 +10,10 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.refactoringbot.model.botIssue.BotIssue;
+import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
-import de.refactoringbot.refactoring.supportedRefactorings.AddOverrideAnnotation;
+import de.refactoringbot.refactoring.supportedrefactorings.AddOverrideAnnotation;
 import de.refactoringbot.resources.TestDataClassMissingOverrideAnnotation;
 
 public class TestAddOverrideAnnotation extends AbstractRefactoringTests {

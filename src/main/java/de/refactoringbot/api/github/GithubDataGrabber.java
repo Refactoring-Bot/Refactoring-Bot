@@ -23,16 +23,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
-import de.refactoringbot.model.githubModels.fork.GithubFork;
-import de.refactoringbot.model.githubModels.pullRequest.GithubCreateRequest;
-import de.refactoringbot.model.githubModels.pullRequest.GithubPullRequest;
-import de.refactoringbot.model.githubModels.pullRequest.GithubPullRequests;
-import de.refactoringbot.model.githubModels.pullRequest.GithubUpdateRequest;
-import de.refactoringbot.model.githubModels.pullRequestComment.GitHubPullRequestComments;
-import de.refactoringbot.model.githubModels.pullRequestComment.PullRequestComment;
-import de.refactoringbot.model.githubModels.pullRequestComment.ReplyComment;
-import de.refactoringbot.model.githubModels.repository.GithubRepository;
-import de.refactoringbot.model.githubModels.user.GithubUser;
+import de.refactoringbot.model.github.fork.GithubFork;
+import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
+import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
+import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
+import de.refactoringbot.model.github.pullrequest.GithubUpdateRequest;
+import de.refactoringbot.model.github.pullrequestcomment.GitHubPullRequestComments;
+import de.refactoringbot.model.github.pullrequestcomment.PullRequestComment;
+import de.refactoringbot.model.github.pullrequestcomment.ReplyComment;
+import de.refactoringbot.model.github.repository.GithubRepository;
+import de.refactoringbot.model.github.user.GithubUser;
 
 /**
  * This class communicates with the Github-API.

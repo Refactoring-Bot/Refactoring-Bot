@@ -26,10 +26,10 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.javadoc.JavadocBlockTag;
 
-import de.refactoringbot.model.botIssue.BotIssue;
+import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
-import de.refactoringbot.refactoring.supportedRefactorings.RemoveMethodParameter;
+import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
 import de.refactoringbot.resources.TestDataClassRemoveParameter;
 
 public class TestRemoveParameter extends AbstractRefactoringTests {

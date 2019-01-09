@@ -11,12 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import de.refactoringbot.model.botIssue.BotIssue;
+import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
-import de.refactoringbot.model.outputModel.botPullRequest.BotPullRequest;
-import de.refactoringbot.model.outputModel.botPullRequest.BotPullRequests;
-import de.refactoringbot.model.outputModel.botPullRequestComment.BotPullRequestComment;
-import de.refactoringbot.model.refactoredIssue.RefactoredIssue;
+import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
+import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
+import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
+import de.refactoringbot.model.refactoredissue.RefactoredIssue;
 
 /**
  * This class performs bot specific operations.
