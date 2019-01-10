@@ -201,10 +201,11 @@ public class RefactoringHelper {
 	 * 
 	 * @param refactoring
 	 * @param postRefactoringSignature
-	 * @throws Exception
+	 * @throws BotRefactoringException
+	 * @throws FileNotFoundException 
 	 */
 	public void checkForDuplicatedMethodSignatures(ParserRefactoring refactoring, String postRefactoringSignature)
-			throws Exception {
+			throws BotRefactoringException, FileNotFoundException {
 
 		// Iterate all Javafiles
 		for (String javaFile : refactoring.getJavaFiles()) {

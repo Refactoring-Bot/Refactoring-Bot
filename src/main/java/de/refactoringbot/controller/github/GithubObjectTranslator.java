@@ -1,5 +1,6 @@
 package de.refactoringbot.controller.github;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
@@ -16,6 +17,7 @@ import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
+import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
@@ -84,10 +86,12 @@ public class GithubObjectTranslator {
 	 * 
 	 * @param githubRequests
 	 * @return translatedRequests
-	 * @throws Exception
+	 * @throws URISyntaxException
+	 * @throws IOException
+	 * @throws GitHubAPIException
 	 */
 	public BotPullRequests translateRequests(GithubPullRequests githubRequests, GitConfiguration gitConfig)
-			throws Exception {
+			throws URISyntaxException, GitHubAPIException, IOException {
 		// Create Requests
 		BotPullRequests translatedRequests = new BotPullRequests();
 
@@ -116,7 +120,7 @@ public class GithubObjectTranslator {
 				commentUri = new URI(githubRequest.getReviewCommentsUrl());
 			} catch (URISyntaxException e) {
 				logger.error(e.getMessage(), e);
-				throw new Exception("Could not build comment URI!");
+				throw new URISyntaxException("Could not build comment URI!", e.getMessage());
 			}
 
 			// Get comments from github

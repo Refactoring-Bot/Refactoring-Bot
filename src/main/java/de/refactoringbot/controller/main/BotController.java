@@ -1,6 +1,7 @@
 package de.refactoringbot.controller.main;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -133,7 +134,7 @@ public class BotController {
 	 * @return rootFolder
 	 * @throws IOException
 	 */
-	public String findSrcFolder(String repoFolder) throws Exception {
+	public String findSrcFolder(String repoFolder) throws IOException {
 		// Get root folder of project
 		File dir = new File(repoFolder);
 
@@ -145,9 +146,9 @@ public class BotController {
 				return file.getAbsolutePath();
 			}
 		}
-
-		// If no src-folder found
-		logger.error("No src-folder found inside this java-project!");
-		throw new Exception("No src-folder found inside this java-project!");
+		
+		String noSrcFolderFoundErrorMsg = "No src-folder found inside this java-project!";
+		logger.error(noSrcFolderFoundErrorMsg);
+		throw new FileNotFoundException(noSrcFolderFoundErrorMsg);
 	}
 }
