@@ -118,7 +118,6 @@ public class SonarQubeObjectTranslator {
 				paramPartOfMessage = splitMessage[i + 1];
 			}
 		}
-		String parameterName = paramPartOfMessage.substring(1, paramPartOfMessage.length() - 2);
-		return parameterName;
+		return paramPartOfMessage.substring(1, paramPartOfMessage.length() - 2);
 	}
 }

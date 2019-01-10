@@ -1,6 +1,7 @@
 package de.refactoringbot.controller.main;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -141,8 +142,7 @@ public class BotController {
 				TrueFileFilter.INSTANCE);
 		for (File file : files) {
 			if (file.isDirectory() && file.getName().equals("src")) {
-				String srcPath = file.getAbsolutePath();
-				return srcPath;
+				return file.getAbsolutePath();
 			}
 		}
 
