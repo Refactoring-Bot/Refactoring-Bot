@@ -147,13 +147,7 @@ public class GithubDataGrabber {
 	public void checkBranch(GitConfiguration gitConfig, String branchName)
 			throws URISyntaxException, BotRefactoringException, GitHubAPIException {
 		// Read URI from configuration
-		URI configUri = null;
-		try {
-			configUri = new URI(gitConfig.getForkApiLink());
-		} catch (URISyntaxException u) {
-			logger.error(u.getMessage(), u);
-			throw new URISyntaxException("Could not read URI from configuration!", u.getMessage());
-		}
+		URI configUri = createURIFromApiLink(gitConfig.getForkApiLink());
 
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
@@ -195,13 +189,7 @@ public class GithubDataGrabber {
 	public GithubPullRequests getAllPullRequests(GitConfiguration gitConfig)
 			throws URISyntaxException, GitHubAPIException, IOException {
 		// Read URI from configuration
-		URI configUri = null;
-		try {
-			configUri = new URI(gitConfig.getRepoApiLink());
-		} catch (URISyntaxException u) {
-			logger.error(u.getMessage(), u);
-			throw new URISyntaxException("Could not read URI from configuration!", u.getMessage());
-		}
+		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
@@ -296,12 +284,7 @@ public class GithubDataGrabber {
 	public void updatePullRequest(GithubUpdateRequest send, GitConfiguration gitConfig, Integer requestNumber)
 			throws GitHubAPIException, URISyntaxException {
 		// Read URI from configuration
-		URI configUri = null;
-		try {
-			configUri = new URI(gitConfig.getRepoApiLink());
-		} catch (URISyntaxException u) {
-			throw new URISyntaxException("Could not read URI from configuration!", u.getMessage());
-		}
+		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
@@ -340,12 +323,7 @@ public class GithubDataGrabber {
 	public void responseToBotComment(ReplyComment comment, GitConfiguration gitConfig, Integer requestNumber)
 			throws URISyntaxException, GitHubAPIException {
 		// Read URI from configuration
-		URI configUri = null;
-		try {
-			configUri = new URI(gitConfig.getRepoApiLink());
-		} catch (URISyntaxException u) {
-			throw new URISyntaxException("Could not read URI from configuration!", u.getMessage());
-		}
+		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
@@ -377,12 +355,7 @@ public class GithubDataGrabber {
 			throws URISyntaxException, GitHubAPIException {
 
 		// Read URI from configuration
-		URI configUri = null;
-		try {
-			configUri = new URI(gitConfig.getRepoApiLink());
-		} catch (URISyntaxException u) {
-			throw new URISyntaxException("Could not read uri from configuration!", u.getMessage());
-		}
+		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
@@ -414,12 +387,7 @@ public class GithubDataGrabber {
 	public void createFork(GitConfiguration gitConfig) throws URISyntaxException, GitHubAPIException {
 
 		// Read URI from configuration
-		URI configUri = null;
-		try {
-			configUri = new URI(gitConfig.getRepoApiLink());
-		} catch (URISyntaxException u) {
-			throw new URISyntaxException("Could not read URI from configuration!", u.getMessage());
-		}
+		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
@@ -456,12 +424,7 @@ public class GithubDataGrabber {
 		}
 
 		// Read URI from configuration
-		URI configUri;
-		try {
-			configUri = new URI(gitConfig.getForkApiLink());
-		} catch (URISyntaxException u) {
-			throw new URISyntaxException("Could not read URI from configuration!", u.getMessage());
-		}
+		URI configUri = createURIFromApiLink(gitConfig.getForkApiLink());
 
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
@@ -480,6 +443,23 @@ public class GithubDataGrabber {
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not delete repository from Github!", r);
 		}
+	}
+	
+	/**
+	 * Attempts to instantiate a URI object using the specified API link
+	 * @param link
+	 * @return
+	 * @throws URISyntaxException
+	 */
+	private URI createURIFromApiLink(String link) throws URISyntaxException {
+		URI result = null;
+		try {
+			result = new URI(link);
+		} catch (URISyntaxException u) {
+			logger.error(u.getMessage(), u);
+			throw new URISyntaxException("Could not create URI from given API link!", u.getMessage());
+		}
+		return result;
 	}
 
 }
