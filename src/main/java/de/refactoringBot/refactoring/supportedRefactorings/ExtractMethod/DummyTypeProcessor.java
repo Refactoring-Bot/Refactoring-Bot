@@ -19,7 +19,7 @@ public class DummyTypeProcessor extends AbstractTypeProcessor {
     @Override
     public synchronized void init(ProcessingEnvironment env) {
         super.init(env);
-        this.processingEnv = env;
+        DummyTypeProcessor.processingEnv = env;
     }
 
     @Override
