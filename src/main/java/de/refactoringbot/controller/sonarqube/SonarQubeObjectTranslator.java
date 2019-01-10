@@ -25,8 +25,6 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 public class SonarQubeObjectTranslator {
 
 	@Autowired
-	RefactoringOperations operations;
-	@Autowired
 	FileController fileController;
 
 	/**
@@ -75,26 +73,26 @@ public class SonarQubeObjectTranslator {
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
 			case "squid:S1161":
-				botIssue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
+				botIssue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
 				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
 			case "squid:ModifiersOrderCheck":
-				botIssue.setRefactoringOperation(operations.REORDER_MODIFIER);
+				botIssue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
 				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
 			case "squid:CommentedOutCodeLine":
-				botIssue.setRefactoringOperation(operations.REMOVE_COMMENTED_OUT_CODE);
+				botIssue.setRefactoringOperation(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE);
 				botIssues.add(botIssue);
 				break;
 			case "squid:S1172":
-				botIssue.setRefactoringOperation(operations.REMOVE_PARAMETER);
+				botIssue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 				botIssue.setRefactorString(getParameterName(issue));
 				botIssues.add(botIssue);
 				break;
 			default:
-				botIssue.setRefactoringOperation(operations.UNKNOWN);
+				botIssue.setRefactoringOperation(RefactoringOperations.UNKNOWN);
 				break;
 			}
 		}
