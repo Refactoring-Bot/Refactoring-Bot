@@ -144,7 +144,7 @@ public class RefactoringHelper {
 
 			// Search all Classes
 			for (ClassOrInterfaceDeclaration currentClass : classes) {
-				List<String> classAncestors = new ArrayList<String>();
+				List<String> classAncestors = new ArrayList<>();
 				boolean isSubClass = false;
 				boolean hasExternalDep = false;
 

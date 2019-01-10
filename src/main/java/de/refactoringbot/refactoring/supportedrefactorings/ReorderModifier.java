@@ -93,7 +93,7 @@ public class ReorderModifier implements RefactoringImpl {
 			}
 			
 			// Reorderd modifiers
-			NodeList<Modifier> reorderedModifiers = new NodeList<Modifier>();
+			NodeList<Modifier> reorderedModifiers = new NodeList<>();
 			// Init empty enumset
 			EnumSet<Keyword> keywords = EnumSet.noneOf(Keyword.class);
 
