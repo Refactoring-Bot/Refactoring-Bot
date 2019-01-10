@@ -51,7 +51,7 @@ public class GithubDataGrabber {
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GithubDataGrabber.class);
 
-	private final String USER_AGENT = "Mozilla/5.0";
+	private static final String USER_AGENT = "Mozilla/5.0";
 
 	/**
 	 * This method tries to get a repository from github.

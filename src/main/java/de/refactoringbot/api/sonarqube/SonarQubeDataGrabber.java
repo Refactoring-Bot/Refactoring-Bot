@@ -1,6 +1,8 @@
 package de.refactoringbot.api.sonarqube;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,9 +16,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * This class gets all kinds of data from SonarCube.
  * 
@@ -26,7 +25,7 @@ import java.util.List;
 @Component
 public class SonarQubeDataGrabber {
 
-	private final String USER_AGENT = "Mozilla/5.0";
+	private static final String USER_AGENT = "Mozilla/5.0";
 
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(SonarQubeDataGrabber.class);
