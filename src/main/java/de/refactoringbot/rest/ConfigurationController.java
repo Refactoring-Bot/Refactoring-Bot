@@ -4,6 +4,22 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+import org.apache.commons.io.FileUtils;
+import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import de.refactoringbot.api.main.ApiGrabber;
 import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.controller.github.GithubObjectTranslator;
@@ -12,17 +28,6 @@ import de.refactoringbot.controller.main.GitController;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
-
-import org.apache.commons.io.FileUtils;
-
-import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import io.swagger.annotations.ApiOperation;
 
 /**
@@ -78,34 +83,8 @@ public class ConfigurationController {
 				logger.error(e.getMessage(), e);
 				return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 			}
-			// Delete local folder for config if exists (if database was resetted)
-			if (new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).exists()) {
-				FileUtils.deleteDirectory(
-						new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
-			}
 
-			// Create new local folder for the fork
-			File dir = new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId());
-			dir.mkdir();
-			// Create the fork on the filehoster bot account
-			grabber.createFork(savedConfig);
-			// Clone fork + add remote of origin repository
-			gitController.initLocalWorkspace(savedConfig);
-
-			// Add repo path and src-folder path to config
-			savedConfig.setRepoFolder(
-					Paths.get(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).toString());
-			savedConfig.setSrcFolder(botController
-					.findSrcFolder(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
-
-			savedConfig = repo.save(savedConfig);
-
-			// Fetch target-Repository-Data and check bot password
-			gitController.fetchRemote(savedConfig);
-			String newBranch = "testCredentialsFor_" + savedConfig.getBotName();
-			gitController.createBranch(savedConfig, "master", newBranch, "upstream");
-			gitController.pushChanges(savedConfig, "Test bot password");
-
+			savedConfig = finalizeGitConfiguration(savedConfig);
 			return new ResponseEntity<>(savedConfig, HttpStatus.CREATED);
 		} catch (Exception e) {
 			// If error occured after config was created
@@ -160,34 +139,7 @@ public class ConfigurationController {
 		modelMapper.map(newConfiguration, savedConfig);
 
 		try {
-
-			// Delete local folder for config if exists (if database was resetted)
-			if (new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).exists()) {
-				FileUtils.deleteDirectory(
-						new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
-			}
-
-			// Create new local folder for the fork
-			File dir = new File(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId());
-			dir.mkdir();
-			// Create the fork on the filehoster bot account
-			grabber.createFork(savedConfig);
-			// Clone fork + add remote of origin repository
-			gitController.initLocalWorkspace(savedConfig);
-
-			// Add repo path and src-folder path to config
-			savedConfig.setRepoFolder(
-					Paths.get(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()).toString());
-			savedConfig.setSrcFolder(botController
-					.findSrcFolder(botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId()));
-			repo.save(savedConfig);
-
-			// Fetch target-Repository-Data and check bot password
-			gitController.fetchRemote(savedConfig);
-			String newBranch = "testCredentialsFor_" + savedConfig.getBotName();
-			gitController.createBranch(savedConfig, "master", newBranch, "upstream");
-			gitController.pushChanges(savedConfig, "Test bot password");
-
+			savedConfig = finalizeGitConfiguration(savedConfig);
 			return new ResponseEntity<>(savedConfig, HttpStatus.CREATED);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
@@ -287,5 +239,43 @@ public class ConfigurationController {
 			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		return new ResponseEntity<>(existsConfig, HttpStatus.OK);
+	}
+
+	/**
+	 * This method finalizes the configuration process. Here we initiate our local
+	 * workspace for our configuration, create a fork on our filehosting service and
+	 * pull the fork. Also we create a remote of the original repository and fetch
+	 * its data initially. At last we create paths to our config workspace and
+	 * update our config in the db with them.
+	 * 
+	 * @param config
+	 * @return savedConfig
+	 * @throws Exception
+	 */
+	private GitConfiguration finalizeGitConfiguration(GitConfiguration config) throws Exception {
+		// Delete local folder for config if exists (if database was resetted)
+		if (new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()).exists()) {
+			FileUtils.deleteDirectory(new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()));
+		}
+
+		// Create new local folder for the fork
+		File dir = new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId());
+		dir.mkdir();
+		// Create the fork on the filehoster bot account
+		grabber.createFork(config);
+		// Clone fork + add remote of origin repository
+		gitController.initLocalWorkspace(config);
+
+		// Add repo path and src-folder path to config
+		config.setRepoFolder(
+				Paths.get(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()).toString());
+		config.setSrcFolder(
+				botController.findSrcFolder(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()));
+		config = repo.save(config);
+
+		// Fetch target-Repository-Data
+		gitController.fetchRemote(config);
+
+		return config;
 	}
 }

@@ -229,13 +229,11 @@ public class GitController {
 			// Perform 'git commit -m'
 			git.commit().setMessage(commitMessage).setCommitter(gitConfig.getBotName(), gitConfig.getBotEmail()).call();
 			// Push with bot credenials
-			git.push()
-					.setCredentialsProvider(
-							new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotPassword()))
+			git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
 					.call();
 		} catch (TransportException t) {
 			logger.error(t.getMessage(), t);
-			throw new Exception("Wrong bot password!");
+			throw new Exception("Wrong bot token!");
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new Exception("Could not successfully perform 'git push'!");
