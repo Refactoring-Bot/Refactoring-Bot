@@ -84,7 +84,7 @@ public class ConfigurationController {
 				return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 
-			savedConfig = addOrUpdateGitConfiguration(savedConfig);
+			savedConfig = finalizeGitConfiguration(savedConfig);
 			return new ResponseEntity<>(savedConfig, HttpStatus.CREATED);
 		} catch (Exception e) {
 			// If error occured after config was created
@@ -139,7 +139,7 @@ public class ConfigurationController {
 		modelMapper.map(newConfiguration, savedConfig);
 
 		try {
-			savedConfig = addOrUpdateGitConfiguration(savedConfig);
+			savedConfig = finalizeGitConfiguration(savedConfig);
 			return new ResponseEntity<>(savedConfig, HttpStatus.CREATED);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
@@ -240,8 +240,19 @@ public class ConfigurationController {
 		}
 		return new ResponseEntity<>(existsConfig, HttpStatus.OK);
 	}
-	
-	private GitConfiguration addOrUpdateGitConfiguration(GitConfiguration config) throws Exception {
+
+	/**
+	 * This method finalizes the configuration process. Here we initiate our local
+	 * workspace for our configuration, create a fork on our filehosting service and
+	 * pull the fork. Also we create a remote of the original repository and fetch
+	 * its data initially. At last we create paths to our config workspace and
+	 * update our config in the db with them.
+	 * 
+	 * @param config
+	 * @return savedConfig
+	 * @throws Exception
+	 */
+	private GitConfiguration finalizeGitConfiguration(GitConfiguration config) throws Exception {
 		// Delete local folder for config if exists (if database was resetted)
 		if (new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()).exists()) {
 			FileUtils.deleteDirectory(new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()));
