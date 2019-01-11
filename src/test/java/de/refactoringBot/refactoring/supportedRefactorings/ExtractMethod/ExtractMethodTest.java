@@ -12,26 +12,43 @@ import java.nio.file.StandardCopyOption;
 
 public class ExtractMethodTest {
     String simpleExamplePath;
+    String ifElseExamplePath;
 
     @Before
     public void setUp() throws Exception {
-        String fileName = "RefactorSimpleExample.java";
         Path tempDir = Files.createTempDirectory("ExtractMethodTest");
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+        // refactor simple example
+        String fileName = "RefactorSimpleExample.java";
         Path filePath = Paths.get(tempDir.toString(), fileName);
         File file = new File(classLoader.getResource(fileName).getFile());
         this.simpleExamplePath = Files.copy(file.toPath(), (new File(filePath.toString())).toPath(), StandardCopyOption.REPLACE_EXISTING).toAbsolutePath().toString();
+
+        // refactor if else example
+        fileName = "RefactorIfElseExample.java";
+        tempDir = Files.createTempDirectory("ExtractMethodTest");
+        filePath = Paths.get(tempDir.toString(), fileName);
+        file = new File(classLoader.getResource(fileName).getFile());
+        this.ifElseExamplePath= Files.copy(file.toPath(), (new File(filePath.toString())).toPath(), StandardCopyOption.REPLACE_EXISTING).toAbsolutePath().toString();
     }
 
 
     @Test
-    public void refactorMethod() {
+    public void refactorMethodSimple() {
         ExtractMethod extractMethod = new ExtractMethod();
         extractMethod.refactorMethod(this.simpleExamplePath, 4);
+    }
+
+    @Test
+    public void refactorMethodIfElse() {
+        ExtractMethod extractMethod = new ExtractMethod();
+        extractMethod.refactorMethod(this.ifElseExamplePath, 4);
     }
 
     @After
     public void tearDown() throws Exception {
         (new File(this.simpleExamplePath)).delete();
+        (new File(this.ifElseExamplePath)).delete();
     }
 }
