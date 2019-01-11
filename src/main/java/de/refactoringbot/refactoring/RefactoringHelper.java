@@ -295,5 +295,40 @@ public class RefactoringHelper {
 
 		return ancestors;
 	}
+	
+	/**
+	 * Finds a method in a compilation unit that starts at the specified line number
+	 * @param lineNumber
+	 * @param cu
+	 * @return MethodDeclaration or null if none found
+	 */
+	public static MethodDeclaration getMethodByLineNumber(int lineNumber, CompilationUnit cu) {
+		MethodDeclaration result = null;
+		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
+		for (MethodDeclaration method : methods) {
+			if (method.getBegin().get().line == lineNumber) {
+				result = method;
+			}
+		}
+		return result;
+	}
+	
+
+	/**
+	 * Finds a method in a compilation unit with a specific name
+	 * @param methodName
+	 * @param cu
+	 * @return MethodDeclaration or null if none found
+	 */
+	public static MethodDeclaration getMethodByName(String methodName, CompilationUnit cu) {
+		MethodDeclaration result = null;
+		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
+		for (MethodDeclaration method : methods) {
+			if (method.getNameAsString().equals(methodName)) {
+				result = method;
+			}
+		}
+		return result;
+	}
 
 }

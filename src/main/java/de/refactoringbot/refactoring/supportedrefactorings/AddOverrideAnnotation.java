@@ -15,52 +15,35 @@ import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinte
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
+import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.RefactoringImpl;
 
 /**
- * This class is used for executing the add override annotation refactoring.
- *
- * @author Timo Pfaff
+ * This class is used for executing the 'add override annotation' refactoring
  */
 @Component
 public class AddOverrideAnnotation implements RefactoringImpl {
 
-	/**
-	 * This method performs the refactoring and returns the a commit message.
-	 * 
-	 * @param issue
-	 * @param gitConfig
-	 * @return commitMessage
-	 * @throws Exception
-	 */
+	private static final String OVERRIDE_ANNOTATION_NAME = "Override";
+
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
-
-		// Prepare data
 		String path = issue.getFilePath();
 		String methodName = null;
 
-		// Read file
 		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
 
-		List<MethodDeclaration> methods = compilationUnit.findAll(MethodDeclaration.class);
-
-		// Search all methods
-		for (MethodDeclaration method : methods) {
-			// If methods match
-			methodName = addAnnotation(method, issue.getLine());
-
-			// If method found
-			if (methodName != null) {
-				break;
-			}
-		}
-
-		// If method not found
-		if (methodName == null) {
+		MethodDeclaration methodDeclarationToModify = RefactoringHelper.getMethodByLineNumber(issue.getLine(),
+				compilationUnit);
+		if (methodDeclarationToModify == null) {
 			throw new BotRefactoringException("Could not find method at specified line! Automated refactoring failed.");
 		}
+		if (isOverrideAnnotationExisting(methodDeclarationToModify)) {
+			throw new BotRefactoringException("Method is already annotated with 'Override'!");
+		}
+
+		methodDeclarationToModify.addMarkerAnnotation(OVERRIDE_ANNOTATION_NAME);
 
 		// Save changes to file
 		PrintWriter out = new PrintWriter(gitConfig.getRepoFolder() + "/" + path);
@@ -72,33 +55,19 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 	}
 
 	/**
-	 * This method adds the override annotation to a method at a specific line
-	 * inside the java file.
-	 * 
 	 * @param declaration
-	 * @param line
-	 * @return methodName
-	 * @throws BotRefactoringException
+	 * @return true if given declaration already has an @Override annotation, false
+	 *         otherwise
 	 */
-	public String addAnnotation(MethodDeclaration declaration, Integer line) throws BotRefactoringException {
-		// Get all method Annotations
+	private boolean isOverrideAnnotationExisting(MethodDeclaration declaration) {
 		List<AnnotationExpr> annotations = declaration.getAnnotations();
 		for (AnnotationExpr annotation : annotations) {
-			// If Override-Annotation already exists
-			if (annotation.getNameAsString().equals("Override")) {
-				throw new BotRefactoringException("Method is already annotated with 'Override'!");
+			if (annotation.getNameAsString().equals(OVERRIDE_ANNOTATION_NAME)) {
+				return true;
 			}
 		}
-		// If method declaration = method that needs refactoring
-		if (declaration.getName().getBegin().isPresent()) {
-			if (line == declaration.getName().getBegin().get().line) {
-				// Add annotation
-				declaration.addMarkerAnnotation("Override");
 
-				// return method name
-				return declaration.getNameAsString();
-			}
-		}
-		return null;
+		return false;
 	}
+
 }
