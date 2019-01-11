@@ -1,5 +1,6 @@
 package de.refactoringbot.controller.sonarqube;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,8 +33,9 @@ public class SonarQubeObjectTranslator {
 	 * 
 	 * @param issue
 	 * @return botIssue
+	 * @throws IOException
 	 */
-	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) throws Exception {
+	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) throws IOException {
 		// Create empty list of bot issues
 		List<BotIssue> botIssues = new ArrayList<>();
 

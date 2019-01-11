@@ -34,9 +34,9 @@ public class RefactoringPicker {
 	 * 
 	 * @param issue
 	 * @return commitMessage
-	 * @throws Exception
+	 * @throws BotRefactoringException
 	 */
-	public String pickAndRefactor(BotIssue issue, GitConfiguration gitConfig) throws Exception {
+	public String pickAndRefactor(BotIssue issue, GitConfiguration gitConfig) throws BotRefactoringException {
 
 		try {
 			// Get rule to class mapping

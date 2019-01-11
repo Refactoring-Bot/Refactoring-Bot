@@ -24,6 +24,7 @@ import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
+import de.refactoringbot.model.exceptions.ValidationException;
 import de.refactoringbot.model.github.fork.GithubFork;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
@@ -124,13 +125,13 @@ public class GithubDataGrabber {
 
 		// Check if user exists and has a public email
 		if (!githubUser.getLogin().equals(botUsername)) {
-			throw new Exception("Bot-User does not exist on Github!");
+			throw new ValidationException("Bot-User does not exist on Github!");
 		}
 		if (githubUser.getEmail() == null) {
-			throw new Exception("Bot-User does not have a public email on Github!");
+			throw new ValidationException("Bot-User does not have a public email on Github!");
 		}
 		if (!githubUser.getEmail().equals(botEmail)) {
-			throw new Exception("Invalid Bot-Email!");
+			throw new ValidationException("Invalid Bot-Email!");
 		}
 	}
 
