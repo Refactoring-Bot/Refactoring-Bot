@@ -46,12 +46,17 @@ public class ExtractMethod implements RefactoringImpl {
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws IOException {
 		// Get filepath
 		String path = issue.getFilePath();
+		String sourcePath = gitConfig.getRepoFolder() + "/" + path;
 
+		return this.refactorMethod(sourcePath, issue.getLine());
+	}
+
+	public String refactorMethod(String sourcePath, Integer lineNumber) {
 		// parse Java
-		ParseResult parseResult = this.parseJava(gitConfig.getRepoFolder() + "/" + path);
+		ParseResult parseResult = this.parseJava(sourcePath);
 
 		for (CompilationUnitTree compilationUnitTree : parseResult.parseResult) {
-			compilationUnitTree.accept(new MethodRefactor(compilationUnitTree, parseResult.sourcePositions, issue.getLine()), null);
+			compilationUnitTree.accept(new MethodRefactor(compilationUnitTree, parseResult.sourcePositions, lineNumber), null);
 		}
 
 		/*
@@ -60,6 +65,7 @@ public class ExtractMethod implements RefactoringImpl {
 		out.println(compilationUnit.toString());
 		out.close();
 		*/
+
 		return "extracted method";
 	}
 
@@ -156,6 +162,7 @@ public class ExtractMethod implements RefactoringImpl {
 		}
 
 		private StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, List<Long>> blockMapping) {
+			System.out.println("createStatementGraphnodeRecursive");
 			StatementGraphNode lastNode = null;
 			Map<Long, Block> orderedBlocksMap = this.mapBlocksToID(orderedBlocks);
 			while (orderedBlocks.get(index).getId() != exitID) {
@@ -165,11 +172,24 @@ public class ExtractMethod implements RefactoringImpl {
 						break;
 					case CONDITIONAL_BLOCK:
 						ConditionalBlock conditionalBlock = (ConditionalBlock) nextBlock;
+						// find the block which is the first successor of both paths
+						long realSuccessor = this.findSuccessor(conditionalBlock.getThenSuccessor(), conditionalBlock.getElseSuccessor(), orderedBlocksMap);
 						// check which successor is the next in the ordered blocks
 						long nextID = orderedBlocks.get(index + 1).getId();
 						long newExitID = (conditionalBlock.getThenSuccessor().getId() == nextID) ? conditionalBlock.getElseSuccessor().getId() : nextID;
-						parentNode.children.add(this.createStatementGraphNodeRecursive(orderedBlocks, ++index, newExitID, lastNode, blockMapping));
+						lastNode.type = StatementGraphNode.StatementGraphNodeType.IFNODE;
+						this.createStatementGraphNodeRecursive(orderedBlocks, ++index, newExitID, lastNode, blockMapping);
 						index = orderedBlocks.indexOf(orderedBlocksMap.get(newExitID));
+						// travel else successor
+						if (newExitID != realSuccessor) {
+							StatementGraphNode elseNode = new StatementGraphNode();
+							elseNode.code = lastNode.code;
+							elseNode.linenumber = lastNode.linenumber;
+							elseNode.cfgBlocks = lastNode.cfgBlocks;
+							elseNode.type = StatementGraphNode.StatementGraphNodeType.ELSENODE;
+							parentNode.children.add(this.createStatementGraphNodeRecursive(orderedBlocks, index, realSuccessor, elseNode, blockMapping));
+							index = orderedBlocks.indexOf(orderedBlocksMap.get(realSuccessor));
+						}
 						break;
 					default:
 						lastNode = this.addNextBlock(lastNode, parentNode, nextBlock, blockMapping);
@@ -181,6 +201,51 @@ public class ExtractMethod implements RefactoringImpl {
 				}
 			}
 			return parentNode;
+		}
+
+		private Long findSuccessor(Block thenBlock, Block elseBlock, Map<Long, Block> orderedBlocksMap) {
+			System.out.println("findSuccessor");
+			// find all ordered successors of thenBlock
+			List<Long> thenSuccessors = this.findSuccessors(thenBlock, orderedBlocksMap);
+			// find all ordered successors of ifBlock
+			List<Long> elseSuccessors = this.findSuccessors(elseBlock, orderedBlocksMap);
+			// compare all successors
+			Set<Long> thenSuccessorsSet = new HashSet<>(thenSuccessors);
+			for (Long id : elseSuccessors) {
+				if (thenSuccessorsSet.contains(id)) {
+					return id;
+				}
+			}
+			return null;
+		}
+
+		private List<Long> findSuccessors(Block block, Map<Long, Block> orderedBlocksMap) {
+			System.out.println("findSuccessors");
+			Block nextBlock = block;
+			List<Long> successors = new ArrayList<>();
+			while (nextBlock != null && nextBlock.getType() != Block.BlockType.SPECIAL_BLOCK) {
+				successors.add(nextBlock.getId());
+				switch (nextBlock.getType()) {
+					case SPECIAL_BLOCK:
+						// should never happen
+						break;
+					case EXCEPTION_BLOCK:
+						nextBlock = ((ExceptionBlock) nextBlock).getSuccessor();
+						break;
+					case REGULAR_BLOCK:
+						nextBlock = ((RegularBlock) nextBlock).getRegularSuccessor();
+						break;
+					case CONDITIONAL_BLOCK:
+						ConditionalBlock conditionalBlock = (ConditionalBlock) nextBlock;
+						Long nextID = this.findSuccessor(conditionalBlock.getThenSuccessor(), conditionalBlock.getElseSuccessor(), orderedBlocksMap);
+						if (nextID != null) {
+							nextBlock = orderedBlocksMap.get(nextID);
+						} else {
+							nextBlock = null;
+						}
+				}
+			}
+			return successors;
 		}
 
 		private Map<Long, Block> mapBlocksToID(List<Block> orderedBlocks) {
@@ -200,6 +265,7 @@ public class ExtractMethod implements RefactoringImpl {
 					StatementGraphNode node = new StatementGraphNode();
 					node.linenumber = lineNumber;
 					node.cfgBlocks.add(block);
+					node.type = StatementGraphNode.StatementGraphNodeType.REGULARNODE;
 					parentNode.children.add(node);
 					lastNode = node;
 				}
