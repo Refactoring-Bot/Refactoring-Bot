@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
+import de.refactoringbot.model.exceptions.GitWorkflowException;
 
 /**
  * This class uses git programmicaly with JGIT.
@@ -39,9 +40,9 @@ public class GitController {
 	 * This method initialises the workspace.
 	 * 
 	 * @param gitConfig
-	 * @throws Exception
+	 * @throws GitWorkflowException
 	 */
-	public void initLocalWorkspace(GitConfiguration gitConfig) throws Exception {
+	public void initLocalWorkspace(GitConfiguration gitConfig) throws GitWorkflowException {
 		// Clone fork
 		cloneRepository(gitConfig);
 		// Add remote to fork
@@ -52,9 +53,9 @@ public class GitController {
 	 * This method adds an Remote to the fork/bot-repository.
 	 * 
 	 * @param gitConfig
-	 * @throws Exception
+	 * @throws GitWorkflowException
 	 */
-	public void addRemote(GitConfiguration gitConfig) throws Exception {
+	public void addRemote(GitConfiguration gitConfig) throws GitWorkflowException {
 		Git git = null;
 		try {
 			// Open git folder
@@ -66,7 +67,8 @@ public class GitController {
 			remoteAddCommand.call();
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Could not add as remote " + "'" + gitConfig.getRepoGitLink() + "' successfully!");
+			throw new GitWorkflowException(
+					"Could not add as remote " + "'" + gitConfig.getRepoGitLink() + "' successfully!");
 		} finally {
 			// Close git if possible
 			if (git != null) {
@@ -79,9 +81,9 @@ public class GitController {
 	 * This method fetches data from the 'upstrem' remote.
 	 * 
 	 * @param gitConfig
-	 * @throws Exception
+	 * @throws GitWorkflowException
 	 */
-	public void fetchRemote(GitConfiguration gitConfig) throws Exception {
+	public void fetchRemote(GitConfiguration gitConfig) throws GitWorkflowException {
 		Git git = null;
 		try {
 			// Open git folder
@@ -90,7 +92,7 @@ public class GitController {
 			git.fetch().setRemote("upstream").call();
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Could not fetch data from 'upstream'!");
+			throw new GitWorkflowException("Could not fetch data from 'upstream'!");
 		} finally {
 			// Close git if possible
 			if (git != null) {
@@ -103,9 +105,9 @@ public class GitController {
 	 * This method stashes all changes since the last commit.
 	 * 
 	 * @param gitConfig
-	 * @throws Exception
+	 * @throws GitWorkflowException
 	 */
-	public void stashChanges(GitConfiguration gitConfig) throws Exception {
+	public void stashChanges(GitConfiguration gitConfig) throws GitWorkflowException {
 		Git git = null;
 		try {
 			// Open git folder
@@ -114,7 +116,7 @@ public class GitController {
 			git.stashApply().call();
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Faild to stash changes!");
+			throw new GitWorkflowException("Faild to stash changes!");
 		} finally {
 			// Close git if possible
 			if (git != null) {
@@ -127,9 +129,9 @@ public class GitController {
 	 * This method clones an repository with its git url.
 	 * 
 	 * @param repoURL
-	 * @throws Exception
+	 * @throws GitWorkflowException
 	 */
-	public void cloneRepository(GitConfiguration gitConfig) throws Exception {
+	public void cloneRepository(GitConfiguration gitConfig) throws GitWorkflowException {
 		Git git = null;
 		try {
 			// Clone repository into git folder
@@ -138,7 +140,7 @@ public class GitController {
 					.call();
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Faild to clone " + "'" + gitConfig.getForkGitLink() + "' successfully!");
+			throw new GitWorkflowException("Faild to clone " + "'" + gitConfig.getForkGitLink() + "' successfully!");
 		} finally {
 			// Close git if possible
 			if (git != null) {
@@ -154,10 +156,11 @@ public class GitController {
 	 * @param branchName
 	 * @param origin
 	 * @param id
-	 * @throws Exception
+	 * @throws BotRefactoringException
+	 * @throws GitWorkflowException
 	 */
 	public void createBranch(GitConfiguration gitConfig, String branchName, String newBranch, String origin)
-			throws Exception {
+			throws BotRefactoringException, GitWorkflowException {
 		Git git = null;
 		try {
 			// Open git folder
@@ -176,7 +179,7 @@ public class GitController {
 					"Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Branch with the name " + "'" + newBranch + "' could not be created!");
+			throw new GitWorkflowException("Branch with the name " + "'" + newBranch + "' could not be created!");
 		} finally {
 			// Close git if possible
 			if (git != null) {
@@ -189,9 +192,11 @@ public class GitController {
 	 * This method switches the branch.
 	 * 
 	 * @param branchName
-	 * @throws Exception
+	 * @throws GitWorkflowException
+	 * @throws BotRefactoringException
 	 */
-	public void switchBranch(GitConfiguration gitConfig, String branchName) throws Exception {
+	public void switchBranch(GitConfiguration gitConfig, String branchName)
+			throws GitWorkflowException, BotRefactoringException {
 		Git git = null;
 		try {
 			// Open git folder
@@ -205,7 +210,7 @@ public class GitController {
 			createBranch(gitConfig, branchName, branchName, "origin");
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Could not switch to the branch with the name " + "'" + branchName + "'!");
+			throw new GitWorkflowException("Could not switch to the branch with the name " + "'" + branchName + "'!");
 		} finally {
 			// Close git if possible
 			if (git != null) {
@@ -217,9 +222,9 @@ public class GitController {
 	/**
 	 * This method performs 'git push' programmically
 	 * 
-	 * @throws Exception
+	 * @throws GitWorkflowException
 	 */
-	public void pushChanges(GitConfiguration gitConfig, String commitMessage) throws Exception {
+	public void pushChanges(GitConfiguration gitConfig, String commitMessage) throws GitWorkflowException {
 		Git git = null;
 		try {
 			// Open git folder
@@ -233,10 +238,10 @@ public class GitController {
 					.call();
 		} catch (TransportException t) {
 			logger.error(t.getMessage(), t);
-			throw new Exception("Wrong bot token!");
+			throw new GitWorkflowException("Wrong bot token!");
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Could not successfully perform 'git push'!");
+			throw new GitWorkflowException("Could not successfully perform 'git push'!");
 		} finally {
 			// Close git if possible
 			if (git != null) {

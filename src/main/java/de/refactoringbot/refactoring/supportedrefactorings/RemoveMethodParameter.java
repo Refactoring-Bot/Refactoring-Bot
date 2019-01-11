@@ -352,7 +352,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			// Current javadoc tags
 			List<JavadocBlockTag> javadocTags = methodJavadoc.getBlockTags();
 			// Empty tag-list
-			List<JavadocBlockTag> tagsToDelete = new LinkedList<JavadocBlockTag>();
+			List<JavadocBlockTag> tagsToDelete = new LinkedList<>();
 			// Find all Tags that should be deleted
 			for (JavadocBlockTag javadocTag : javadocTags) {
 				if (javadocTag.getTagName().equals("param") && javadocTag.getName().isPresent()

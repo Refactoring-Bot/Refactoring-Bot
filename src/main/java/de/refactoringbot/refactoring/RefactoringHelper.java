@@ -144,7 +144,7 @@ public class RefactoringHelper {
 
 			// Search all Classes
 			for (ClassOrInterfaceDeclaration currentClass : classes) {
-				List<String> classAncestors = new ArrayList<String>();
+				List<String> classAncestors = new ArrayList<>();
 				boolean isSubClass = false;
 				boolean hasExternalDep = false;
 
@@ -201,10 +201,11 @@ public class RefactoringHelper {
 	 * 
 	 * @param refactoring
 	 * @param postRefactoringSignature
-	 * @throws Exception
+	 * @throws BotRefactoringException
+	 * @throws FileNotFoundException 
 	 */
 	public void checkForDuplicatedMethodSignatures(ParserRefactoring refactoring, String postRefactoringSignature)
-			throws Exception {
+			throws BotRefactoringException, FileNotFoundException {
 
 		// Iterate all Javafiles
 		for (String javaFile : refactoring.getJavaFiles()) {
@@ -293,6 +294,41 @@ public class RefactoringHelper {
 		}
 
 		return ancestors;
+	}
+	
+	/**
+	 * Finds a method in a compilation unit that starts at the specified line number
+	 * @param lineNumber
+	 * @param cu
+	 * @return MethodDeclaration or null if none found
+	 */
+	public static MethodDeclaration getMethodByLineNumberOfMethodName(int lineNumber, CompilationUnit cu) {
+		MethodDeclaration result = null;
+		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
+		for (MethodDeclaration method : methods) {
+			if (method.getName().getBegin().get().line == lineNumber) {
+				result = method;
+			}
+		}
+		return result;
+	}
+	
+
+	/**
+	 * Finds a method in a compilation unit with a specific name
+	 * @param methodName
+	 * @param cu
+	 * @return MethodDeclaration or null if none found
+	 */
+	public static MethodDeclaration getMethodByName(String methodName, CompilationUnit cu) {
+		MethodDeclaration result = null;
+		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
+		for (MethodDeclaration method : methods) {
+			if (method.getNameAsString().equals(methodName)) {
+				result = method;
+			}
+		}
+		return result;
 	}
 
 }

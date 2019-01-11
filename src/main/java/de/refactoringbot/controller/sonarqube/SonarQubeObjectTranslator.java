@@ -1,5 +1,6 @@
 package de.refactoringbot.controller.sonarqube;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,8 +26,6 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 public class SonarQubeObjectTranslator {
 
 	@Autowired
-	RefactoringOperations operations;
-	@Autowired
 	FileController fileController;
 
 	/**
@@ -34,8 +33,9 @@ public class SonarQubeObjectTranslator {
 	 * 
 	 * @param issue
 	 * @return botIssue
+	 * @throws IOException
 	 */
-	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) throws Exception {
+	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) throws IOException {
 		// Create empty list of bot issues
 		List<BotIssue> botIssues = new ArrayList<>();
 
@@ -75,26 +75,26 @@ public class SonarQubeObjectTranslator {
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
 			case "squid:S1161":
-				botIssue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
+				botIssue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
 				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
 			case "squid:ModifiersOrderCheck":
-				botIssue.setRefactoringOperation(operations.REORDER_MODIFIER);
+				botIssue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
 				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
 			case "squid:CommentedOutCodeLine":
-				botIssue.setRefactoringOperation(operations.REMOVE_COMMENTED_OUT_CODE);
+				botIssue.setRefactoringOperation(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE);
 				botIssues.add(botIssue);
 				break;
 			case "squid:S1172":
-				botIssue.setRefactoringOperation(operations.REMOVE_PARAMETER);
+				botIssue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 				botIssue.setRefactorString(getParameterName(issue));
 				botIssues.add(botIssue);
 				break;
 			default:
-				botIssue.setRefactoringOperation(operations.UNKNOWN);
+				botIssue.setRefactoringOperation(RefactoringOperations.UNKNOWN);
 				break;
 			}
 		}
@@ -118,7 +118,6 @@ public class SonarQubeObjectTranslator {
 				paramPartOfMessage = splitMessage[i + 1];
 			}
 		}
-		String parameterName = paramPartOfMessage.substring(1, paramPartOfMessage.length() - 2);
-		return parameterName;
+		return paramPartOfMessage.substring(1, paramPartOfMessage.length() - 2);
 	}
 }

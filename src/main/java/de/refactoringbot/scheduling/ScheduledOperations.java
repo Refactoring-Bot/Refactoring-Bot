@@ -4,6 +4,8 @@ import java.io.IOException;
 
 import javax.annotation.PostConstruct;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +21,8 @@ public class ScheduledOperations {
 	@Value("${server.port}")
 	Integer port;
 
+	private static final Logger logger = LoggerFactory.getLogger(ScheduledOperations.class);
+	
 	/**
 	 * This method opens the Swagger-UI in the browser on startup of the
 	 * application.
@@ -45,7 +49,7 @@ public class ScheduledOperations {
 				runtime.exec("xdg-open " + url);
 			}
 		} catch (IOException e) {
-			System.err.println("Could not start Swagger-UI in the browser!");
+			logger.error("Could not start Swagger-UI in the browser!");
 		}
 	}
 

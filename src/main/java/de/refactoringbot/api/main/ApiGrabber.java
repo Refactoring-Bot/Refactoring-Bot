@@ -1,5 +1,6 @@
 package de.refactoringbot.api.main;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.naming.OperationNotSupportedException;
@@ -22,8 +23,6 @@ import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
-
-import java.util.ArrayList;
 
 /**
  * This class transfers all Rest-Requests to correct APIs and returns all

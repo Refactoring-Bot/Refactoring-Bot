@@ -31,8 +31,6 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 public class GrammarController {
 
 	@Autowired
-	RefactoringOperations operations;
-	@Autowired
 	FileController fileController;
 
 	// Logger
@@ -90,7 +88,7 @@ public class GrammarController {
 			issue.setCommentServiceID(comment.getCommentID().toString());
 			issue.setLine(comment.getPosition());
 			issue.setFilePath(comment.getFilepath());
-			
+
 			// Set all Java-Files and Java-Roots
 			List<String> allJavaFiles = fileController.getAllJavaFiles(gitConfig.getRepoFolder());
 			issue.setAllJavaFiles(allJavaFiles);
@@ -102,7 +100,7 @@ public class GrammarController {
 				if (commentArr[2].equals("ANNOTATION")) {
 					// Add override annotation
 					if (commentArr[3].equals("Override")) {
-						issue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
+						issue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
 					}
 					// Add line/position
 					issue.setLine(Integer.valueOf(commentArr[5]));
@@ -113,7 +111,7 @@ public class GrammarController {
 			if (commentArr[1].equals("REORDER")) {
 				// Reorder modifier operation
 				if (commentArr[2].equals("MODIFIER")) {
-					issue.setRefactoringOperation(operations.REORDER_MODIFIER);
+					issue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
 				}
 			}
 
@@ -121,7 +119,7 @@ public class GrammarController {
 			if (commentArr[1].equals("RENAME")) {
 				// Rename method operations
 				if (commentArr[2].equals("METHOD")) {
-					issue.setRefactoringOperation(operations.RENAME_METHOD);
+					issue.setRefactoringOperation(RefactoringOperations.RENAME_METHOD);
 					// Set new name of the method
 					issue.setRefactorString(commentArr[6]);
 				}
@@ -133,7 +131,7 @@ public class GrammarController {
 			if (commentArr[1].equals("REMOVE")) {
 				// Remove method parameter
 				if (commentArr[2].equals("PARAMETER")) {
-					issue.setRefactoringOperation(operations.REMOVE_PARAMETER);
+					issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 					// Set name of the parameter
 					issue.setRefactorString(commentArr[6]);
 				}

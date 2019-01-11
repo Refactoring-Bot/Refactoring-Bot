@@ -1,6 +1,8 @@
 package de.refactoringbot.api.sonarqube;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,10 +14,8 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import de.refactoringbot.model.exceptions.SonarcloudAPIException;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This class gets all kinds of data from SonarCube.
@@ -26,7 +26,7 @@ import java.util.List;
 @Component
 public class SonarQubeDataGrabber {
 
-	private final String USER_AGENT = "Mozilla/5.0";
+	private static final String USER_AGENT = "Mozilla/5.0";
 
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(SonarQubeDataGrabber.class);
@@ -36,9 +36,9 @@ public class SonarQubeDataGrabber {
 	 * 
 	 * @param sonarQubeProjectKey
 	 * @return allIssues
-	 * @throws Exception
+	 * @throws SonarcloudAPIException
 	 */
-	public List<SonarQubeIssues> getIssues(String sonarQubeProjectKey) throws Exception {
+	public List<SonarQubeIssues> getIssues(String sonarQubeProjectKey) throws SonarcloudAPIException {
 		int page = 1;
 
 		List<SonarQubeIssues> issues = new ArrayList<>();
@@ -69,7 +69,7 @@ public class SonarQubeDataGrabber {
 			} catch (RestClientException e) {
 				if (page == 1) {
 					logger.error(e.getMessage(), e);
-					throw new Exception("Could not access SonarCube API!");
+					throw new SonarcloudAPIException("Could not access SonarCube API!", e);
 				}
 
 				break;
@@ -87,9 +87,9 @@ public class SonarQubeDataGrabber {
 	 * SonarQube/SonarCloud.
 	 * 
 	 * @param analysisServiceProjectKey
-	 * @throws Exception
+	 * @throws SonarcloudAPIException
 	 */
-	public void checkSonarData(String analysisServiceProjectKey) throws Exception {
+	public void checkSonarData(String analysisServiceProjectKey) throws SonarcloudAPIException {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("sonarcloud.io")
 				.path("api/components/show");
@@ -110,7 +110,7 @@ public class SonarQubeDataGrabber {
 			rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Project with given project key does not exist on SonarQube!");
+			throw new SonarcloudAPIException("Project with given project key does not exist on SonarQube!", e);
 		}
 	}
 }

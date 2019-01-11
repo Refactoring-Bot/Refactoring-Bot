@@ -2,7 +2,6 @@ package de.refactoringbot.refactoring.supportedrefactorings;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.EnumSet;
 import java.util.List;
@@ -74,10 +73,9 @@ public class ReorderModifier implements RefactoringImpl {
 	 * @param declarators
 	 * @param filepath
 	 * @throws BotRefactoringException
-	 * @throws IOException
 	 */
 	private List<FieldDeclaration> performReordering(List<FieldDeclaration> declarators, String filepath)
-			throws Exception {
+			throws BotRefactoringException {
 
 		// Helper variable
 		boolean reorderingNeccessary = false;
@@ -86,14 +84,14 @@ public class ReorderModifier implements RefactoringImpl {
 		for (FieldDeclaration declarator : declarators) {
 			// Get modifiers
 			NodeList<Modifier> modifiers = declarator.getModifiers();
-			
+
 			// If no or one modifier -> no reordering
 			if (modifiers.size() <= 1) {
 				continue;
 			}
-			
+
 			// Reorderd modifiers
-			NodeList<Modifier> reorderedModifiers = new NodeList<Modifier>();
+			NodeList<Modifier> reorderedModifiers = new NodeList<>();
 			// Init empty enumset
 			EnumSet<Keyword> keywords = EnumSet.noneOf(Keyword.class);
 
