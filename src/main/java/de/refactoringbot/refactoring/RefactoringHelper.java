@@ -302,11 +302,11 @@ public class RefactoringHelper {
 	 * @param cu
 	 * @return MethodDeclaration or null if none found
 	 */
-	public static MethodDeclaration getMethodByLineNumber(int lineNumber, CompilationUnit cu) {
+	public static MethodDeclaration getMethodByLineNumberOfMethodName(int lineNumber, CompilationUnit cu) {
 		MethodDeclaration result = null;
 		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
 		for (MethodDeclaration method : methods) {
-			if (method.getBegin().get().line == lineNumber) {
+			if (method.getName().getBegin().get().line == lineNumber) {
 				result = method;
 			}
 		}

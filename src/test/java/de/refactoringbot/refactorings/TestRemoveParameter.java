@@ -80,11 +80,11 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 		GitConfiguration gitConfig = new GitConfiguration();
 		RemoveMethodParameter refactoring = new RemoveMethodParameter();
 		CompilationUnit cuOriginalFile = JavaParser.parse(tempFile);
-		MethodDeclaration originalMethod = RefactoringHelper.getMethodByLineNumber(lineNumberOfMethodWithParameterToBeRemoved,
+		MethodDeclaration originalMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(lineNumberOfMethodWithParameterToBeRemoved,
 				cuOriginalFile);
-		MethodDeclaration originalDummyMethod = RefactoringHelper.getMethodByLineNumber(
+		MethodDeclaration originalDummyMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
 				removeParameterTestClass.getLineNumberOfDummyMethod(0, 0, 0), cuOriginalFile);
-		MethodDeclaration originalCallerMethod = RefactoringHelper.getMethodByLineNumber(removeParameterTestClass.getLineNumberOfCaller(),
+		MethodDeclaration originalCallerMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(removeParameterTestClass.getLineNumberOfCaller(),
 				cuOriginalFile);
 		assertNotNull(originalMethod);
 		assertNotNull(originalDummyMethod);

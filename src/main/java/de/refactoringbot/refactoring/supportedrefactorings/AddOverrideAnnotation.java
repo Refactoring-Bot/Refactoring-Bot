@@ -34,7 +34,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
 
-		MethodDeclaration methodDeclarationToModify = RefactoringHelper.getMethodByLineNumber(issue.getLine(),
+		MethodDeclaration methodDeclarationToModify = RefactoringHelper.getMethodByLineNumberOfMethodName(issue.getLine(),
 				compilationUnit);
 		if (methodDeclarationToModify == null) {
 			throw new BotRefactoringException("Could not find method at specified line! Automated refactoring failed.");
