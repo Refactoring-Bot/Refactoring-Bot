@@ -142,7 +142,7 @@ public class ExtractMethod implements RefactoringImpl {
 				Map<String, Object> graph = visualizer.visualize(cfg, cfg.getEntryBlock(), analysis);
 				System.out.println(graph);
 				System.out.println("done");
-				 DEBUGEND */
+				 /* DEBUGEND */
 			}
 
 			return super.visitMethod(node, aVoid);
@@ -172,7 +172,7 @@ public class ExtractMethod implements RefactoringImpl {
 					case CONDITIONAL_BLOCK:
 						ConditionalBlock conditionalBlock = (ConditionalBlock) nextBlock;
 						// find the block which is the first successor of both paths
-						long realSuccessor = this.findSuccessor(conditionalBlock.getThenSuccessor(), conditionalBlock.getElseSuccessor(), orderedBlocksMap);
+						Long realSuccessor = this.findSuccessor(conditionalBlock, orderedBlocksMap);
 						// check which successor is the next in the ordered blocks
 						long nextID = orderedBlocks.get(index + 1).getId();
 						long newExitID = (conditionalBlock.getThenSuccessor().getId() == nextID) ? conditionalBlock.getElseSuccessor().getId() : nextID;
@@ -180,7 +180,7 @@ public class ExtractMethod implements RefactoringImpl {
 						this.createStatementGraphNodeRecursive(orderedBlocks, ++index, newExitID, lastNode, blockMapping);
 						index = orderedBlocks.indexOf(orderedBlocksMap.get(newExitID));
 						// travel else successor
-						if (newExitID != realSuccessor) {
+						if (realSuccessor != null && newExitID != realSuccessor) {
 							StatementGraphNode elseNode = new StatementGraphNode();
 							elseNode.code = lastNode.code;
 							elseNode.linenumber = lastNode.linenumber;
@@ -204,11 +204,13 @@ public class ExtractMethod implements RefactoringImpl {
 			return parentNode;
 		}
 
-		private Long findSuccessor(Block thenBlock, Block elseBlock, Map<Long, Block> orderedBlocksMap) {
+		private Long findSuccessor(ConditionalBlock block, Map<Long, Block> orderedBlocksMap) {
+			Set<Long> visitedBlocks = new HashSet<>();
+			visitedBlocks.add(block.getId());
 			// find all ordered successors of thenBlock
-			List<Long> thenSuccessors = this.findSuccessors(thenBlock, orderedBlocksMap);
+			List<Long> thenSuccessors = this.findSuccessors(block.getThenSuccessor(), orderedBlocksMap, visitedBlocks);
 			// find all ordered successors of ifBlock
-			List<Long> elseSuccessors = this.findSuccessors(elseBlock, orderedBlocksMap);
+			List<Long> elseSuccessors = this.findSuccessors(block.getElseSuccessor(), orderedBlocksMap, visitedBlocks);
 			// compare all successors
 			Set<Long> thenSuccessorsSet = new HashSet<>(thenSuccessors);
 			for (Long id : elseSuccessors) {
@@ -219,11 +221,12 @@ public class ExtractMethod implements RefactoringImpl {
 			return null;
 		}
 
-		private List<Long> findSuccessors(Block block, Map<Long, Block> orderedBlocksMap) {
+		private List<Long> findSuccessors(Block block, Map<Long, Block> orderedBlocksMap, Set<Long> visitedBlocks) {
 			Block nextBlock = block;
 			List<Long> successors = new ArrayList<>();
-			while (nextBlock != null && nextBlock.getType() != Block.BlockType.SPECIAL_BLOCK) {
+			while (nextBlock != null && nextBlock.getType() != Block.BlockType.SPECIAL_BLOCK && !visitedBlocks.contains(nextBlock.getId())) {
 				successors.add(nextBlock.getId());
+				visitedBlocks.add(nextBlock.getId());
 				switch (nextBlock.getType()) {
 					case SPECIAL_BLOCK:
 						// should never happen
@@ -236,7 +239,7 @@ public class ExtractMethod implements RefactoringImpl {
 						break;
 					case CONDITIONAL_BLOCK:
 						ConditionalBlock conditionalBlock = (ConditionalBlock) nextBlock;
-						Long nextID = this.findSuccessor(conditionalBlock.getThenSuccessor(), conditionalBlock.getElseSuccessor(), orderedBlocksMap);
+						Long nextID = this.findSuccessor(conditionalBlock, orderedBlocksMap);
 						if (nextID != null) {
 							nextBlock = orderedBlocksMap.get(nextID);
 						} else {
@@ -300,15 +303,12 @@ public class ExtractMethod implements RefactoringImpl {
 		}
 
 		private Long addLineNumber(LineMap lineMap, Map<Long, List<Long>> lineMapping, Long currentLineNumber, Block block, Node node) {
-			if (node.getInSource()) {
-				if (node.getTree() != null) {
-					int pos = ((JCTree) node.getTree()).pos;
-					long lineNumber = lineMap.getLineNumber(pos);
-					lineMapping.computeIfAbsent(lineNumber, k -> new ArrayList<>());
-					lineMapping.get(lineNumber).add(block.getId());
-					currentLineNumber = lineNumber;
-				}
+			if (node.getInSource() && node.getTree() != null) {
+				int pos = ((JCTree) node.getTree()).pos;
+				currentLineNumber = lineMap.getLineNumber(pos);
 			}
+			lineMapping.computeIfAbsent(currentLineNumber, k -> new ArrayList<>());
+			lineMapping.get(currentLineNumber).add(block.getId());
 			return currentLineNumber;
 		}
 		private Map<Long, List<Long>> reverseLineToBlockMapping(Map<Long, List<Long>> lineMapping) {

@@ -15,6 +15,7 @@ public class ExtractMethodTest {
     String simpleExamplePath;
     String ifElseExamplePath;
     String switchExamplePath;
+    String forLoopExamplePath;
 
     @Before
     public void setUp() throws Exception {
@@ -26,6 +27,9 @@ public class ExtractMethodTest {
 
         // refactor switch example
         this.switchExamplePath = this.copyFileToTemp("RefactorSwitchExample.java");
+
+        // refactor for loop example
+        this.forLoopExamplePath = this.copyFileToTemp("RefactorForLoopExample.java");
     }
 
 
@@ -50,11 +54,19 @@ public class ExtractMethodTest {
         Assert.assertEquals(commitMessage, "extracted method");
     }
 
+    @Test
+    public void refactorMethodForLoop() {
+        ExtractMethod extractMethod = new ExtractMethod();
+        String commitMessage = extractMethod.refactorMethod(this.forLoopExamplePath, 4);
+        Assert.assertEquals(commitMessage, "extracted method");
+    }
+
     @After
     public void tearDown() {
-        this.deleteFile(simpleExamplePath);
-        this.deleteFile(ifElseExamplePath);
-        this.deleteFile(switchExamplePath);
+        this.deleteFile(this.simpleExamplePath);
+        this.deleteFile(this.ifElseExamplePath);
+        this.deleteFile(this.switchExamplePath);
+        this.deleteFile(this.forLoopExamplePath);
     }
 
     private String copyFileToTemp(String fileName) throws Exception {
