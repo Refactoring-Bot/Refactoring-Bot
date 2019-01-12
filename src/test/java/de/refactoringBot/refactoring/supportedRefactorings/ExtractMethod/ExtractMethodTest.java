@@ -16,6 +16,8 @@ public class ExtractMethodTest {
     String ifElseExamplePath;
     String switchExamplePath;
     String forLoopExamplePath;
+    String tryCatchExamplePath;
+    String multipleReturnsExamplePath;
 
     @Before
     public void setUp() throws Exception {
@@ -30,6 +32,12 @@ public class ExtractMethodTest {
 
         // refactor for loop example
         this.forLoopExamplePath = this.copyFileToTemp("RefactorForLoopExample.java");
+
+        // refactor try catch example
+        this.tryCatchExamplePath = this.copyFileToTemp("RefactorTryCatchExample.java");
+
+        // refactor multiple returns example
+        this.multipleReturnsExamplePath = this.copyFileToTemp( "RefactorMultipleReturnsExample.java");
     }
 
 
@@ -61,12 +69,27 @@ public class ExtractMethodTest {
         Assert.assertEquals(commitMessage, "extracted method");
     }
 
+    @Test
+    public void refactorMethodTryCatch() {
+        ExtractMethod extractMethod = new ExtractMethod();
+        String commitMessage = extractMethod.refactorMethod(this.tryCatchExamplePath, 4);
+        Assert.assertEquals(commitMessage, "extracted method");
+    }
+    @Test
+    public void refactorMethodMultipleReturns() {
+        ExtractMethod extractMethod = new ExtractMethod();
+        String commitMessage = extractMethod.refactorMethod(this.multipleReturnsExamplePath, 4);
+        Assert.assertEquals(commitMessage, "extracted method");
+    }
+
     @After
     public void tearDown() {
         this.deleteFile(this.simpleExamplePath);
         this.deleteFile(this.ifElseExamplePath);
         this.deleteFile(this.switchExamplePath);
         this.deleteFile(this.forLoopExamplePath);
+        this.deleteFile(this.tryCatchExamplePath);
+        this.deleteFile(this.multipleReturnsExamplePath);
     }
 
     private String copyFileToTemp(String fileName) throws Exception {

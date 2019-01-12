@@ -124,6 +124,7 @@ public class ExtractMethod implements RefactoringImpl {
 			if (startLine <= this.lineNumber && endLine >= this.lineNumber) {
 				ControlFlowGraph cfg = CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv);
 
+
 				Map<Long, List<Long>> blockMap = this.getBlockToLineMapping(cfg, lineMap);
 
 				StatementGraphNode graph = this.createStatementGraph(cfg, blockMap);
