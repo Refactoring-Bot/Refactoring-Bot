@@ -305,7 +305,9 @@ public class ExtractMethod implements RefactoringImpl {
 		private Long addLineNumber(LineMap lineMap, Map<Long, List<Long>> lineMapping, Long currentLineNumber, Block block, Node node) {
 			if (node.getInSource() && node.getTree() != null) {
 				int pos = ((JCTree) node.getTree()).pos;
-				currentLineNumber = lineMap.getLineNumber(pos);
+				if (pos != 0) {
+					currentLineNumber = lineMap.getLineNumber(pos);
+				}
 			}
 			lineMapping.computeIfAbsent(currentLineNumber, k -> new ArrayList<>());
 			lineMapping.get(currentLineNumber).add(block.getId());
