@@ -162,7 +162,6 @@ public class ExtractMethod implements RefactoringImpl {
 		}
 
 		private StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, List<Long>> blockMapping) {
-			System.out.println("createStatementGraphnodeRecursive");
 			StatementGraphNode lastNode = null;
 			Map<Long, Block> orderedBlocksMap = this.mapBlocksToID(orderedBlocks);
 			while (orderedBlocks.get(index).getId() != exitID) {
@@ -190,6 +189,8 @@ public class ExtractMethod implements RefactoringImpl {
 							parentNode.children.add(this.createStatementGraphNodeRecursive(orderedBlocks, index, realSuccessor, elseNode, blockMapping));
 							index = orderedBlocks.indexOf(orderedBlocksMap.get(realSuccessor));
 						}
+						// lower index buy one because we increment in the end of the loop
+						index--;
 						break;
 					default:
 						lastNode = this.addNextBlock(lastNode, parentNode, nextBlock, blockMapping);
@@ -204,7 +205,6 @@ public class ExtractMethod implements RefactoringImpl {
 		}
 
 		private Long findSuccessor(Block thenBlock, Block elseBlock, Map<Long, Block> orderedBlocksMap) {
-			System.out.println("findSuccessor");
 			// find all ordered successors of thenBlock
 			List<Long> thenSuccessors = this.findSuccessors(thenBlock, orderedBlocksMap);
 			// find all ordered successors of ifBlock
@@ -220,7 +220,6 @@ public class ExtractMethod implements RefactoringImpl {
 		}
 
 		private List<Long> findSuccessors(Block block, Map<Long, Block> orderedBlocksMap) {
-			System.out.println("findSuccessors");
 			Block nextBlock = block;
 			List<Long> successors = new ArrayList<>();
 			while (nextBlock != null && nextBlock.getType() != Block.BlockType.SPECIAL_BLOCK) {
