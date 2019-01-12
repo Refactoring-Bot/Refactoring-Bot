@@ -124,7 +124,6 @@ public class ExtractMethod implements RefactoringImpl {
 			if (startLine <= this.lineNumber && endLine >= this.lineNumber) {
 				ControlFlowGraph cfg = CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv);
 
-
 				Map<Long, List<Long>> blockMap = this.getBlockToLineMapping(cfg, lineMap);
 
 				StatementGraphNode graph = this.createStatementGraph(cfg, blockMap);
@@ -190,11 +189,16 @@ public class ExtractMethod implements RefactoringImpl {
 							parentNode.children.add(this.createStatementGraphNodeRecursive(orderedBlocks, index, realSuccessor, elseNode, blockMapping));
 							index = orderedBlocks.indexOf(orderedBlocksMap.get(realSuccessor));
 						}
-						// lower index buy one because we increment in the end of the loop
+						// lower index by one because we increment in the end of the loop
 						index--;
 						break;
-					default:
-						lastNode = this.addNextBlock(lastNode, parentNode, nextBlock, blockMapping);
+					case REGULAR_BLOCK:
+						RegularBlock regularBlock = (RegularBlock) nextBlock;
+						lastNode = this.addNextBlock(lastNode, parentNode, nextBlock, blockMapping, regularBlock.getRegularSuccessor());
+						break;
+					case EXCEPTION_BLOCK:
+						ExceptionBlock exceptionBlock = (ExceptionBlock) nextBlock;
+						lastNode = this.addNextBlock(lastNode, parentNode, nextBlock, blockMapping, exceptionBlock.getSuccessor());
 						break;
 				}
 
@@ -259,7 +263,8 @@ public class ExtractMethod implements RefactoringImpl {
 			return map;
 		}
 
-		private StatementGraphNode addNextBlock(StatementGraphNode lastNode, StatementGraphNode parentNode, Block block, Map<Long, List<Long>> blockMapping) {
+		private StatementGraphNode addNextBlock(StatementGraphNode lastNode, StatementGraphNode parentNode, Block block, Map<Long, List<Long>> blockMapping, Block successor) {
+			boolean exitNode = (successor.getType().equals(Block.BlockType.SPECIAL_BLOCK) && ((SpecialBlock) successor).getSpecialType().equals(SpecialBlock.SpecialBlockType.EXIT));
 			List<Long> lineNumbers = blockMapping.get(block.getId());
 			for (Long lineNumber : lineNumbers) {
 				if (lastNode != null && lineNumber.equals(lastNode.linenumber)) {
@@ -273,6 +278,7 @@ public class ExtractMethod implements RefactoringImpl {
 					lastNode = node;
 				}
 			}
+			lastNode.isExitNode = exitNode;
 			return lastNode;
 		}
 

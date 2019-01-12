@@ -15,4 +15,5 @@ public class StatementGraphNode {
     public List<Block> cfgBlocks = new ArrayList<>();
     public List<StatementGraphNode> children = new ArrayList<>();
     public StatementGraphNodeType type = StatementGraphNodeType.REGULARNODE;
+    public boolean isExitNode = false;
 }
