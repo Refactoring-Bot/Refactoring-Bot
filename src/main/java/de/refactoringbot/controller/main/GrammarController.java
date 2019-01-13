@@ -33,7 +33,6 @@ public class GrammarController {
 	@Autowired
 	FileController fileController;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GrammarController.class);
 
 	/**
@@ -70,7 +69,7 @@ public class GrammarController {
 	}
 
 	/**
-	 * This mehtod translates an valid comment to a BotIssue that can be refactored.
+	 * This method translates a valid comment to a BotIssue that can be refactored.
 	 * 
 	 * @param comment
 	 * @return issue

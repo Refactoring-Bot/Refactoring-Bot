@@ -33,7 +33,6 @@ public class GitController {
 	@Autowired
 	BotConfiguration botConfig;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GitController.class);
 
 	/**

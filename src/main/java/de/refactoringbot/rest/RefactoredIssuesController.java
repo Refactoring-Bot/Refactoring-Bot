@@ -28,11 +28,10 @@ public class RefactoredIssuesController {
 	@Autowired
 	RefactoredIssueRepository repo;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(RefactoredIssuesController.class);
 
 	/**
-	 * This methor returns all refactored issues of a specific user from a specific
+	 * This method returns all refactored issues of a specific user from a specific
 	 * filehoster.
 	 * 
 	 * @return allIssues

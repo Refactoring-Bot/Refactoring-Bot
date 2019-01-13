@@ -32,7 +32,6 @@ import de.refactoringbot.model.javaparser.ParserRefactoring;
  */
 public class RefactoringHelper {
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
 
 	/**
@@ -230,7 +229,6 @@ public class RefactoringHelper {
 	 * This method returns the global signature of a method as a string.
 	 * 
 	 * @param methodDeclaration
-	 * @param position
 	 * @return
 	 */
 	public String getFullMethodSignature(MethodDeclaration methodDeclaration) {
@@ -259,7 +257,6 @@ public class RefactoringHelper {
 	 * This method returns the local signature of a method as a string.
 	 * 
 	 * @param methodDeclaration
-	 * @param position
 	 * @return
 	 */
 	public String getMethodDeclarationAsString(MethodDeclaration methodDeclaration) {
