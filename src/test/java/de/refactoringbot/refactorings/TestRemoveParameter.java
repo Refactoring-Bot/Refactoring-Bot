@@ -31,7 +31,7 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
-import de.refactoringbot.resources.TestDataClassRemoveParameter;
+import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter;
 
 public class TestRemoveParameter extends AbstractRefactoringTests {
 
@@ -41,6 +41,11 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
+	@Override
+	public Class<TestDataClassRemoveParameter> getTestResourcesClass() {
+		return TestDataClassRemoveParameter.class;
+	}
+	
 	@Test
 	public void testRemoveUnusedParameter() throws Exception {
 		testRemoveParameter(removeParameterTestClass.getLineOfMethodWithUnusedParameter(0, 0, 0), "b");
@@ -75,7 +80,7 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 	private void testRemoveParameter(int lineNumberOfMethodWithParameterToBeRemoved, String parameterName)
 			throws Exception {
 		// arrange
-		File tempFile = getTempCopyOfResourcesFile("TestDataClassRemoveParameter.java");
+		File tempFile = getTempCopyOfTestResourcesFile();
 		BotIssue issue = new BotIssue();
 		GitConfiguration gitConfig = new GitConfiguration();
 		RemoveMethodParameter refactoring = new RemoveMethodParameter();
