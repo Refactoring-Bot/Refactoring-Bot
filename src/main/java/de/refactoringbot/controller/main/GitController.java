@@ -22,7 +22,7 @@ import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
 
 /**
- * This class uses git programmicaly with JGIT.
+ * This class uses git programmatically with JGIT.
  * 
  * @author Stefan Basaric
  *
@@ -56,10 +56,8 @@ public class GitController {
 	 * @throws GitWorkflowException
 	 */
 	public void addRemote(GitConfiguration gitConfig) throws GitWorkflowException {
-		Git git = null;
-		try {
-			// Open git folder
-			git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()));
+		try (Git git = Git.open(
+				new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Add Remote as 'upstream'
 			RemoteAddCommand remoteAddCommand = git.remoteAdd();
 			remoteAddCommand.setName("upstream");
@@ -69,11 +67,6 @@ public class GitController {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException(
 					"Could not add as remote " + "'" + gitConfig.getRepoGitLink() + "' successfully!");
-		} finally {
-			// Close git if possible
-			if (git != null) {
-				git.close();
-			}
 		}
 	}
 
@@ -84,20 +77,13 @@ public class GitController {
 	 * @throws GitWorkflowException
 	 */
 	public void fetchRemote(GitConfiguration gitConfig) throws GitWorkflowException {
-		Git git = null;
-		try {
-			// Open git folder
-			git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()));
+		try (Git git = Git.open(
+				new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Fetch data
 			git.fetch().setRemote("upstream").call();
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Could not fetch data from 'upstream'!");
-		} finally {
-			// Close git if possible
-			if (git != null) {
-				git.close();
-			}
 		}
 	}
 
@@ -108,27 +94,21 @@ public class GitController {
 	 * @throws GitWorkflowException
 	 */
 	public void stashChanges(GitConfiguration gitConfig) throws GitWorkflowException {
-		Git git = null;
-		try {
+		try (Git git = Git.open(
+				new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Open git folder
-			git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()));
 			// Stash changes
 			git.stashApply().call();
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Faild to stash changes!");
-		} finally {
-			// Close git if possible
-			if (git != null) {
-				git.close();
-			}
 		}
 	}
 
 	/**
 	 * This method clones an repository with its git url.
 	 * 
-	 * @param repoURL
+	 * @param gitConfig
 	 * @throws GitWorkflowException
 	 */
 	public void cloneRepository(GitConfiguration gitConfig) throws GitWorkflowException {
@@ -155,16 +135,12 @@ public class GitController {
 	 * @param gitConfig
 	 * @param branchName
 	 * @param origin
-	 * @param id
 	 * @throws BotRefactoringException
 	 * @throws GitWorkflowException
 	 */
 	public void createBranch(GitConfiguration gitConfig, String branchName, String newBranch, String origin)
 			throws BotRefactoringException, GitWorkflowException {
-		Git git = null;
-		try {
-			// Open git folder
-			git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()));
+		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Try to create new branch
 			@SuppressWarnings("unused")
 			Ref ref = git.checkout().setCreateBranch(true).setName(newBranch)
@@ -180,11 +156,6 @@ public class GitController {
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Branch with the name " + "'" + newBranch + "' could not be created!");
-		} finally {
-			// Close git if possible
-			if (git != null) {
-				git.close();
-			}
 		}
 	}
 
@@ -197,25 +168,17 @@ public class GitController {
 	 */
 	public void switchBranch(GitConfiguration gitConfig, String branchName)
 			throws GitWorkflowException, BotRefactoringException {
-		Git git = null;
-		try {
-			// Open git folder
-			git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()));
+		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Switch branch
 			@SuppressWarnings("unused")
 			Ref ref = git.checkout().setName(branchName).call();
-			// If branch does not exist localy anymore
+			// If branch does not exist locally anymore
 		} catch (RefNotFoundException r) {
 			// Recreate branch with current branch data from remote origin
 			createBranch(gitConfig, branchName, branchName, "origin");
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Could not switch to the branch with the name " + "'" + branchName + "'!");
-		} finally {
-			// Close git if possible
-			if (git != null) {
-				git.close();
-			}
 		}
 	}
 
@@ -225,10 +188,7 @@ public class GitController {
 	 * @throws GitWorkflowException
 	 */
 	public void pushChanges(GitConfiguration gitConfig, String commitMessage) throws GitWorkflowException {
-		Git git = null;
-		try {
-			// Open git folder
-			git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()));
+		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Perform 'git add .'
 			git.add().addFilepattern(".").call();
 			// Perform 'git commit -m'
@@ -242,11 +202,6 @@ public class GitController {
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Could not successfully perform 'git push'!");
-		} finally {
-			// Close git if possible
-			if (git != null) {
-				git.close();
-			}
 		}
 	}
 }
