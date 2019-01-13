@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
@@ -308,6 +309,23 @@ public class RefactoringHelper {
 		for (MethodDeclaration method : methods) {
 			if (method.getName().getBegin().get().line == lineNumber) {
 				result = method;
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * Finds a field in a compilation unit that starts at the specified line number
+	 * @param lineNumber
+	 * @param cu
+	 * @return FieldDeclaration or null if none found
+	 */
+	public static FieldDeclaration getFieldDeclarationByLineNumber(int lineNumber, CompilationUnit cu) {
+		FieldDeclaration result = null;
+		List<FieldDeclaration> fields = cu.findAll(FieldDeclaration.class);
+		for (FieldDeclaration field : fields) {
+			if (field.getBegin().get().line == lineNumber) {
+				result = field;
 			}
 		}
 		return result;
