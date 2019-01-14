@@ -309,7 +309,7 @@ public class RefactoringHelper {
 		MethodDeclaration result = null;
 		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
 		for (MethodDeclaration method : methods) {
-			if (method.getName().getBegin().get().line == lineNumber) {
+			if (isMethodDeclarationAtLine(method, lineNumber)) {
 				result = method;
 			}
 		}
