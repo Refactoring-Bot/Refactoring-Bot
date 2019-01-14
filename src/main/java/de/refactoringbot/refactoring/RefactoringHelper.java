@@ -203,7 +203,7 @@ public class RefactoringHelper {
 	 * @param refactoring
 	 * @param postRefactoringSignature
 	 * @throws BotRefactoringException
-	 * @throws FileNotFoundException 
+	 * @throws FileNotFoundException
 	 */
 	public void checkForDuplicatedMethodSignatures(ParserRefactoring refactoring, String postRefactoringSignature)
 			throws BotRefactoringException, FileNotFoundException {
@@ -219,7 +219,7 @@ public class RefactoringHelper {
 
 			// Check if class has an overriden method without the "to be removed" parameter
 			for (MethodDeclaration fileMethod : fileMethods) {
-				if (getMethodDeclarationAsString(fileMethod).equals(postRefactoringSignature)) {
+				if (getMethodSignatureAsString(fileMethod).equals(postRefactoringSignature)) {
 					throw new BotRefactoringException(
 							"File '" + javaFile + "' has a method with the same signature as our refactored method!");
 				}
@@ -240,31 +240,25 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * This method returns the local signature of a method as a string.
-	 * 
 	 * @param methodDeclaration
 	 * @param position
-	 * @return
+	 * @return true if given method starts at given position, false otherwise
 	 */
-	public String getMethodDeclarationAsString(MethodDeclaration methodDeclaration, Integer position) {
-		// If method is at the refactored position
+	public boolean isMethodDeclarationAtLine(MethodDeclaration methodDeclaration, Integer position) {
 		if (methodDeclaration.getName().getBegin().isPresent()) {
 			if (position == methodDeclaration.getName().getBegin().get().line) {
-				return methodDeclaration.getSignature().asString();
+				return true;
 			}
 		}
-		return null;
+		return false;
 	}
 
 	/**
-	 * This method returns the local signature of a method as a string.
-	 * 
 	 * @param methodDeclaration
 	 * @param position
-	 * @return
+	 * @return the local signature of a method as a string
 	 */
-	public String getMethodDeclarationAsString(MethodDeclaration methodDeclaration) {
-		// If method is at the refactored position
+	public String getMethodSignatureAsString(MethodDeclaration methodDeclaration) {
 		return methodDeclaration.getSignature().asString();
 	}
 
@@ -296,9 +290,10 @@ public class RefactoringHelper {
 
 		return ancestors;
 	}
-	
+
 	/**
 	 * Finds a method in a compilation unit that starts at the specified line number
+	 * 
 	 * @param lineNumber
 	 * @param cu
 	 * @return MethodDeclaration or null if none found
@@ -313,9 +308,10 @@ public class RefactoringHelper {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Finds a field in a compilation unit that starts at the specified line number
+	 * 
 	 * @param lineNumber
 	 * @param cu
 	 * @return FieldDeclaration or null if none found
@@ -330,10 +326,10 @@ public class RefactoringHelper {
 		}
 		return result;
 	}
-	
 
 	/**
 	 * Finds a method in a compilation unit with a specific name
+	 * 
 	 * @param methodName
 	 * @param cu
 	 * @return MethodDeclaration or null if none found

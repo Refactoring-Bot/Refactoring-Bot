@@ -83,7 +83,9 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			for (MethodDeclaration method : methods) {
 				// check if method = desired method
 				globalMethodSignature = getFullMethodSignature(method, issue.getLine(), issue.getRefactorString());
-				localMethodSignature = getMethodDeclarationAsString(method, issue.getLine());
+				localMethodSignature = isMethodDeclarationAtLine(method, issue.getLine())
+						? getMethodSignatureAsString(method)
+						: null;
 				// If it is
 				if (globalMethodSignature != null) {
 					// Set method and class signatures of the method
@@ -299,7 +301,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
 					performRemoveMethodParameter(fileMethod, paramName);
-					return getMethodDeclarationAsString(fileMethod);
+					return getMethodSignatureAsString(fileMethod);
 				}
 			}
 
