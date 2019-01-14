@@ -34,7 +34,7 @@ import de.refactoringbot.model.javaparser.ParserRefactoring;
 import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.RefactoringImpl;
 
-public class RemoveMethodParameter extends RefactoringHelper implements RefactoringImpl {
+public class RemoveMethodParameter implements RefactoringImpl {
 
 	/**
 	 * This method performs the refactoring and returns the a commit message.
@@ -83,8 +83,8 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			for (MethodDeclaration method : methods) {
 				// check if method = desired method
 				globalMethodSignature = getFullMethodSignature(method, issue.getLine(), issue.getRefactorString());
-				localMethodSignature = isMethodDeclarationAtLine(method, issue.getLine())
-						? getMethodSignatureAsString(method)
+				localMethodSignature = RefactoringHelper.isMethodDeclarationAtLine(method, issue.getLine())
+						? RefactoringHelper.getMethodSignatureAsString(method)
 						: null;
 				// If it is
 				if (globalMethodSignature != null) {
@@ -107,7 +107,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 					try {
 						ancestors = currentClass.resolve().getAllAncestors();
 					} catch (UnsolvedSymbolException u) {
-						ancestors = getAllAncestors(currentClass.resolve());
+						ancestors = RefactoringHelper.getAllAncestors(currentClass.resolve());
 						refactoring.setWarning(
 								" Refactored classes might extend/implement external project! Check if overriden method was NOT renamed!");
 					} catch (InvalidPathException i) {
@@ -140,7 +140,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 		// Add all Subclasses and their Superclasses to AST-Tree
 		while (true) {
 			int before = refactoring.getClasses().size();
-			refactoring = addSubClasses(refactoring, issue.getAllJavaFiles());
+			refactoring = RefactoringHelper.addSubClasses(refactoring, issue.getAllJavaFiles());
 			int after = refactoring.getClasses().size();
 			// Break if all classes found
 			if (before == after) {
@@ -149,15 +149,15 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 		}
 
 		// Find all Methods and Method-Calls for renaming
-		refactoring = findAndAddMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
-		refactoring = findAndAddMethodCalls(refactoring, issue.getAllJavaFiles());
+		refactoring = RefactoringHelper.findAndAddMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
+		refactoring = RefactoringHelper.findAndAddMethodCalls(refactoring, issue.getAllJavaFiles());
 
 		// Check if any method in AST-Tree uses parameter
 		for (MethodDeclaration method : refactoring.getMethods()) {
 			if (checkIfParameterUsed(method, issue.getRefactorString())) {
-				throw new BotRefactoringException(
-						"Parameter '" + issue.getRefactorString() + "' is used inside the method '"
-								+ getFullMethodSignature(method) + "' which is a super/sub class of the given method!");
+				throw new BotRefactoringException("Parameter '" + issue.getRefactorString()
+						+ "' is used inside the method '" + RefactoringHelper.getFullMethodSignature(method)
+						+ "' which is a super/sub class of the given method!");
 			}
 		}
 
@@ -165,7 +165,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 		String postRefactoringSignature = getPostRefactoringSignature(refactoring, issue.getRefactorString());
 
 		// Check Overriden Methods
-		checkForDuplicatedMethodSignatures(refactoring, postRefactoringSignature);
+		RefactoringHelper.checkForDuplicatedMethodSignatures(refactoring, postRefactoringSignature);
 
 		// Remove parameter from all methods/method calls
 		removeParameter(refactoring, issue.getRefactorString(), paramPosition);
@@ -301,7 +301,7 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
 					performRemoveMethodParameter(fileMethod, paramName);
-					return getMethodSignatureAsString(fileMethod);
+					return RefactoringHelper.getMethodSignatureAsString(fileMethod);
 				}
 			}
 

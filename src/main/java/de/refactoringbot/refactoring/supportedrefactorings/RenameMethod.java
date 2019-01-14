@@ -35,7 +35,7 @@ import de.refactoringbot.refactoring.RefactoringImpl;
  * @author Stefan Basaric
  */
 @Component
-public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
+public class RenameMethod implements RefactoringImpl {
 
 	/**
 	 * This method performs the refactoring and returns the a commit message.
@@ -84,8 +84,8 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 			for (MethodDeclaration method : methods) {
 				// check if method = desired method
 				globalMethodSignature = getFullMethodSignature(method, issue.getLine());
-				localMethodSignature = isMethodDeclarationAtLine(method, issue.getLine())
-						? getMethodSignatureAsString(method)
+				localMethodSignature = RefactoringHelper.isMethodDeclarationAtLine(method, issue.getLine())
+						? RefactoringHelper.getMethodSignatureAsString(method)
 						: null;
 				oldMethodName = method.getNameAsString();
 				// If it is
@@ -102,7 +102,7 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 					try {
 						ancestors = currentClass.resolve().getAllAncestors();
 					} catch (UnsolvedSymbolException u) {
-						ancestors = getAllAncestors(currentClass.resolve());
+						ancestors = RefactoringHelper.getAllAncestors(currentClass.resolve());
 						refactoring.setWarning(
 								" Refactored classes might extend/implement external project! Check if overriden method was NOT renamed!");
 					} catch (InvalidPathException i) {
@@ -140,7 +140,7 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 		// Add all Subclasses and their Superclasses to AST-Tree
 		while (true) {
 			int before = refactoring.getClasses().size();
-			refactoring = addSubClasses(refactoring, issue.getAllJavaFiles());
+			refactoring = RefactoringHelper.addSubClasses(refactoring, issue.getAllJavaFiles());
 			int after = refactoring.getClasses().size();
 			// Break if all classes found
 			if (before == after) {
@@ -149,14 +149,14 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 		}
 
 		// Find all Methods and Method-Calls for renaming
-		refactoring = findAndAddMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
-		refactoring = findAndAddMethodCalls(refactoring, issue.getAllJavaFiles());
+		refactoring = RefactoringHelper.findAndAddMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
+		refactoring = RefactoringHelper.findAndAddMethodCalls(refactoring, issue.getAllJavaFiles());
 
 		// Get local method signature after rename
 		String postRefactoringSignature = getPostRefactoringSignature(refactoring, issue.getRefactorString());
 
 		// Check Overriden Methods
-		checkForDuplicatedMethodSignatures(refactoring, postRefactoringSignature);
+		RefactoringHelper.checkForDuplicatedMethodSignatures(refactoring, postRefactoringSignature);
 
 		// Rename method declarations and their calls
 		renameFindings(refactoring, issue.getRefactorString());
@@ -230,7 +230,7 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
 					performRenameMethod(fileMethod, methodName);
-					return getMethodSignatureAsString(fileMethod);
+					return RefactoringHelper.getMethodSignatureAsString(fileMethod);
 				}
 			}
 
