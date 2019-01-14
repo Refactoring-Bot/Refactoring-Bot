@@ -24,7 +24,6 @@ public class RefactoringPicker {
 	@Autowired
 	RefactoringOperations operations;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
 
 	/**

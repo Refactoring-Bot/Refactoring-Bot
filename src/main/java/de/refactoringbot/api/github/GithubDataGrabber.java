@@ -50,7 +50,6 @@ public class GithubDataGrabber {
 	@Autowired
 	BotConfiguration botConfig;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GithubDataGrabber.class);
 
 	private static final String USER_AGENT = "Mozilla/5.0";
@@ -60,7 +59,7 @@ public class GithubDataGrabber {
 	 * 
 	 * @param repoName
 	 * @param repoOwner
-	 * @param repoService
+	 * @param botToken
 	 * @return {Repository-File}
 	 * @throws GitHubAPIException
 	 */
@@ -124,7 +123,7 @@ public class GithubDataGrabber {
 		}
 
 		// Check if user exists and has a public email
-		if (!githubUser.getLogin().equals(botUsername)) {
+		if (!botUsername.equals(githubUser.getLogin())) {
 			throw new ValidationException("Bot-User does not exist on Github!");
 		}
 		if (githubUser.getEmail() == null) {
@@ -306,7 +305,7 @@ public class GithubDataGrabber {
 
 		// Send request to the GitHub-API
 		try {
-			rest.exchange(pullsUri, HttpMethod.PATCH, new HttpEntity<GithubUpdateRequest>(send), String.class);
+			rest.exchange(pullsUri, HttpMethod.PATCH, new HttpEntity<>(send), String.class);
 		} catch (RestClientException e) {
 			throw new GitHubAPIException("Could not update pull request!", e);
 		}
@@ -338,7 +337,7 @@ public class GithubDataGrabber {
 
 		// Send request to Github-API
 		try {
-			rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<ReplyComment>(comment), String.class);
+			rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<>(comment), String.class);
 		} catch (RestClientException e) {
 			throw new GitHubAPIException("Could not reply to Github comment!", e);
 		}
@@ -370,8 +369,8 @@ public class GithubDataGrabber {
 
 		// Send request to the GitHub-API
 		try {
-			return rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<GithubCreateRequest>(request),
-					GithubPullRequest.class).getBody();
+			return rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<>(request), GithubPullRequest.class)
+					.getBody();
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not create pull request on Github!", r);
 		}
@@ -412,7 +411,7 @@ public class GithubDataGrabber {
 	/**
 	 * This method deletes a repository from Github.
 	 * 
-	 * @param gitConfiguration
+	 * @param gitConfig
 	 * @throws URISyntaxException
 	 * @throws GitHubAPIException
 	 */

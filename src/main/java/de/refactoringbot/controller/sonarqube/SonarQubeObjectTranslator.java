@@ -31,7 +31,7 @@ public class SonarQubeObjectTranslator {
 	/**
 	 * This method translates all SonarCubeIssues to BotIssues.
 	 * 
-	 * @param issue
+	 * @param issues
 	 * @return botIssue
 	 * @throws IOException
 	 */

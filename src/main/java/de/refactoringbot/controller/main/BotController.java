@@ -29,7 +29,6 @@ import de.refactoringbot.model.refactoredissue.RefactoredIssue;
 @Component
 public class BotController {
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(BotController.class);
 
 	/**
@@ -94,7 +93,6 @@ public class BotController {
 	 * The Method creates a RefactoredIssue-Object from a
 	 * Request-Comment-Refactoring.
 	 * 
-	 * @param issue
 	 * @param gitConfig
 	 * @return refactoredIssue
 	 */

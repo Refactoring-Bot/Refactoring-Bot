@@ -54,7 +54,6 @@ public class ConfigurationController {
 	@Autowired
 	BotController botController;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
 
 	@Autowired
@@ -63,9 +62,7 @@ public class ConfigurationController {
 	/**
 	 * This method creates an git configuration with the user inputs.
 	 * 
-	 * @param repoName
-	 * @param repoOwner
-	 * @param repoService
+	 * @param newConfiguration
 	 * @return
 	 */
 
@@ -151,9 +148,7 @@ public class ConfigurationController {
 	/**
 	 * This method removes a configuration with a specific ID from the database.
 	 * 
-	 * @param repoName
-	 * @param repoOwner
-	 * @param repoService
+	 * @param configurationId
 	 * @return {feedbackString}
 	 */
 

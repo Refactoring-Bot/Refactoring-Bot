@@ -37,15 +37,15 @@ public class ScheduledOperations {
 		String os = System.getProperty("os.name").toLowerCase();
 		try {
 			// Windows
-			if (os.indexOf("win") >= 0) {
+			if (os.contains("win")) {
 				runtime.exec("rundll32 url.dll,FileProtocolHandler " + url);
 			}
 			// MacOS
-			if (os.indexOf("mac") >= 0) {
+			if (os.contains("mac")) {
 				runtime.exec("open " + url);
 			}
 			// Linux
-			if (os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0) {
+			if (os.contains("nix") || os.contains("nux")) {
 				runtime.exec("xdg-open " + url);
 			}
 		} catch (IOException e) {
