@@ -202,19 +202,21 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * This method checks all Java classes of ParserRefactoring for equality with
-	 * the specified postRefactoringSignature string.
+	 * This method checks all given Java files for methods that equal the given
+	 * method signature. This is relevant, for example, to check whether a method
+	 * overwrites a method of a superclass after refactoring.
 	 * 
-	 * @param refactoring
-	 * @param postRefactoringSignature
+	 * @param javaFiles
+	 * @param methodSignature
 	 * @throws BotRefactoringException
+	 *             if there is a duplicate
 	 * @throws FileNotFoundException
 	 */
-	public static void checkForDuplicatedMethodSignatures(ParserRefactoring refactoring,
-			String postRefactoringSignature) throws BotRefactoringException, FileNotFoundException {
+	public static void checkForDuplicatedMethodSignatures(List<String> javaFiles, String methodSignature)
+			throws BotRefactoringException, FileNotFoundException {
 
 		// Iterate all Javafiles
-		for (String javaFile : refactoring.getJavaFiles()) {
+		for (String javaFile : javaFiles) {
 			// Create compilation unit
 			FileInputStream methodPath = new FileInputStream(javaFile);
 			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
@@ -222,9 +224,9 @@ public class RefactoringHelper {
 			// Get all Methods and MethodCalls of File
 			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
 
-			// Check if class has an overriden method without the "to be removed" parameter
+			// Check if class contains a method equal to the given method signature
 			for (MethodDeclaration fileMethod : fileMethods) {
-				if (getMethodSignatureAsString(fileMethod).equals(postRefactoringSignature)) {
+				if (getMethodSignatureAsString(fileMethod).equals(methodSignature)) {
 					throw new BotRefactoringException(
 							"File '" + javaFile + "' has a method with the same signature as our refactored method!");
 				}

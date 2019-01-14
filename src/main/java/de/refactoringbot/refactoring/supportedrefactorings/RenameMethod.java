@@ -156,7 +156,7 @@ public class RenameMethod implements RefactoringImpl {
 		String postRefactoringSignature = getPostRefactoringSignature(refactoring, issue.getRefactorString());
 
 		// Check Overriden Methods
-		RefactoringHelper.checkForDuplicatedMethodSignatures(refactoring, postRefactoringSignature);
+		RefactoringHelper.checkForDuplicatedMethodSignatures(refactoring.getJavaFiles(), postRefactoringSignature);
 
 		// Rename method declarations and their calls
 		renameFindings(refactoring, issue.getRefactorString());
