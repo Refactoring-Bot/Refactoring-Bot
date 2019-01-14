@@ -209,10 +209,7 @@ public class RefactoringHelper {
 	 * @param javaFiles
 	 * @param methodSignature
 	 * @throws BotRefactoringException
-<<<<<<< HEAD
-=======
 	 *             if there is a duplicate
->>>>>>> 5b110ae9f5bc24d864385e586eb7f409e2852bad
 	 * @throws FileNotFoundException
 	 */
 	public static void checkForDuplicatedMethodSignatures(List<String> javaFiles, String methodSignature)
