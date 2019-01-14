@@ -203,7 +203,7 @@ public class RefactoringHelper {
 	 * @param refactoring
 	 * @param postRefactoringSignature
 	 * @throws BotRefactoringException
-	 * @throws FileNotFoundException 
+	 * @throws FileNotFoundException
 	 */
 	public void checkForDuplicatedMethodSignatures(ParserRefactoring refactoring, String postRefactoringSignature)
 			throws BotRefactoringException, FileNotFoundException {
@@ -296,9 +296,10 @@ public class RefactoringHelper {
 
 		return ancestors;
 	}
-	
+
 	/**
 	 * Finds a method in a compilation unit that starts at the specified line number
+	 * 
 	 * @param lineNumber
 	 * @param cu
 	 * @return MethodDeclaration or null if none found
@@ -307,15 +308,18 @@ public class RefactoringHelper {
 		MethodDeclaration result = null;
 		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
 		for (MethodDeclaration method : methods) {
-			if (method.getName().getBegin().get().line == lineNumber) {
-				result = method;
+			if (method.getName().getBegin().isPresent()) {
+				if (method.getName().getBegin().get().line == lineNumber) {
+					result = method;
+				}
 			}
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Finds a field in a compilation unit that starts at the specified line number
+	 * 
 	 * @param lineNumber
 	 * @param cu
 	 * @return FieldDeclaration or null if none found
@@ -324,16 +328,18 @@ public class RefactoringHelper {
 		FieldDeclaration result = null;
 		List<FieldDeclaration> fields = cu.findAll(FieldDeclaration.class);
 		for (FieldDeclaration field : fields) {
-			if (field.getBegin().get().line == lineNumber) {
-				result = field;
+			if (field.getBegin().isPresent()) {
+				if (field.getBegin().get().line == lineNumber) {
+					result = field;
+				}
 			}
 		}
 		return result;
 	}
-	
 
 	/**
 	 * Finds a method in a compilation unit with a specific name
+	 * 
 	 * @param methodName
 	 * @param cu
 	 * @return MethodDeclaration or null if none found

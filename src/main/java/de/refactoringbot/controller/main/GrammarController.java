@@ -113,6 +113,8 @@ public class GrammarController {
 				if (commentArr[2].equals("MODIFIER")) {
 					issue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
 				}
+				// Add line/position
+				issue.setLine(Integer.valueOf(commentArr[4]));
 			}
 
 			// Rename operations
