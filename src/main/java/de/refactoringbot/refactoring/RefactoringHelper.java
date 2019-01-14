@@ -36,15 +36,19 @@ public class RefactoringHelper {
 	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
 
+	private RefactoringHelper() {
+	}
+
 	/**
-	 * This method scanns all java files for method calls that need to be renamed.
+	 * This method scans all Java files for methods that match the passed method
+	 * signature and adds them to the given refactoring
 	 * 
 	 * @param refactoring
 	 * @param allJavaFiles
 	 * @return
 	 * @throws FileNotFoundException
 	 */
-	public ParserRefactoring findMethods(ParserRefactoring refactoring, List<String> allJavaFiles,
+	public static ParserRefactoring findAndAddMethods(ParserRefactoring refactoring, List<String> allJavaFiles,
 			String methodSignature) throws FileNotFoundException {
 
 		// Iterate all Java-Files
@@ -80,14 +84,16 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * This method scanns all java files for methods that need to be renamed.
+	 * This method scans all Java files for method calls that match the method
+	 * signatures in the ParserRefactoring and adds them as method calls to the
+	 * ParserRefactoring
 	 * 
 	 * @param refactoring
 	 * @param allJavaFiles
 	 * @return
 	 * @throws FileNotFoundException
 	 */
-	public ParserRefactoring findMethodCalls(ParserRefactoring refactoring, List<String> allJavaFiles)
+	public static ParserRefactoring findAndAddMethodCalls(ParserRefactoring refactoring, List<String> allJavaFiles)
 			throws FileNotFoundException {
 
 		for (String javaFile : allJavaFiles) {
@@ -122,16 +128,16 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * This method scanns all java files for classes that could be subclasses in our
-	 * AST-Tree.
+	 * This method scans all Java files for classes that could be subclasses in the
+	 * AST and adds them to the ParserRefactoring
 	 * 
 	 * @param refactoring
 	 * @param allJavaFiles
-	 * @return refactoring
+	 * @return ParserRefactoring
 	 * @throws FileNotFoundException
 	 * @throws BotRefactoringException
 	 */
-	public ParserRefactoring addSubClasses(ParserRefactoring refactoring, List<String> allJavaFiles)
+	public static ParserRefactoring addSubClasses(ParserRefactoring refactoring, List<String> allJavaFiles)
 			throws FileNotFoundException {
 
 		// Search all Java-Files
@@ -196,20 +202,24 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * This method checks all Java-Classes that will be refactored if they have a
-	 * method with the same signature as our 'to be refactored' method after the
-	 * refactoring.
+	 * This method checks all given Java files for methods that equal the given
+	 * method signature. This is relevant, for example, to check whether a method
+	 * overwrites a method of a superclass after refactoring.
 	 * 
-	 * @param refactoring
-	 * @param postRefactoringSignature
+	 * @param javaFiles
+	 * @param methodSignature
 	 * @throws BotRefactoringException
+<<<<<<< HEAD
+=======
+	 *             if there is a duplicate
+>>>>>>> 5b110ae9f5bc24d864385e586eb7f409e2852bad
 	 * @throws FileNotFoundException
 	 */
-	public void checkForDuplicatedMethodSignatures(ParserRefactoring refactoring, String postRefactoringSignature)
+	public static void checkForDuplicatedMethodSignatures(List<String> javaFiles, String methodSignature)
 			throws BotRefactoringException, FileNotFoundException {
 
 		// Iterate all Javafiles
-		for (String javaFile : refactoring.getJavaFiles()) {
+		for (String javaFile : javaFiles) {
 			// Create compilation unit
 			FileInputStream methodPath = new FileInputStream(javaFile);
 			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
@@ -217,9 +227,9 @@ public class RefactoringHelper {
 			// Get all Methods and MethodCalls of File
 			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
 
-			// Check if class has an overriden method without the "to be removed" parameter
+			// Check if class contains a method equal to the given method signature
 			for (MethodDeclaration fileMethod : fileMethods) {
-				if (getMethodDeclarationAsString(fileMethod).equals(postRefactoringSignature)) {
+				if (getMethodSignatureAsString(fileMethod).equals(methodSignature)) {
 					throw new BotRefactoringException(
 							"File '" + javaFile + "' has a method with the same signature as our refactored method!");
 				}
@@ -234,37 +244,31 @@ public class RefactoringHelper {
 	 * @param position
 	 * @return
 	 */
-	public String getFullMethodSignature(MethodDeclaration methodDeclaration) {
+	public static String getFullMethodSignature(MethodDeclaration methodDeclaration) {
 		ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
 		return resolvedMethod.getQualifiedSignature();
 	}
 
 	/**
-	 * This method returns the local signature of a method as a string.
-	 * 
 	 * @param methodDeclaration
 	 * @param position
-	 * @return
+	 * @return true if given method starts at given position, false otherwise
 	 */
-	public String getMethodDeclarationAsString(MethodDeclaration methodDeclaration, Integer position) {
-		// If method is at the refactored position
+	public static boolean isMethodDeclarationAtLine(MethodDeclaration methodDeclaration, Integer position) {
 		if (methodDeclaration.getName().getBegin().isPresent()) {
 			if (position == methodDeclaration.getName().getBegin().get().line) {
-				return methodDeclaration.getSignature().asString();
+				return true;
 			}
 		}
-		return null;
+		return false;
 	}
 
 	/**
-	 * This method returns the local signature of a method as a string.
-	 * 
 	 * @param methodDeclaration
 	 * @param position
-	 * @return
+	 * @return the local signature of a method as a string
 	 */
-	public String getMethodDeclarationAsString(MethodDeclaration methodDeclaration) {
-		// If method is at the refactored position
+	public static String getMethodSignatureAsString(MethodDeclaration methodDeclaration) {
 		return methodDeclaration.getSignature().asString();
 	}
 
@@ -275,7 +279,7 @@ public class RefactoringHelper {
 	 * @param currentClass
 	 * @return ancestors
 	 */
-	public List<ResolvedReferenceType> getAllAncestors(ResolvedReferenceTypeDeclaration currentClass) {
+	public static List<ResolvedReferenceType> getAllAncestors(ResolvedReferenceTypeDeclaration currentClass) {
 		// Init ancestor list
 		List<ResolvedReferenceType> ancestors = new ArrayList<>();
 
@@ -308,10 +312,8 @@ public class RefactoringHelper {
 		MethodDeclaration result = null;
 		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
 		for (MethodDeclaration method : methods) {
-			if (method.getName().getBegin().isPresent()) {
-				if (method.getName().getBegin().get().line == lineNumber) {
-					result = method;
-				}
+			if (isMethodDeclarationAtLine(method, lineNumber)) {
+				result = method;
 			}
 		}
 		return result;
