@@ -37,14 +37,15 @@ public class RefactoringHelper {
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
 
 	/**
-	 * This method scanns all java files for method calls that need to be renamed.
+	 * This method scans all Java files for methods that match the passed method
+	 * signature and adds them to the given refactoring
 	 * 
 	 * @param refactoring
 	 * @param allJavaFiles
 	 * @return
 	 * @throws FileNotFoundException
 	 */
-	public ParserRefactoring findMethods(ParserRefactoring refactoring, List<String> allJavaFiles,
+	public ParserRefactoring findAndAddMethods(ParserRefactoring refactoring, List<String> allJavaFiles,
 			String methodSignature) throws FileNotFoundException {
 
 		// Iterate all Java-Files
@@ -80,14 +81,16 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * This method scanns all java files for methods that need to be renamed.
+	 * This method scans all Java files for method calls that match the method
+	 * signatures in the ParserRefactoring and adds them as method calls to the
+	 * ParserRefactoring
 	 * 
 	 * @param refactoring
 	 * @param allJavaFiles
 	 * @return
 	 * @throws FileNotFoundException
 	 */
-	public ParserRefactoring findMethodCalls(ParserRefactoring refactoring, List<String> allJavaFiles)
+	public ParserRefactoring findAndAddMethodCalls(ParserRefactoring refactoring, List<String> allJavaFiles)
 			throws FileNotFoundException {
 
 		for (String javaFile : allJavaFiles) {
@@ -122,12 +125,12 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * This method scanns all java files for classes that could be subclasses in our
-	 * AST-Tree.
+	 * This method scans all Java files for classes that could be subclasses in the
+	 * AST and adds them to the ParserRefactoring
 	 * 
 	 * @param refactoring
 	 * @param allJavaFiles
-	 * @return refactoring
+	 * @return ParserRefactoring
 	 * @throws FileNotFoundException
 	 * @throws BotRefactoringException
 	 */
@@ -196,9 +199,8 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * This method checks all Java-Classes that will be refactored if they have a
-	 * method with the same signature as our 'to be refactored' method after the
-	 * refactoring.
+	 * This method checks all Java classes of ParserRefactoring for equality with
+	 * the specified postRefactoringSignature string.
 	 * 
 	 * @param refactoring
 	 * @param postRefactoringSignature

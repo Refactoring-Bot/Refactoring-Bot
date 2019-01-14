@@ -149,8 +149,8 @@ public class RemoveMethodParameter extends RefactoringHelper implements Refactor
 		}
 
 		// Find all Methods and Method-Calls for renaming
-		refactoring = findMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
-		refactoring = findMethodCalls(refactoring, issue.getAllJavaFiles());
+		refactoring = findAndAddMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
+		refactoring = findAndAddMethodCalls(refactoring, issue.getAllJavaFiles());
 
 		// Check if any method in AST-Tree uses parameter
 		for (MethodDeclaration method : refactoring.getMethods()) {

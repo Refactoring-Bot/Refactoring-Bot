@@ -149,8 +149,8 @@ public class RenameMethod extends RefactoringHelper implements RefactoringImpl {
 		}
 
 		// Find all Methods and Method-Calls for renaming
-		refactoring = findMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
-		refactoring = findMethodCalls(refactoring, issue.getAllJavaFiles());
+		refactoring = findAndAddMethods(refactoring, issue.getAllJavaFiles(), localMethodSignature);
+		refactoring = findAndAddMethodCalls(refactoring, issue.getAllJavaFiles());
 
 		// Get local method signature after rename
 		String postRefactoringSignature = getPostRefactoringSignature(refactoring, issue.getRefactorString());
