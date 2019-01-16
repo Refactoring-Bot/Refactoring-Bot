@@ -9,22 +9,14 @@ import com.sun.tools.javac.tree.JCTree;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.refactoring.RefactoringImpl;
-import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.cfg.CFGBuilder;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
-import org.checkerframework.dataflow.cfg.DOTCFGVisualizer;
 import org.checkerframework.dataflow.cfg.block.*;
-import org.checkerframework.dataflow.cfg.node.Node;
-import org.checkerframework.dataflow.constantpropagation.Constant;
-import org.checkerframework.dataflow.constantpropagation.ConstantPropagationStore;
-import org.checkerframework.dataflow.constantpropagation.ConstantPropagationTransfer;
+import org.checkerframework.dataflow.cfg.node.*;
 import org.springframework.stereotype.Component;
 
-import javax.naming.ldap.Control;
-import javax.swing.plaf.nimbus.State;
 import javax.tools.*;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -124,11 +116,17 @@ public class ExtractMethod implements RefactoringImpl {
 			if (startLine <= this.lineNumber && endLine >= this.lineNumber) {
 				ControlFlowGraph cfg = CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv);
 
-				Map<Long, List<Long>> blockMap = this.getBlockToLineMapping(cfg, lineMap);
+				Map<Long, LineMapBlock> lineMapping = this.getLineToBlockMapping(cfg, this.lineMap);
 
-				StatementGraphNode graph = this.createStatementGraph(cfg, blockMap);
+				StatementGraphNode graph = this.createStatementGraph(cfg, lineMapping);
+
+				this.analyseTryCatchRecursive(graph, lineMapping);
+
+				Set<String> localVariables = this.findLocalVariables(cfg);
+				Map<Long, LineMapVariable> variableMap = this.analyseLocalDataFlow(cfg, localVariables, this.lineMap);
 
 				System.out.println(graph);
+				System.out.println(variableMap);
 
 				/* DEBUG
 				ConstantPropagationTransfer transfer = new ConstantPropagationTransfer();
@@ -154,14 +152,186 @@ public class ExtractMethod implements RefactoringImpl {
 			return super.visitClass(node, aVoid);
 		}
 
-		private StatementGraphNode createStatementGraph(ControlFlowGraph cfg, Map<Long, List<Long>> blockMapping) {
-			List<Block> orderedBlocks = cfg.getDepthFirstOrderedBlocks();
-			StatementGraphNode methodHead = new StatementGraphNode();
-			long lastID = orderedBlocks.get(orderedBlocks.size() - 1).getId();
-			return createStatementGraphNodeRecursive(orderedBlocks, 1, lastID, methodHead, blockMapping);
+		private Set<String> findLocalVariables(ControlFlowGraph cfg) {
+			Set<String> localVariables = new HashSet<>();
+			List<Block> blocks = cfg.getDepthFirstOrderedBlocks();
+			for (Block block : blocks) {
+				switch (block.getType()) {
+					case EXCEPTION_BLOCK: {
+							Node node = ((ExceptionBlock) block).getNode();
+							String variable = this.getLocalVariables(node);
+							if (variable != null) localVariables.add(variable);
+							break;
+						}
+					case REGULAR_BLOCK: {
+							for (Node node : ((RegularBlock) block).getContents()) {
+								String variable = this.getLocalVariables(node);
+								if (variable != null) localVariables.add(variable);
+							}
+							break;
+						}
+					case SPECIAL_BLOCK:
+						break;
+					case CONDITIONAL_BLOCK:
+						break;
+				}
+			}
+			return localVariables;
 		}
 
-		private StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, List<Long>> blockMapping) {
+		private String getLocalVariables(Node node) {
+			if (node.getClass().equals(VariableDeclarationNode.class)) {
+				return ((VariableDeclarationNode)node).getName();
+			}
+			return null;
+		}
+
+		private Map<Long, LineMapVariable> analyseLocalDataFlow(ControlFlowGraph cfg, Set<String> localVariables, LineMap lineMap) {
+			Map<Long, LineMapVariable> map = new HashMap<>();
+			SpecialBlock entryBlock = cfg.getEntryBlock();
+			for (String variable : localVariables) {
+				this.mapVariable(map, entryBlock, variable, null, lineMap);
+			}
+			return map;
+		}
+
+		private void mapVariable(Map<Long, LineMapVariable> variableMap, Block block, String variable, Long lastLine, LineMap lineMap) {
+			switch (block.getType()) {
+				case EXCEPTION_BLOCK:
+					ExceptionBlock exceptionBlock = (ExceptionBlock) block;
+					lastLine = this.addNodeToMap(variableMap, exceptionBlock.getNode(), variable, lastLine, lastLine, lineMap);
+					this.mapVariable(variableMap, exceptionBlock.getSuccessor(), variable, lastLine, lineMap);
+					break;
+				case CONDITIONAL_BLOCK:
+					ConditionalBlock conditionalBlock = (ConditionalBlock) block;
+					this.mapVariable(variableMap, conditionalBlock.getThenSuccessor(), variable, lastLine, lineMap);
+					this.mapVariable(variableMap, conditionalBlock.getElseSuccessor(), variable, lastLine, lineMap);
+					break;
+				case SPECIAL_BLOCK:
+					break;
+				case REGULAR_BLOCK:
+					RegularBlock regularBlock = (RegularBlock) block;
+					Long newLine = lastLine;
+					for (Node node : regularBlock.getContents()) {
+						Long copyLine = newLine;
+						newLine = this.addNodeToMap(variableMap, node, variable, newLine, lastLine, lineMap);
+						lastLine = copyLine;
+					}
+					this.mapVariable(variableMap, regularBlock.getRegularSuccessor(), variable, lastLine, lineMap);
+					break;
+			}
+		}
+
+		private Long addNodeToMap(Map<Long, LineMapVariable> variableMap, Node node, String variable, Long lastLine, Long previousLine, LineMap lineMap) {
+			Long newLine = lastLine;
+			if (this.nodeContainsVariable(node, variable)) {
+				Long lineNumber = this.getLineNumber(lineMap, node);
+				if (this.nodeIsAssignmentNode(node)) {
+					newLine = lineNumber;
+				} else {
+					Long in = (lineNumber > lastLine) ? lastLine : previousLine;
+					// add in
+					variableMap.computeIfAbsent(lineNumber, k -> new LineMapVariable());
+					variableMap.get(lineNumber).in.computeIfAbsent(variable, k -> new HashSet<>());
+					variableMap.get(lineNumber).in.get(variable).add(in);
+					// add out
+					variableMap.computeIfAbsent(lastLine, k -> new LineMapVariable());
+					variableMap.get(in).out.computeIfAbsent(variable, k -> new HashSet<>());
+					variableMap.get(in).out.get(variable).add(lineNumber);
+				}
+			}
+			return newLine;
+		}
+
+		private Set<Long> findVariableOccurences(ControlFlowGraph cfg, String variable) {
+			List<Block> orderedBlocks = cfg.getDepthFirstOrderedBlocks();
+			Set<Long> blockIDs = new HashSet<>();
+			for (Block block : orderedBlocks) {
+				switch (block.getType()) {
+					case REGULAR_BLOCK:
+						RegularBlock regularBlock = (RegularBlock) block;
+						for (Node node : regularBlock.getContents()) {
+							if (this.nodeContainsVariable(node, variable)) {
+								blockIDs.add(block.getId());
+							}
+						}
+						break;
+					case EXCEPTION_BLOCK:
+						ExceptionBlock exceptionBlock = (ExceptionBlock) block;
+						if (this.nodeContainsVariable(exceptionBlock.getNode(), variable)) {
+							blockIDs.add(block.getId());
+						}
+						break;
+					default:
+						break;
+				}
+			}
+			return blockIDs;
+		}
+
+		private boolean nodeIsAssignmentNode(Node node) {
+			return node.getClass().equals(AssignmentNode.class);
+		}
+
+		private boolean nodeContainsVariable(Node node, String variable) {
+			if (node.getClass().equals(LocalVariableNode.class)) {
+				LocalVariableNode varNode = (LocalVariableNode) node;
+				return varNode.getName().equals(variable);
+			}
+			if (node.getClass().equals(VariableDeclarationNode.class)) {
+				VariableDeclarationNode decNode = (VariableDeclarationNode) node;
+				return decNode.getName().equals(variable);
+			}
+			if (node.getClass().equals(AssignmentNode.class)) {
+				AssignmentNode assNode = (AssignmentNode) node;
+				return this.nodeContainsVariable(assNode.getTarget(), variable);
+			}
+			return false;
+		}
+
+
+		private void analyseTryCatchRecursive(StatementGraphNode node, Map<Long, LineMapBlock> lineMapping) {
+			boolean inTry = false;
+			boolean inCatch = false;
+			StatementGraphNode parentNode = node;
+			for (StatementGraphNode childNode : node.children) {
+				StatementGraphNode.TryCatchMarker marker = lineMapping.get(childNode.linenumber).tryCatchMarker;
+				if (inTry) {
+					node.children.remove(childNode);
+					parentNode.children.add(childNode);
+					inTry = !(marker.equals(StatementGraphNode.TryCatchMarker.ENDTRY));
+				} else if (inCatch) {
+					node.children.remove(childNode);
+					parentNode.children.add(childNode);
+					inCatch = !(marker.equals(StatementGraphNode.TryCatchMarker.ENDCATCH));
+				} else {
+					if (marker.equals(StatementGraphNode.TryCatchMarker.STATEMENTTRY) || marker.equals(StatementGraphNode.TryCatchMarker.STARTTRY)) {
+						inTry = true;
+						childNode.type = StatementGraphNode.StatementGraphNodeType.TRYNODE;
+						parentNode = childNode;
+					} else if (marker.equals(StatementGraphNode.TryCatchMarker.STARTCATCH)) {
+						inCatch = true;
+						childNode.type = StatementGraphNode.StatementGraphNodeType.CATCHNODE;
+						parentNode = childNode;
+					} else {
+						if (!childNode.children.isEmpty()) {
+							this.analyseTryCatchRecursive(childNode, lineMapping);
+						}
+					}
+				}
+			}
+		}
+
+		private StatementGraphNode createStatementGraph(ControlFlowGraph cfg, Map<Long, LineMapBlock> lineMapping) {
+			List<Block> orderedBlocks = cfg.getDepthFirstOrderedBlocks();
+			StatementGraphNode methodHead = new StatementGraphNode();
+
+			long lastID = orderedBlocks.get(orderedBlocks.size() - 1).getId();
+			Map<Long, List<Long>> blockMapping = this.reverseLineToBlockMapping(lineMapping);
+			return createStatementGraphNodeRecursive(orderedBlocks, 1, lastID, methodHead, blockMapping, lineMapping);
+		}
+
+		private StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, List<Long>> blockMapping, Map<Long, LineMapBlock> lineMapping) {
 			StatementGraphNode lastNode = null;
 			Map<Long, Block> orderedBlocksMap = this.mapBlocksToID(orderedBlocks);
 			while (orderedBlocks.get(index).getId() != exitID) {
@@ -177,7 +347,7 @@ public class ExtractMethod implements RefactoringImpl {
 						long nextID = orderedBlocks.get(index + 1).getId();
 						long newExitID = (conditionalBlock.getThenSuccessor().getId() == nextID) ? conditionalBlock.getElseSuccessor().getId() : nextID;
 						lastNode.type = StatementGraphNode.StatementGraphNodeType.IFNODE;
-						this.createStatementGraphNodeRecursive(orderedBlocks, ++index, newExitID, lastNode, blockMapping);
+						this.createStatementGraphNodeRecursive(orderedBlocks, ++index, newExitID, lastNode, blockMapping, lineMapping);
 						index = orderedBlocks.indexOf(orderedBlocksMap.get(newExitID));
 						// travel else successor
 						if (realSuccessor != null && newExitID != realSuccessor) {
@@ -186,10 +356,10 @@ public class ExtractMethod implements RefactoringImpl {
 							elseNode.linenumber = lastNode.linenumber;
 							elseNode.cfgBlocks = lastNode.cfgBlocks;
 							elseNode.type = StatementGraphNode.StatementGraphNodeType.ELSENODE;
-							parentNode.children.add(this.createStatementGraphNodeRecursive(orderedBlocks, index, realSuccessor, elseNode, blockMapping));
+							parentNode.children.add(this.createStatementGraphNodeRecursive(orderedBlocks, index, realSuccessor, elseNode, blockMapping, lineMapping));
 							index = orderedBlocks.indexOf(orderedBlocksMap.get(realSuccessor));
 						}
-						// lower index by one because we increment in the end of the loop
+						// lower index by one because we increment in the end of the loop and for conditional blocks this is already the next index
 						index--;
 						break;
 					case REGULAR_BLOCK:
@@ -282,8 +452,8 @@ public class ExtractMethod implements RefactoringImpl {
 			return lastNode;
 		}
 
-		private Map<Long, List<Long>> getLineToBlockMapping(ControlFlowGraph cfg, LineMap lineMap) {
-			Map<Long, List<Long>> lineMapping = new HashMap<>();
+		private Map<Long, LineMapBlock> getLineToBlockMapping(ControlFlowGraph cfg, LineMap lineMap) {
+			Map<Long, LineMapBlock> lineMapping = new HashMap<>();
 			Long currentLineNumber = 0L;
 			for (Block block: cfg.getDepthFirstOrderedBlocks()) {
 				switch (block.getType()) {
@@ -292,38 +462,69 @@ public class ExtractMethod implements RefactoringImpl {
 					case REGULAR_BLOCK:
 						RegularBlock regularBlock = (RegularBlock) block;
 						for (Node node : regularBlock.getContents()) {
-							currentLineNumber = addLineNumber(lineMap, lineMapping, currentLineNumber, block, node);
+							StatementGraphNode.TryCatchMarker tryCatchType = this.checkTryCatch(node);
+							currentLineNumber = this.addLineNumber(lineMap, lineMapping, currentLineNumber, block, node, tryCatchType);
 						}
 						break;
 					case EXCEPTION_BLOCK:
 						ExceptionBlock exceptionBlock = (ExceptionBlock) block;
 						Node node = exceptionBlock.getNode();
-						currentLineNumber = addLineNumber(lineMap, lineMapping, currentLineNumber, block, node);
+						StatementGraphNode.TryCatchMarker tryCatchType = this.checkTryCatch(node);
+						currentLineNumber = this.addLineNumber(lineMap, lineMapping, currentLineNumber, block, node, tryCatchType);
 						break;
 					case CONDITIONAL_BLOCK:
-						lineMapping.computeIfAbsent(currentLineNumber, k -> new ArrayList<>());
-						lineMapping.get(currentLineNumber).add(block.getId());
+						lineMapping.computeIfAbsent(currentLineNumber, k -> new LineMapBlock());
+						lineMapping.get(currentLineNumber).blocks.add(block.getId());
 						break;
 				}
 			}
 			return lineMapping;
 		}
 
-		private Long addLineNumber(LineMap lineMap, Map<Long, List<Long>> lineMapping, Long currentLineNumber, Block block, Node node) {
+
+		private StatementGraphNode.TryCatchMarker checkTryCatch(Node node) {
+			if (node.getClass().equals(MarkerNode.class)) {
+				MarkerNode markerNode = (MarkerNode) node;
+				String message = markerNode.getMessage();
+				if (message.startsWith("start of try statement")) {
+					return StatementGraphNode.TryCatchMarker.STATEMENTTRY;
+				} else if (message.startsWith("start of try block")) {
+					return StatementGraphNode.TryCatchMarker.STARTTRY;
+				} else if (message.startsWith("end of try block")) {
+					return StatementGraphNode.TryCatchMarker.ENDTRY;
+				} else if (message.startsWith("start of catch block")) {
+					return StatementGraphNode.TryCatchMarker.STARTCATCH;
+				} else if (message.startsWith("end of catch block")) {
+					return StatementGraphNode.TryCatchMarker.ENDCATCH;
+				}
+			}
+			return StatementGraphNode.TryCatchMarker.NONE;
+		}
+
+		private Long addLineNumber(LineMap lineMap, Map<Long, LineMapBlock> lineMapping, Long currentLineNumber, Block block, Node node, StatementGraphNode.TryCatchMarker tryCatchMarker) {
+			Long lineNumber = this.getLineNumber(lineMap, node);
+			if (lineNumber != null) {
+				currentLineNumber = lineNumber;
+			}
+			lineMapping.computeIfAbsent(currentLineNumber, k -> new LineMapBlock());
+			lineMapping.get(currentLineNumber).blocks.add(block.getId());
+			lineMapping.get(currentLineNumber).tryCatchMarker = tryCatchMarker;
+			return currentLineNumber;
+		}
+
+		private Long getLineNumber(LineMap lineMap, Node node) {
 			if (node.getInSource() && node.getTree() != null) {
 				int pos = ((JCTree) node.getTree()).pos;
 				if (pos != 0) {
-					currentLineNumber = lineMap.getLineNumber(pos);
+					return lineMap.getLineNumber(pos);
 				}
 			}
-			lineMapping.computeIfAbsent(currentLineNumber, k -> new ArrayList<>());
-			lineMapping.get(currentLineNumber).add(block.getId());
-			return currentLineNumber;
+			return null;
 		}
-		private Map<Long, List<Long>> reverseLineToBlockMapping(Map<Long, List<Long>> lineMapping) {
+		private Map<Long, List<Long>> reverseLineToBlockMapping(Map<Long, LineMapBlock> lineMapping) {
 			Map<Long, List<Long>> blockMapping = new HashMap<>();
-			for (Map.Entry<Long, List<Long>> blocks : lineMapping.entrySet()) {
-				for (Long block : blocks.getValue()) {
+			for (Map.Entry<Long, LineMapBlock> blocks : lineMapping.entrySet()) {
+				for (Long block : blocks.getValue().blocks) {
 					blockMapping.computeIfAbsent(block, k -> new ArrayList<>());
 					blockMapping.get(block).add(blocks.getKey());
 				}
