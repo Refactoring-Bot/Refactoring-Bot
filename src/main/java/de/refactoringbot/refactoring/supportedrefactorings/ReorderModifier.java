@@ -1,10 +1,9 @@
 package de.refactoringbot.refactoring.supportedrefactorings;
 
+import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.EnumSet;
-import java.util.List;
 
 import org.springframework.stereotype.Component;
 
@@ -14,48 +13,53 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Modifier.Keyword;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
+import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.RefactoringImpl;
 
 /**
- * This class is used to execute the reorder modifier refactoring.
- * 
- * The LexicalPreservationPrinter is not used here, because there are Problems
- * when reordering the Modifiers. The Printer expects the String, that was there
- * before the Refactoring was done and therefore throws an exception. It also
- * has the same problem as the remove of the unused variable.
- *
- * @author Timo Pfaff
+ * This class is used to bring method and field modifiers into the correct
+ * order, following the Java Language Specification (JLS)
  */
 @Component
 public class ReorderModifier implements RefactoringImpl {
 
 	/**
-	 * This method performs the refactoring and returns the a commit message.
-	 * 
-	 * @param issue
-	 * @param gitConfig
-	 * @return commitMessage
-	 * @throws FileNotFoundException
+	 * Reorder modifiers of a given field or method to comply with the JLS
 	 */
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
-		// Get filepath
-		String filepath = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
-
-		// Read file
+		String filepath = gitConfig.getRepoFolder() + File.separator + issue.getFilePath();
 		FileInputStream in = new FileInputStream(filepath);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
 
-		// Visit place in the code that needs refactoring
-		List<FieldDeclaration> declarators = compilationUnit.findAll(FieldDeclaration.class);
+		FieldDeclaration field = RefactoringHelper.getFieldDeclarationByLineNumber(issue.getLine(), compilationUnit);
+		MethodDeclaration method = RefactoringHelper.getMethodByLineNumberOfMethodName(issue.getLine(),
+				compilationUnit);
+		boolean isModifierListUnchanged = false;
+		NodeList<Modifier> modifiersInCorrectOrder;
+		if (field != null) {
+			modifiersInCorrectOrder = getModifiersInCorrectOrder(field.getModifiers());
+			isModifierListUnchanged = field.getModifiers().equals(modifiersInCorrectOrder);
+			field.setModifiers(new NodeList<Modifier>());
+			field.setModifiers(modifiersInCorrectOrder);
+		} else if (method != null) {
+			modifiersInCorrectOrder = getModifiersInCorrectOrder(method.getModifiers());
+			isModifierListUnchanged = method.getModifiers().equals(modifiersInCorrectOrder);
+			method.setModifiers(new NodeList<Modifier>());
+			method.setModifiers(modifiersInCorrectOrder);
+		} else {
+			throw new BotRefactoringException("Could not find method or field declaration at the given line.");
+		}
 
-		// Perform reordering
-		performReordering(declarators, filepath);
+		if (isModifierListUnchanged) {
+			throw new BotRefactoringException("All modifiers are in correct order! Nothing to refactor.");
+		}
 
 		// Save changes to file
 		PrintWriter out = new PrintWriter(filepath);
@@ -63,71 +67,33 @@ public class ReorderModifier implements RefactoringImpl {
 		out.close();
 
 		// Return commit message
-		return "Reordered modifier";
+		return "Reordered modifiers to comply with the Java Language Specification";
 	}
 
-	/**
-	 * This method reorders all modifiers that need reordering and throws an
-	 * exception if there is nothing to reorder.
-	 * 
-	 * @param declarators
-	 * @param filepath
-	 * @throws BotRefactoringException
-	 */
-	private List<FieldDeclaration> performReordering(List<FieldDeclaration> declarators, String filepath)
-			throws BotRefactoringException {
+	private NodeList<Modifier> getModifiersInCorrectOrder(NodeList<Modifier> modifiers) {
+		NodeList<Modifier> reorderedModifiers = new NodeList<>();
 
-		// Helper variable
-		boolean reorderingNeccessary = false;
+		if (modifiers.size() <= 1) {
+			return modifiers;
+		}
 
-		// Iterate all declarators
-		for (FieldDeclaration declarator : declarators) {
-			// Get modifiers
-			NodeList<Modifier> modifiers = declarator.getModifiers();
+		// Fill enum set with java modifier keywords, assuming that they are in the
+		// correct order
+		EnumSet<Keyword> keywords = EnumSet.noneOf(Keyword.class);
+		for (Modifier modifier : modifiers) {
+			keywords.add(modifier.getKeyword());
+		}
 
-			// If no or one modifier -> no reordering
-			if (modifiers.size() <= 1) {
-				continue;
-			}
-
-			// Reorderd modifiers
-			NodeList<Modifier> reorderedModifiers = new NodeList<>();
-			// Init empty enumset
-			EnumSet<Keyword> keywords = EnumSet.noneOf(Keyword.class);
-
-			// Fill enum set
+		// Reorder modifiers
+		for (Keyword keyword : keywords) {
 			for (Modifier modifier : modifiers) {
-				keywords.add(modifier.getKeyword());
-			}
-
-			// Reorder modifiers
-			for (Keyword keyword : keywords) {
-				for (Modifier modifier : modifiers) {
-					if (keyword.equals(modifier.getKeyword())) {
-						reorderedModifiers.add(modifier);
-					}
+				if (keyword.equals(modifier.getKeyword())) {
+					reorderedModifiers.add(modifier);
 				}
 			}
-
-			// Trigger helper variable
-			if (!modifiers.equals(reorderedModifiers)) {
-				reorderingNeccessary = true;
-			}
-
-			// Delete all modifiers
-			declarator.setModifiers(new NodeList<Modifier>());
-
-			// Add them in correct order
-			for (Modifier modifier : reorderedModifiers) {
-				declarator.addModifier(modifier.getKeyword());
-			}
 		}
 
-		// Error if everything is in correct order
-		if (!reorderingNeccessary) {
-			throw new BotRefactoringException("All modifiers are in correct order! Nothing to refactor.");
-		}
-
-		return declarators;
+		return reorderedModifiers;
 	}
+
 }
