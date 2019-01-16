@@ -9,11 +9,6 @@ import org.junit.Test;
 
 import java.util.Map;
 
-import static de.refactoringbot.refactoring.RefactoringOperations.ADD_OVERRIDE_ANNOTATION;
-import static de.refactoringbot.refactoring.RefactoringOperations.REMOVE_COMMENTED_OUT_CODE;
-import static de.refactoringbot.refactoring.RefactoringOperations.REMOVE_PARAMETER;
-import static de.refactoringbot.refactoring.RefactoringOperations.RENAME_METHOD;
-import static de.refactoringbot.refactoring.RefactoringOperations.REORDER_MODIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -26,12 +21,13 @@ public class RefactoringOperationsTest {
 		Map<String, Class<? extends RefactoringImpl>> ruleToClassMapping = refactoringOperations.getRuleToClassMapping();
 
 		assertThat(ruleToClassMapping)
-				.as("Add missing mappings of key to class to the test")
+				.as("Add missing mappings of key to class to the test. "
+						+ "Keys should not be renamed without migration as they are persisted to the database")
 				.containsOnly(
-				entry(ADD_OVERRIDE_ANNOTATION, AddOverrideAnnotation.class),
-				entry(REORDER_MODIFIER, ReorderModifier.class),
-				entry(RENAME_METHOD, RenameMethod.class),
-				entry(REMOVE_COMMENTED_OUT_CODE, RemoveCommentedOutCode.class),
-				entry(REMOVE_PARAMETER, RemoveMethodParameter.class));
+						entry("Add Override Annotation", AddOverrideAnnotation.class),
+						entry("Rename Method", ReorderModifier.class),
+						entry("Reorder Modifier", RenameMethod.class),
+						entry("Remove Commented Out Code", RemoveCommentedOutCode.class),
+						entry("Remove Parameter", RemoveMethodParameter.class));
 	}
 }
