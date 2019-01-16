@@ -1,6 +1,7 @@
 package de.refactoringbot.refactoring;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -33,7 +34,7 @@ public class RefactoringOperations {
 	 * 
 	 * @return
 	 */
-	public HashMap<String, Class<?>> getRuleToClassMapping() {
+	public Map<String, Class<?>> getRuleToClassMapping() {
 		HashMap<String, Class<?>> ruleToClassMapping = new HashMap<>();
 		ruleToClassMapping.put(ADD_OVERRIDE_ANNOTATION, AddOverrideAnnotation.class);
 		ruleToClassMapping.put(REORDER_MODIFIER, ReorderModifier.class);

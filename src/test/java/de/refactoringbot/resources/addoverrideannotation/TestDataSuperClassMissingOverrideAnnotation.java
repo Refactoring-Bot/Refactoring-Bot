@@ -1,4 +1,4 @@
-package de.refactoringbot.resources;
+package de.refactoringbot.resources.addoverrideannotation;
 
 public abstract class TestDataSuperClassMissingOverrideAnnotation {
 	
