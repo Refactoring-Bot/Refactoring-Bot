@@ -45,7 +45,7 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 	public Class<TestDataClassRemoveParameter> getTestResourcesClass() {
 		return TestDataClassRemoveParameter.class;
 	}
-	
+
 	@Test
 	public void testRemoveUnusedParameter() throws Exception {
 		testRemoveParameter(removeParameterTestClass.getLineOfMethodWithUnusedParameter(0, 0, 0), "b");
@@ -85,12 +85,12 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 		GitConfiguration gitConfig = new GitConfiguration();
 		RemoveMethodParameter refactoring = new RemoveMethodParameter();
 		CompilationUnit cuOriginalFile = JavaParser.parse(tempFile);
-		MethodDeclaration originalMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(lineNumberOfMethodWithParameterToBeRemoved,
-				cuOriginalFile);
+		MethodDeclaration originalMethod = RefactoringHelper
+				.getMethodByLineNumberOfMethodName(lineNumberOfMethodWithParameterToBeRemoved, cuOriginalFile);
 		MethodDeclaration originalDummyMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
 				removeParameterTestClass.getLineNumberOfDummyMethod(0, 0, 0), cuOriginalFile);
-		MethodDeclaration originalCallerMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(removeParameterTestClass.getLineNumberOfCaller(),
-				cuOriginalFile);
+		MethodDeclaration originalCallerMethod = RefactoringHelper
+				.getMethodByLineNumberOfMethodName(removeParameterTestClass.getLineNumberOfCaller(), cuOriginalFile);
 		assertNotNull(originalMethod);
 		assertNotNull(originalDummyMethod);
 		assertNotNull(originalCallerMethod);
@@ -112,7 +112,7 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 		String callerMethodName = originalCallerMethod.getNameAsString();
 		FileInputStream in = new FileInputStream(tempFile);
 		CompilationUnit cu = JavaParser.parse(in);
-		MethodDeclaration refactoredMethod = RefactoringHelper.getMethodByName(methodName, cu);
+		MethodDeclaration refactoredMethod = getMethodByName(methodName, cu);
 
 		// assert that parameter has been removed from the target method
 		assertNotNull(refactoredMethod);
@@ -126,12 +126,12 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 		}
 
 		// assert that dummy method is unchanged
-		MethodDeclaration dummyMethod = RefactoringHelper.getMethodByName(dummyMethodName, cu);
+		MethodDeclaration dummyMethod = getMethodByName(dummyMethodName, cu);
 		assertNotNull(dummyMethod);
 		assertTrue(dummyMethod.getParameterByName(parameterName).isPresent());
 
 		// assert that caller method has been refactored as well
-		MethodDeclaration callerMethod = RefactoringHelper.getMethodByName(callerMethodName, cu);
+		MethodDeclaration callerMethod = getMethodByName(callerMethodName, cu);
 		assertNotNull(callerMethod);
 		for (MethodCallExpr methodCall : callerMethod.getBody().get().findAll(MethodCallExpr.class)) {
 			if (methodCall.getNameAsString().equals(refactoredMethod.getNameAsString())) {
@@ -141,7 +141,27 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 				assertEquals(refactoredMethodParameters.size(), callerMethodArguments.size());
 			}
 		}
+	}
 
+	/**
+	 * TEST HELPER METHOD ONLY. Does not work for classes with with more than one
+	 * method declaration with the same name.
+	 * 
+	 * Finds a method in a compilation unit with a specific name.
+	 * 
+	 * @param methodName
+	 * @param cu
+	 * @return MethodDeclaration or null if none found
+	 */
+	private MethodDeclaration getMethodByName(String methodName, CompilationUnit cu) {
+		MethodDeclaration result = null;
+		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
+		for (MethodDeclaration method : methods) {
+			if (method.getNameAsString().equals(methodName)) {
+				result = method;
+			}
+		}
+		return result;
 	}
 
 }

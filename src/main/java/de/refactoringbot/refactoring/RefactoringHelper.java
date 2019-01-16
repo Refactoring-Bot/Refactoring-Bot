@@ -336,22 +336,4 @@ public class RefactoringHelper {
 		return result;
 	}
 
-	/**
-	 * Finds a method in a compilation unit with a specific name
-	 * 
-	 * @param methodName
-	 * @param cu
-	 * @return MethodDeclaration or null if none found
-	 */
-	public static MethodDeclaration getMethodByName(String methodName, CompilationUnit cu) {
-		MethodDeclaration result = null;
-		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
-		for (MethodDeclaration method : methods) {
-			if (method.getNameAsString().equals(methodName)) {
-				result = method;
-			}
-		}
-		return result;
-	}
-
 }
