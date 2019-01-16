@@ -25,8 +25,8 @@ public class RefactoringOperationsTest {
 						+ "Keys should not be renamed without migration as they are persisted to the database")
 				.containsOnly(
 						entry("Add Override Annotation", AddOverrideAnnotation.class),
-						entry("Rename Method", ReorderModifier.class),
-						entry("Reorder Modifier", RenameMethod.class),
+						entry("Rename Method", RenameMethod.class),
+						entry("Reorder Modifier", ReorderModifier.class),
 						entry("Remove Commented Out Code", RemoveCommentedOutCode.class),
 						entry("Remove Parameter", RemoveMethodParameter.class));
 	}
