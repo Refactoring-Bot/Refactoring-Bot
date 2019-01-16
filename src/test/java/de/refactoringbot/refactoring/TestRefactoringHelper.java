@@ -16,6 +16,7 @@ import org.springframework.util.ClassUtils;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 
 import de.refactoringbot.model.exceptions.BotRefactoringException;
@@ -27,7 +28,8 @@ public class TestRefactoringHelper {
 	public final ExpectedException exception = ExpectedException.none();
 
 	@Test
-	public void testCheckForDuplicatedMethodSignaturesExpectException() throws FileNotFoundException, BotRefactoringException {
+	public void testCheckForDuplicatedMethodSignaturesExpectException()
+			throws FileNotFoundException, BotRefactoringException {
 		exception.expect(BotRefactoringException.class);
 
 		// arrange
@@ -38,33 +40,56 @@ public class TestRefactoringHelper {
 		// act
 		RefactoringHelper.checkForDuplicatedMethodSignatures(javaFiles, methodSignatureAsString);
 	}
-	
+
 	@Test
-	public void testCheckForDuplicatedMethodSignaturesExpectNoException() throws FileNotFoundException, BotRefactoringException {
+	public void testCheckForDuplicatedMethodSignaturesExpectNoException()
+			throws FileNotFoundException, BotRefactoringException {
 		String methodSignatureAsString = "foo(int)";
 		List<String> javaFiles = getJavaFilePathsForTest();
 		RefactoringHelper.checkForDuplicatedMethodSignatures(javaFiles, methodSignatureAsString);
-		
+
 		methodSignatureAsString = "foo()";
 		RefactoringHelper.checkForDuplicatedMethodSignatures(javaFiles, methodSignatureAsString);
-		
+
 		methodSignatureAsString = "bar(boolean)";
 		RefactoringHelper.checkForDuplicatedMethodSignatures(javaFiles, methodSignatureAsString);
 	}
-	
+
 	@Test
 	public void testGetMethodByLineNumberOfMethodName() throws FileNotFoundException {
 		// arrange
 		FileInputStream in = new FileInputStream(getTestResourcesFile());
 		CompilationUnit cu = JavaParser.parse(in);
 		int lineNumber = TestDataClassRefactoringHelper.getLineOfMethod(true);
-		
+
 		// act
 		MethodDeclaration method = RefactoringHelper.getMethodByLineNumberOfMethodName(lineNumber, cu);
-		
+
 		// assert
 		assertTrue(method != null);
 		assertEquals("public static int getLineOfMethod(boolean parm)", method.getDeclarationAsString());
+		
+		// act
+		boolean isMethodDeclarationAtLineNumber = RefactoringHelper.isMethodDeclarationAtLine(method, lineNumber);
+		
+		// assert
+		assertTrue(isMethodDeclarationAtLineNumber);
+	}
+
+	@Test
+	public void testGetFieldDeclarationByLineNumber() throws FileNotFoundException {
+		// arrange
+		FileInputStream in = new FileInputStream(getTestResourcesFile());
+		CompilationUnit cu = JavaParser.parse(in);
+		int lineNumber = TestDataClassRefactoringHelper.lineNumberOfFieldDeclaration;
+		String expectedFieldAsString = "public static int lineNumberOfFieldDeclaration = " + lineNumber + ";";
+
+		// act
+		FieldDeclaration field = RefactoringHelper.getFieldDeclarationByLineNumber(lineNumber, cu);
+
+		// assert
+		assertTrue(field != null);
+		assertEquals(expectedFieldAsString, field.toString());
 	}
 
 	private List<String> getJavaFilePathsForTest() {
