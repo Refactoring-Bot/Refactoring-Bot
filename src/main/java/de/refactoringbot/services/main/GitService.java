@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.main;
+package de.refactoringbot.services.main;
 
 import java.io.File;
 
@@ -14,7 +14,7 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.configuration.GitConfiguration;
@@ -27,13 +27,13 @@ import de.refactoringbot.model.exceptions.GitWorkflowException;
  * @author Stefan Basaric
  *
  */
-@Component
-public class GitController {
+@Service
+public class GitService {
 
 	@Autowired
 	BotConfiguration botConfig;
 
-	private static final Logger logger = LoggerFactory.getLogger(GitController.class);
+	private static final Logger logger = LoggerFactory.getLogger(GitService.class);
 
 	/**
 	 * This method initialises the workspace.

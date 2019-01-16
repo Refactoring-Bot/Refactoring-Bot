@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.main;
+package de.refactoringbot.services.main;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import de.refactoringbot.grammar.botgrammar.BotOperationsBaseListener;
 import de.refactoringbot.grammar.botgrammar.BotOperationsLexer;
@@ -27,13 +27,13 @@ import de.refactoringbot.refactoring.RefactoringOperations;
  * @author Stefan Basaric
  *
  */
-@Component
-public class GrammarController {
+@Service
+public class GrammarService {
 
 	@Autowired
-	FileController fileController;
+	FileService fileController;
 
-	private static final Logger logger = LoggerFactory.getLogger(GrammarController.class);
+	private static final Logger logger = LoggerFactory.getLogger(GrammarService.class);
 
 	/**
 	 * This method checks if a comment has a valid bot grammar and returns if the

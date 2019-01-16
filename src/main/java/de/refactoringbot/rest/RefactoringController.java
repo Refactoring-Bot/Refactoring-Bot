@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.*;
 import de.refactoringbot.api.main.ApiGrabber;
 import de.refactoringbot.api.sonarqube.SonarQubeDataGrabber;
 import de.refactoringbot.configuration.BotConfiguration;
-import de.refactoringbot.controller.main.BotController;
-import de.refactoringbot.controller.main.GitController;
-import de.refactoringbot.controller.main.GrammarController;
-import de.refactoringbot.controller.sonarqube.SonarQubeObjectTranslator;
+import de.refactoringbot.services.main.BotService;
+import de.refactoringbot.services.main.GitService;
+import de.refactoringbot.services.main.GrammarService;
+import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
@@ -46,7 +46,7 @@ public class RefactoringController {
 	@Autowired
 	SonarQubeDataGrabber sonarCubeGrabber;
 	@Autowired
-	GitController dataGetter;
+	GitService dataGetter;
 	@Autowired
 	ConfigurationRepository configRepo;
 	@Autowired
@@ -54,9 +54,9 @@ public class RefactoringController {
 	@Autowired
 	BotConfiguration botConfig;
 	@Autowired
-	BotController botController;
+	BotService botController;
 	@Autowired
-	GrammarController grammarController;
+	GrammarService grammarController;
 	@Autowired
 	RefactoringPicker refactoring;
 	@Autowired

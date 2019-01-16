@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.sonarqube;
+package de.refactoringbot.services.sonarqube;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -7,9 +7,9 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import de.refactoringbot.controller.main.FileController;
+import de.refactoringbot.services.main.FileService;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.sonarqube.SonarIssue;
@@ -22,11 +22,11 @@ import de.refactoringbot.refactoring.RefactoringOperations;
  * @author Stefan Basaric
  *
  */
-@Component
+@Service
 public class SonarQubeObjectTranslator {
 
 	@Autowired
-	FileController fileController;
+	FileService fileController;
 
 	/**
 	 * This method translates all SonarCubeIssues to BotIssues.

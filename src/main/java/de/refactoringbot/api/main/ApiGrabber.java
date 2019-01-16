@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 
 import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.api.sonarqube.SonarQubeDataGrabber;
-import de.refactoringbot.controller.github.GithubObjectTranslator;
-import de.refactoringbot.controller.main.BotController;
-import de.refactoringbot.controller.sonarqube.SonarQubeObjectTranslator;
+import de.refactoringbot.services.github.GithubObjectTranslator;
+import de.refactoringbot.services.main.BotService;
+import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
@@ -43,7 +43,7 @@ public class ApiGrabber {
 	@Autowired
 	SonarQubeObjectTranslator sonarQubeTranslator;
 	@Autowired
-	BotController botController;
+	BotService botController;
 
 	/**
 	 * This method gets all requests with all comments from an api translated into a

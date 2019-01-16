@@ -22,9 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import de.refactoringbot.api.main.ApiGrabber;
 import de.refactoringbot.configuration.BotConfiguration;
-import de.refactoringbot.controller.github.GithubObjectTranslator;
-import de.refactoringbot.controller.main.BotController;
-import de.refactoringbot.controller.main.GitController;
+import de.refactoringbot.services.github.GithubObjectTranslator;
+import de.refactoringbot.services.main.BotService;
+import de.refactoringbot.services.main.GitService;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
@@ -50,9 +50,9 @@ public class ConfigurationController {
 	@Autowired
 	BotConfiguration botConfig;
 	@Autowired
-	GitController gitController;
+	GitService gitController;
 	@Autowired
-	BotController botController;
+	BotService botController;
 
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
 
