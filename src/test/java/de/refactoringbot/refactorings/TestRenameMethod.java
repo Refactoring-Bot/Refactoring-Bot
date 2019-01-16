@@ -58,7 +58,7 @@ public class TestRenameMethod extends AbstractRefactoringTests {
 		gitConfig.setRepoFolder("");
 		issue.setFilePath(tempFile.getAbsolutePath());
 		issue.setLine(lineNumberOfMethodToBeRenamed);
-		issue.setJavaRoots(new ArrayList<String>());
+		issue.setJavaRoots(new ArrayList<>());
 		issue.setRefactorString(newMethodName);
 		issue.setAllJavaFiles(Arrays.asList(tempFile.getAbsolutePath()));
 
