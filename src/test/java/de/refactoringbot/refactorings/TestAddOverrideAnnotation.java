@@ -14,7 +14,7 @@ import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.supportedrefactorings.AddOverrideAnnotation;
-import de.refactoringbot.resources.TestDataClassMissingOverrideAnnotation;
+import de.refactoringbot.resources.addoverrideannotation.TestDataClassMissingOverrideAnnotation;
 
 public class TestAddOverrideAnnotation extends AbstractRefactoringTests {
 
@@ -24,6 +24,11 @@ public class TestAddOverrideAnnotation extends AbstractRefactoringTests {
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
+	@Override
+	public Class<TestDataClassMissingOverrideAnnotation> getTestResourcesClass() {
+		return TestDataClassMissingOverrideAnnotation.class;
+	}
+	
 	@Test
 	public void testAddOverrideAnnotation() throws Exception {
 		testAddOverrideAnnotation(missingOverrideTestClass.getLineOfMethodWithMissingOverrideAnnotation());
@@ -52,7 +57,7 @@ public class TestAddOverrideAnnotation extends AbstractRefactoringTests {
 
 	private void testAddOverrideAnnotation(int lineNumberOfMethodWithMissingOverride) throws Exception {
 		// arrange
-		File tempFile = getTempCopyOfResourcesFile("TestDataClassMissingOverrideAnnotation.java");
+		File tempFile = getTempCopyOfTestResourcesFile();
 		BotIssue issue = new BotIssue();
 		GitConfiguration gitConfig = new GitConfiguration();
 		AddOverrideAnnotation refactoring = new AddOverrideAnnotation();

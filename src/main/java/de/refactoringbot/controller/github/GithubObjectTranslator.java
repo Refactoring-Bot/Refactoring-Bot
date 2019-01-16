@@ -46,7 +46,6 @@ public class GithubObjectTranslator {
 	@Autowired
 	ModelMapper modelMapper;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GithubObjectTranslator.class);
 
 	/**

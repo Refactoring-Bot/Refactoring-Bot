@@ -1,7 +1,7 @@
 package de.refactoringbot.refactoring;
 
 import java.lang.reflect.Constructor;
-import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,6 @@ public class RefactoringPicker {
 	@Autowired
 	RefactoringOperations operations;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
 
 	/**
@@ -40,7 +39,7 @@ public class RefactoringPicker {
 
 		try {
 			// Get rule to class mapping
-			HashMap<String, Class<?>> ruleToClassMapping = operations.getRuleToClassMapping();
+			Map<String, Class<?>> ruleToClassMapping = operations.getRuleToClassMapping();
 			// Get class of the mapping
 			Class<?> refactoringClass = ruleToClassMapping.get(issue.getRefactoringOperation());
 

@@ -33,7 +33,6 @@ public class GrammarController {
 	@Autowired
 	FileController fileController;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(GrammarController.class);
 
 	/**
@@ -70,7 +69,7 @@ public class GrammarController {
 	}
 
 	/**
-	 * This mehtod translates an valid comment to a BotIssue that can be refactored.
+	 * This method translates a valid comment to a BotIssue that can be refactored.
 	 * 
 	 * @param comment
 	 * @return issue
@@ -113,6 +112,8 @@ public class GrammarController {
 				if (commentArr[2].equals("MODIFIER")) {
 					issue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
 				}
+				// Add line/position
+				issue.setLine(Integer.valueOf(commentArr[4]));
 			}
 
 			// Rename operations

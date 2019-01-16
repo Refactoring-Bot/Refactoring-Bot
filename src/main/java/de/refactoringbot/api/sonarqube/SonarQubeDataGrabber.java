@@ -28,7 +28,6 @@ public class SonarQubeDataGrabber {
 
 	private static final String USER_AGENT = "Mozilla/5.0";
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(SonarQubeDataGrabber.class);
 
 	/**

@@ -62,7 +62,6 @@ public class RefactoringController {
 	@Autowired
 	SonarQubeObjectTranslator sonarTranslator;
 
-	// Logger
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
 
 	/**
