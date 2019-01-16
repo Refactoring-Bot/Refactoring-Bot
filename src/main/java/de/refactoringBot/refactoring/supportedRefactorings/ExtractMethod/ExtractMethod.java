@@ -190,24 +190,32 @@ public class ExtractMethod implements RefactoringImpl {
 			Map<Long, LineMapVariable> map = new HashMap<>();
 			SpecialBlock entryBlock = cfg.getEntryBlock();
 			for (String variable : localVariables) {
-				this.mapVariable(map, entryBlock, variable, null, lineMap);
+				this.mapVariable(map, entryBlock, variable, null, lineMap, new HashSet<>());
 			}
 			return map;
 		}
 
-		private void mapVariable(Map<Long, LineMapVariable> variableMap, Block block, String variable, Long lastLine, LineMap lineMap) {
+		private void mapVariable(Map<Long, LineMapVariable> variableMap, Block block, String variable, Long lastLine, LineMap lineMap, Set<Long> visitedBlocks) {
+		    if (visitedBlocks.contains(block.getId())) {
+		        return;
+            }
+            visitedBlocks.add(block.getId());
 			switch (block.getType()) {
 				case EXCEPTION_BLOCK:
 					ExceptionBlock exceptionBlock = (ExceptionBlock) block;
 					lastLine = this.addNodeToMap(variableMap, exceptionBlock.getNode(), variable, lastLine, lastLine, lineMap);
-					this.mapVariable(variableMap, exceptionBlock.getSuccessor(), variable, lastLine, lineMap);
+					this.mapVariable(variableMap, exceptionBlock.getSuccessor(), variable, lastLine, lineMap, visitedBlocks);
 					break;
 				case CONDITIONAL_BLOCK:
 					ConditionalBlock conditionalBlock = (ConditionalBlock) block;
-					this.mapVariable(variableMap, conditionalBlock.getThenSuccessor(), variable, lastLine, lineMap);
-					this.mapVariable(variableMap, conditionalBlock.getElseSuccessor(), variable, lastLine, lineMap);
+					this.mapVariable(variableMap, conditionalBlock.getThenSuccessor(), variable, lastLine, lineMap, visitedBlocks);
+					this.mapVariable(variableMap, conditionalBlock.getElseSuccessor(), variable, lastLine, lineMap, visitedBlocks);
 					break;
 				case SPECIAL_BLOCK:
+				    SpecialBlock specialBlock = (SpecialBlock) block;
+				    if (specialBlock.getSpecialType() == SpecialBlock.SpecialBlockType.ENTRY) {
+				        this.mapVariable(variableMap, specialBlock.getSuccessor(), variable, lastLine, lineMap, visitedBlocks);
+                    }
 					break;
 				case REGULAR_BLOCK:
 					RegularBlock regularBlock = (RegularBlock) block;
@@ -217,7 +225,7 @@ public class ExtractMethod implements RefactoringImpl {
 						newLine = this.addNodeToMap(variableMap, node, variable, newLine, lastLine, lineMap);
 						lastLine = copyLine;
 					}
-					this.mapVariable(variableMap, regularBlock.getRegularSuccessor(), variable, lastLine, lineMap);
+					this.mapVariable(variableMap, regularBlock.getRegularSuccessor(), variable, lastLine, lineMap, visitedBlocks);
 					break;
 			}
 		}
@@ -226,19 +234,19 @@ public class ExtractMethod implements RefactoringImpl {
 			Long newLine = lastLine;
 			if (this.nodeContainsVariable(node, variable)) {
 				Long lineNumber = this.getLineNumber(lineMap, node);
-				if (this.nodeIsAssignmentNode(node)) {
-					newLine = lineNumber;
-				} else {
-					Long in = (lineNumber > lastLine) ? lastLine : previousLine;
-					// add in
-					variableMap.computeIfAbsent(lineNumber, k -> new LineMapVariable());
-					variableMap.get(lineNumber).in.computeIfAbsent(variable, k -> new HashSet<>());
-					variableMap.get(lineNumber).in.get(variable).add(in);
-					// add out
-					variableMap.computeIfAbsent(lastLine, k -> new LineMapVariable());
-					variableMap.get(in).out.computeIfAbsent(variable, k -> new HashSet<>());
-					variableMap.get(in).out.get(variable).add(lineNumber);
-				}
+                if (this.nodeIsAssignmentNode(node)) {
+                    newLine = lineNumber;
+                } else {
+                    Long in = (lastLine != null && lineNumber > lastLine) ? lastLine : previousLine;
+                    // add in
+                    variableMap.computeIfAbsent(lineNumber, k -> new LineMapVariable());
+                    variableMap.get(lineNumber).in.computeIfAbsent(variable, k -> new HashSet<>());
+                    variableMap.get(lineNumber).in.get(variable).add(in);
+                    // add out
+                    variableMap.computeIfAbsent(lastLine, k -> new LineMapVariable());
+                    variableMap.get(in).out.computeIfAbsent(variable, k -> new HashSet<>());
+                    variableMap.get(in).out.get(variable).add(lineNumber);
+                }
 			}
 			return newLine;
 		}
