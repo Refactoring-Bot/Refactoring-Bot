@@ -39,7 +39,7 @@ public class RefactoringPicker {
 
 		try {
 			// Get rule to class mapping
-			Map<String, Class<?>> ruleToClassMapping = operations.getRuleToClassMapping();
+			Map<String, Class<? extends RefactoringImpl>> ruleToClassMapping = operations.getRuleToClassMapping();
 			// Get class of the mapping
 			Class<?> refactoringClass = ruleToClassMapping.get(issue.getRefactoringOperation());
 
