@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import de.refactoringbot.api.github.GithubDataGrabber;
-import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
@@ -39,23 +38,21 @@ import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestCommen
 @Component
 public class GithubObjectTranslator {
 
-	@Autowired
-	GithubDataGrabber grabber;
-	@Autowired
-	BotConfiguration botConfig;
-	@Autowired
-	ModelMapper modelMapper;
-
 	private static final Logger logger = LoggerFactory.getLogger(GithubObjectTranslator.class);
+
+	private final GithubDataGrabber grabber;
+	private final ModelMapper modelMapper;
+
+	@Autowired
+	public GithubObjectTranslator(GithubDataGrabber grabber, ModelMapper modelMapper) {
+		this.grabber = grabber;
+		this.modelMapper = modelMapper;
+	}
 
 	/**
 	 * This method creates a GitConfiguration from GitHub data.
 	 * 
-	 * @param repo
-	 * @param repoService
-	 * @param analysusServiceProjectKey
-	 * @param maxAmountRequests
-	 * @param projectRootFolder
+	 * @param configuration
 	 * @return
 	 */
 	public GitConfiguration createConfiguration(GitConfigurationDTO configuration) {
@@ -280,7 +277,7 @@ public class GithubObjectTranslator {
 	 * This method creates a reply comment for a failed refactoring that was
 	 * triggered by a comment of a pull request.
 	 * 
-	 * @param comment
+	 * @param replyTo
 	 * @param errorMessage
 	 * @return
 	 */
