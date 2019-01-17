@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import javax.tools.*;
 import java.io.*;
+import java.sql.Statement;
 import java.util.*;
 
 /**
@@ -251,32 +252,6 @@ public class ExtractMethod implements RefactoringImpl {
 			return newLine;
 		}
 
-		private Set<Long> findVariableOccurences(ControlFlowGraph cfg, String variable) {
-			List<Block> orderedBlocks = cfg.getDepthFirstOrderedBlocks();
-			Set<Long> blockIDs = new HashSet<>();
-			for (Block block : orderedBlocks) {
-				switch (block.getType()) {
-					case REGULAR_BLOCK:
-						RegularBlock regularBlock = (RegularBlock) block;
-						for (Node node : regularBlock.getContents()) {
-							if (this.nodeContainsVariable(node, variable)) {
-								blockIDs.add(block.getId());
-							}
-						}
-						break;
-					case EXCEPTION_BLOCK:
-						ExceptionBlock exceptionBlock = (ExceptionBlock) block;
-						if (this.nodeContainsVariable(exceptionBlock.getNode(), variable)) {
-							blockIDs.add(block.getId());
-						}
-						break;
-					default:
-						break;
-				}
-			}
-			return blockIDs;
-		}
-
 		private boolean nodeIsAssignmentNode(Node node) {
 			return node.getClass().equals(AssignmentNode.class);
 		}
@@ -302,7 +277,8 @@ public class ExtractMethod implements RefactoringImpl {
 			boolean inTry = false;
 			boolean inCatch = false;
 			StatementGraphNode parentNode = node;
-			for (StatementGraphNode childNode : node.children) {
+			for (int i = 0; i < node.children.size(); i++) {
+			    StatementGraphNode childNode = node.children.get(i);
 				StatementGraphNode.TryCatchMarker marker = lineMapping.get(childNode.linenumber).tryCatchMarker;
 				if (inTry) {
 					node.children.remove(childNode);
@@ -516,7 +492,9 @@ public class ExtractMethod implements RefactoringImpl {
 			}
 			lineMapping.computeIfAbsent(currentLineNumber, k -> new LineMapBlock());
 			lineMapping.get(currentLineNumber).blocks.add(block.getId());
-			lineMapping.get(currentLineNumber).tryCatchMarker = tryCatchMarker;
+			if (lineMapping.get(currentLineNumber).tryCatchMarker.equals(StatementGraphNode.TryCatchMarker.NONE)) {
+                lineMapping.get(currentLineNumber).tryCatchMarker = tryCatchMarker;
+            }
 			return currentLineNumber;
 		}
 
