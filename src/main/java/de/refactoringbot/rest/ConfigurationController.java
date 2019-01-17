@@ -1,10 +1,7 @@
 package de.refactoringbot.rest;
 
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.Optional;
+import java.io.IOException;
 
-import org.apache.commons.io.FileUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,15 +17,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import de.refactoringbot.api.main.ApiGrabber;
-import de.refactoringbot.configuration.BotConfiguration;
-import de.refactoringbot.services.github.GithubObjectTranslator;
-import de.refactoringbot.services.main.BotService;
-import de.refactoringbot.services.main.GitService;
-import de.refactoringbot.model.configuration.ConfigurationRepository;
+import de.refactoringbot.services.main.ConfigurationService;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
+import de.refactoringbot.model.exceptions.DatabaseConnectionException;
+import de.refactoringbot.model.exceptions.GitHubAPIException;
 import io.swagger.annotations.ApiOperation;
+import javassist.NotFoundException;
 
 /**
  * This method offers an CRUD-Interface as a REST-Interface for the
@@ -42,22 +37,11 @@ import io.swagger.annotations.ApiOperation;
 public class ConfigurationController {
 
 	@Autowired
-	ConfigurationRepository repo;
-	@Autowired
-	ApiGrabber grabber;
-	@Autowired
-	GithubObjectTranslator translator;
-	@Autowired
-	BotConfiguration botConfig;
-	@Autowired
-	GitService gitController;
-	@Autowired
-	BotService botController;
-
-	private static final Logger logger = LoggerFactory.getLogger(RefactoringController.class);
-
+	ConfigurationService configService;
 	@Autowired
 	ModelMapper modelMapper;
+
+	private static final Logger logger = LoggerFactory.getLogger(ConfigurationController.class);
 
 	/**
 	 * This method creates an git configuration with the user inputs.
@@ -71,32 +55,20 @@ public class ConfigurationController {
 	public ResponseEntity<Object> add(@RequestBody GitConfigurationDTO newConfiguration) {
 		GitConfiguration savedConfig = null;
 		try {
-			savedConfig = grabber.createConfigurationForRepo(newConfiguration);
-			try {
-				// Try to save the new configuration
-				savedConfig = repo.save(savedConfig);
-			} catch (Exception e) {
-				// Print exception and abort if database error occurs
-				logger.error(e.getMessage(), e);
-				return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
-			}
-
-			savedConfig = finalizeGitConfiguration(savedConfig);
+			// Create initial configuration
+			savedConfig = configService.createInitialConfiguration(newConfiguration);
+			// Finalize configuration process
+			savedConfig = configService.finalizeGitConfiguration(savedConfig);
 			return new ResponseEntity<>(savedConfig, HttpStatus.CREATED);
+		} catch (DatabaseConnectionException d) {
+			// Print exception and abort if database error occurs
+			logger.error(d.getMessage(), d);
+			return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (Exception e) {
 			// If error occured after config was created
 			try {
 				// Try to delete configuration if created
-				if (savedConfig != null) {
-					repo.delete(savedConfig);
-					// Try to delete local folder
-					File forkFolder = new File(
-							botConfig.getBotRefactoringDirectory() + savedConfig.getConfigurationId());
-					FileUtils.deleteDirectory(forkFolder);
-
-					// Try to delete Repo
-					grabber.deleteRepository(savedConfig);
-				}
+				configService.revertConfigurationCreation(savedConfig);
 			} catch (Exception t) {
 				logger.error(t.getMessage(), t);
 			}
@@ -110,38 +82,30 @@ public class ConfigurationController {
 	@ApiOperation(value = "Update Git-Configuration with configuration id")
 	public ResponseEntity<?> update(@RequestBody GitConfigurationDTO newConfiguration,
 			@PathVariable(name = "configurationId") Long configurationId) {
-		// Check if configuration exists
-		Optional<GitConfiguration> existsConfig;
-		try {
-			// Try to get the Git-Configuration with the given ID
-			existsConfig = repo.getByID(configurationId);
-		} catch (Exception e) {
-			// Print exception and abort if database error occurs
-			logger.error(e.getMessage(), e);
-			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
 
-		// unwrap optional
 		GitConfiguration savedConfig = null;
 
-		// Read configuration if possible
-		if (existsConfig.isPresent()) {
-			savedConfig = existsConfig.get();
-		} else {
-			return new ResponseEntity<>("Configuration with given ID does not exist in the database!",
-					HttpStatus.NOT_FOUND);
+		try {
+			savedConfig = configService.checkConfigurationExistance(configurationId);
+		} catch (DatabaseConnectionException d) {
+			// Print exception and abort if database error occurs
+			logger.error(d.getMessage(), d);
+			return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (NotFoundException n) {
+			logger.error(n.getMessage(), n);
+			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
 		}
 
 		// Init database config
 		modelMapper.map(newConfiguration, savedConfig);
 
+		// Finalize configuration process
 		try {
-			savedConfig = finalizeGitConfiguration(savedConfig);
+			savedConfig = configService.finalizeGitConfiguration(savedConfig);
 			return new ResponseEntity<>(savedConfig, HttpStatus.CREATED);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-
 		}
 	}
 
@@ -156,43 +120,40 @@ public class ConfigurationController {
 	@ApiOperation(value = "Delete Git-Configuration with configuration id")
 	public ResponseEntity<?> deleteConfig(@PathVariable("configurationId") Long configurationId) {
 		// Check if configuration exists
-		Optional<GitConfiguration> existsConfig;
+		GitConfiguration config = null;
 		try {
-			// Try to get the Git-Configuration with the given ID
-			existsConfig = repo.getByID(configurationId);
-		} catch (Exception e) {
+			config = configService.checkConfigurationExistance(configurationId);
+		} catch (DatabaseConnectionException d) {
 			// Print exception and abort if database error occurs
-			logger.error(e.getMessage(), e);
-			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+			logger.error(d.getMessage(), d);
+			return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (NotFoundException n) {
+			logger.error(n.getMessage(), n);
+			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
 		}
-		String userFeedback = "";
+		String userFeedback = null;
 		// If it does
-		if (existsConfig.isPresent()) {
+		if (config != null) {
 			// Delete configuration from the database
 			try {
-				repo.delete(existsConfig.get());
-				userFeedback = userFeedback.concat("Configuration deleted from database!");
-			} catch (Exception e) {
-				logger.error(e.getMessage(), e);
-				return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
+				userFeedback = configService.deleteConfiguration(config);
+			} catch (DatabaseConnectionException d) {
+				logger.error(d.getMessage(), d);
+				return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 			// Delete repository from the filehoster bot account
 			try {
-				grabber.deleteRepository(existsConfig.get());
-			} catch (Exception e) {
+				configService.deleteConfigurationRepo(config);
+			} catch (GitHubAPIException e) {
 				logger.error(e.getMessage(), e);
-				userFeedback = userFeedback
-						.concat(" Could not delete repository on " + existsConfig.get().getRepoService() + "!");
+				userFeedback = userFeedback.concat(e.getMessage());
 			}
 			// Delete local folder
 			try {
-				File forkFolder = new File(
-						botConfig.getBotRefactoringDirectory() + existsConfig.get().getConfigurationId());
-				FileUtils.deleteDirectory(forkFolder);
-			} catch (Exception e) {
+				configService.deleteConfigurationFolder(config);
+			} catch (IOException e) {
 				logger.error(e.getMessage(), e);
-				userFeedback = userFeedback.concat(" Could not delete local folder '"
-						+ existsConfig.get().getConfigurationId() + "' of the configuration!");
+				userFeedback = userFeedback.concat(e.getMessage());
 			}
 			// Return feedback to user
 			return new ResponseEntity<>(userFeedback, HttpStatus.OK);
@@ -206,71 +167,39 @@ public class ConfigurationController {
 	 * 
 	 * @return allConfigs
 	 */
-
 	@GetMapping(produces = "application/json")
 	@ApiOperation(value = "Get all Git-Configurations")
 	public ResponseEntity<?> getAllConfigs() {
-		Iterable<GitConfiguration> allConfigs;
 		try {
-			allConfigs = repo.findAll();
-		} catch (Exception e) {
+			Iterable<GitConfiguration> allConfigs = configService.getAllConfigurations();
+			return new ResponseEntity<>(allConfigs, HttpStatus.OK);
+		} catch (DatabaseConnectionException e) {
 			// Print exception and abort if database error occurs
 			logger.error(e.getMessage(), e);
-			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-		return new ResponseEntity<>(allConfigs, HttpStatus.OK);
-	}
-
-	@GetMapping(path = "/{configurationId}", produces = "application/json")
-	@ApiOperation(value = "Get Git-Configuration with configuration id")
-	public ResponseEntity<?> getAllConfigs(@PathVariable("configurationId") Long configurationId) {
-		Optional<GitConfiguration> existsConfig;
-		try {
-			// Try to get the Git-Configuration with the given ID
-			existsConfig = repo.getByID(configurationId);
-		} catch (Exception e) {
-			// Print exception and abort if database error occurs
-			logger.error(e.getMessage(), e);
-			return new ResponseEntity<>("Connection with database failed!", HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-		return new ResponseEntity<>(existsConfig, HttpStatus.OK);
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		} 
 	}
 
 	/**
-	 * This method finalizes the configuration process. Here we initiate our local
-	 * workspace for our configuration, create a fork on our filehosting service and
-	 * pull the fork. Also we create a remote of the original repository and fetch
-	 * its data initially. At last we create paths to our config workspace and
-	 * update our config in the db with them.
+	 * This method returns a configuration with a specific ID.
 	 * 
-	 * @param config
-	 * @return savedConfig
-	 * @throws Exception
+	 * @param configurationId
+	 * @return config
 	 */
-	private GitConfiguration finalizeGitConfiguration(GitConfiguration config) throws Exception {
-		// Delete local folder for config if exists (if database was resetted)
-		if (new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()).exists()) {
-			FileUtils.deleteDirectory(new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()));
+	@GetMapping(path = "/{configurationId}", produces = "application/json")
+	@ApiOperation(value = "Get Git-Configuration with configuration id")
+	public ResponseEntity<?> getConfigById(@PathVariable("configurationId") Long configurationId) {
+		// Check if configuration exists
+		GitConfiguration config = null;
+		try {
+			config = configService.checkConfigurationExistance(configurationId);
+			return new ResponseEntity<>(config, HttpStatus.OK);
+		} catch (DatabaseConnectionException d) {
+			// Print exception and abort if database error occurs
+			logger.error(d.getMessage(), d);
+			return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (NotFoundException n) {
+			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
 		}
-
-		// Create new local folder for the fork
-		File dir = new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId());
-		dir.mkdir();
-		// Create the fork on the filehoster bot account
-		grabber.createFork(config);
-		// Clone fork + add remote of origin repository
-		gitController.initLocalWorkspace(config);
-
-		// Add repo path and src-folder path to config
-		config.setRepoFolder(
-				Paths.get(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()).toString());
-		config.setSrcFolder(
-				botController.findSrcFolder(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()));
-		config = repo.save(config);
-
-		// Fetch target-Repository-Data
-		gitController.fetchRemote(config);
-
-		return config;
 	}
 }
