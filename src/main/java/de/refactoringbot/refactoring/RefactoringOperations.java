@@ -34,8 +34,8 @@ public class RefactoringOperations {
 	 * 
 	 * @return
 	 */
-	public Map<String, Class<?>> getRuleToClassMapping() {
-		HashMap<String, Class<?>> ruleToClassMapping = new HashMap<>();
+	public Map<String, Class<? extends RefactoringImpl>> getRuleToClassMapping() {
+		HashMap<String, Class<? extends RefactoringImpl>> ruleToClassMapping = new HashMap<>();
 		ruleToClassMapping.put(ADD_OVERRIDE_ANNOTATION, AddOverrideAnnotation.class);
 		ruleToClassMapping.put(REORDER_MODIFIER, ReorderModifier.class);
 		ruleToClassMapping.put(RENAME_METHOD, RenameMethod.class);
