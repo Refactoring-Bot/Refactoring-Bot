@@ -82,9 +82,7 @@ public class ConfigurationController {
 	@ApiOperation(value = "Update Git-Configuration with configuration id")
 	public ResponseEntity<?> update(@RequestBody GitConfigurationDTO newConfiguration,
 			@PathVariable(name = "configurationId") Long configurationId) {
-
 		GitConfiguration savedConfig = null;
-
 		try {
 			savedConfig = configService.checkConfigurationExistance(configurationId);
 		} catch (DatabaseConnectionException d) {
@@ -92,7 +90,6 @@ public class ConfigurationController {
 			logger.error(d.getMessage(), d);
 			return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (NotFoundException n) {
-			logger.error(n.getMessage(), n);
 			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
 		}
 
@@ -128,7 +125,6 @@ public class ConfigurationController {
 			logger.error(d.getMessage(), d);
 			return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (NotFoundException n) {
-			logger.error(n.getMessage(), n);
 			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
 		}
 		String userFeedback = null;
