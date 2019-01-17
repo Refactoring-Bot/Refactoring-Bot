@@ -39,16 +39,15 @@ public class RefactoringPicker {
 
 		try {
 			// Get rule to class mapping
-			Map<String, Class<?>> ruleToClassMapping = operations.getRuleToClassMapping();
+			Map<String, Class<? extends RefactoringImpl>> ruleToClassMapping = operations.getRuleToClassMapping();
 			// Get class of the mapping
-			Class<?> refactoringClass = ruleToClassMapping.get(issue.getRefactoringOperation());
+			Class<? extends RefactoringImpl> refactoringClass = ruleToClassMapping.get(issue.getRefactoringOperation());
 
 			// If class for refactoring exists
 			if (refactoringClass != null) {
-				Constructor<?> ctor = refactoringClass.getConstructor();
-				Object object = ctor.newInstance(new Object[] {});
-				return (String) refactoringClass.getMethod("performRefactoring", BotIssue.class, GitConfiguration.class)
-						.invoke(object, issue, gitConfig);
+				Constructor<? extends RefactoringImpl> constructor = refactoringClass.getConstructor();
+				RefactoringImpl refactoring = constructor.newInstance();
+				return refactoring.performRefactoring(issue, gitConfig);
 			} else {
 				throw new BotRefactoringException("Bot does not support specified refactoring yet!");
 			}
