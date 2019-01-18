@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.github;
+package de.refactoringbot.services.github;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

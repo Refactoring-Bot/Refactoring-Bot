@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.main;
+package de.refactoringbot.services.main;
 
 import static org.junit.Assert.assertTrue;
 
