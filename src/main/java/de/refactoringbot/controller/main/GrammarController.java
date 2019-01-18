@@ -30,10 +30,14 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 @Component
 public class GrammarController {
 
-	@Autowired
-	FileController fileController;
+	private FileController fileController;
 
 	private static final Logger logger = LoggerFactory.getLogger(GrammarController.class);
+
+	@Autowired
+	public GrammarController(FileController fileController) {
+		this.fileController = fileController;
+	}
 
 	/**
 	 * This method checks if a comment has a valid bot grammar and returns if the
@@ -80,9 +84,6 @@ public class GrammarController {
 			// Create object
 			BotIssue issue = new BotIssue();
 
-			// Split comment at whitespace
-			String[] commentArr = comment.getCommentBody().split(" ");
-
 			// Add data to comment
 			issue.setCommentServiceID(comment.getCommentID().toString());
 			issue.setLine(comment.getPosition());
@@ -93,56 +94,63 @@ public class GrammarController {
 			issue.setAllJavaFiles(allJavaFiles);
 			issue.setJavaRoots(fileController.findJavaRoots(allJavaFiles, gitConfig.getRepoFolder()));
 
-			// Add operations
-			if (commentArr[1].equals("ADD")) {
-				// Add annotations
-				if (commentArr[2].equals("ANNOTATION")) {
-					// Add override annotation
-					if (commentArr[3].equals("Override")) {
-						issue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
-					}
-					// Add line/position
-					issue.setLine(Integer.valueOf(commentArr[5]));
-				}
-			}
-
-			// Reorder operations
-			if (commentArr[1].equals("REORDER")) {
-				// Reorder modifier operation
-				if (commentArr[2].equals("MODIFIER")) {
-					issue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
-				}
-				// Add line/position
-				issue.setLine(Integer.valueOf(commentArr[4]));
-			}
-
-			// Rename operations
-			if (commentArr[1].equals("RENAME")) {
-				// Rename method operations
-				if (commentArr[2].equals("METHOD")) {
-					issue.setRefactoringOperation(RefactoringOperations.RENAME_METHOD);
-					// Set new name of the method
-					issue.setRefactorString(commentArr[6]);
-				}
-				// Add line/position
-				issue.setLine(Integer.valueOf(commentArr[4]));
-			}
-
-			// Remove operations
-			if (commentArr[1].equals("REMOVE")) {
-				// Remove method parameter
-				if (commentArr[2].equals("PARAMETER")) {
-					issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
-					// Set name of the parameter
-					issue.setRefactorString(commentArr[6]);
-				}
-				// Add line/position
-				issue.setLine(Integer.valueOf(commentArr[4]));
-			}
+			mapCommentBodyToIssue(issue, comment.getCommentBody());
 			return issue;
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new Exception("Could not create a BotIssue from the comment '" + comment.getCommentBody() + "'!");
+		}
+	}
+
+	private void mapCommentBodyToIssue(BotIssue issue, String commentBody) {
+		// Split comment at whitespace
+		String[] commentArr = commentBody.split(" ");
+
+		// Add operations
+		if (commentArr[1].equals("ADD")) {
+			// Add annotations
+			if (commentArr[2].equals("ANNOTATION")) {
+				// Add override annotation
+				if (commentArr[3].equals("Override")) {
+					issue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
+				}
+				// Add line/position
+				issue.setLine(Integer.valueOf(commentArr[5]));
+			}
+		}
+
+		// Reorder operations
+		if (commentArr[1].equals("REORDER")) {
+			// Reorder modifier operation
+			if (commentArr[2].equals("MODIFIER")) {
+				issue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
+			}
+			// Add line/position
+			issue.setLine(Integer.valueOf(commentArr[4]));
+		}
+
+		// Rename operations
+		if (commentArr[1].equals("RENAME")) {
+			// Rename method operations
+			if (commentArr[2].equals("METHOD")) {
+				issue.setRefactoringOperation(RefactoringOperations.RENAME_METHOD);
+				// Set new name of the method
+				issue.setRefactorString(commentArr[6]);
+			}
+			// Add line/position
+			issue.setLine(Integer.valueOf(commentArr[4]));
+		}
+
+		// Remove operations
+		if (commentArr[1].equals("REMOVE")) {
+			// Remove method parameter
+			if (commentArr[2].equals("PARAMETER")) {
+				issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
+				// Set name of the parameter
+				issue.setRefactorString(commentArr[6]);
+			}
+			// Add line/position
+			issue.setLine(Integer.valueOf(commentArr[4]));
 		}
 	}
 }
