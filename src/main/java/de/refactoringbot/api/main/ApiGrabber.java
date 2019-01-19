@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.naming.OperationNotSupportedException;
 
+import de.refactoringbot.model.configuration.AnalysisProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,8 +23,6 @@ import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
-
-import static de.refactoringbot.model.configuration.FileHoster.github;
 
 /**
  * This class transfers all Rest-Requests to correct APIs and returns all
@@ -221,16 +220,16 @@ public class ApiGrabber {
 	public List<BotIssue> getAnalysisServiceIssues(GitConfiguration gitConfig) throws Exception {
 		// Pick service
 		switch (gitConfig.getAnalysisService()) {
-		case "sonarqube":
-			// Get issues and translate them
-			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
-			List<BotIssue> botIssues = new ArrayList<>();
-			for (SonarQubeIssues i : issues) {
-				botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
-			}
-			return botIssues;
-		default:
-			return null;
+            case sonarqube:
+                // Get issues and translate them
+                List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
+                List<BotIssue> botIssues = new ArrayList<>();
+                for (SonarQubeIssues i : issues) {
+                    botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
+                }
+                return botIssues;
+            default:
+                return null;
 		}
 	}
 
@@ -263,16 +262,17 @@ public class ApiGrabber {
 	 * @param analysisService
 	 * @param analysisServiceProjectKey
 	 */
-	private void checkAnalysisService(String analysisService, String analysisServiceProjectKey) throws Exception {
+	private void checkAnalysisService(AnalysisProvider analysisService, String analysisServiceProjectKey)
+            throws Exception {
 		// Check if input exists
 		if (analysisService == null || analysisServiceProjectKey == null) {
 			return;
 		}
 		// Pick service
-		switch (analysisService.toLowerCase()) {
-		case "sonarqube":
-			sonarQubeGrabber.checkSonarData(analysisServiceProjectKey);
-			break;
+		switch (analysisService) {
+            case sonarqube:
+                sonarQubeGrabber.checkSonarData(analysisServiceProjectKey);
+                break;
 		}
 
 	}

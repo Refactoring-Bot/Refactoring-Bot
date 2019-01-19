@@ -51,11 +51,7 @@ public class GithubObjectTranslator {
 	/**
 	 * This method creates a GitConfiguration from GitHub data.
 	 * 
-	 * @param repo
-	 * @param repoService
-	 * @param analysusServiceProjectKey
-	 * @param maxAmountRequests
-	 * @param projectRootFolder
+	 * @param configuration
 	 * @return
 	 */
 	public GitConfiguration createConfiguration(GitConfigurationDTO configuration) {
@@ -74,7 +70,7 @@ public class GithubObjectTranslator {
 				"https://github.com/" + configuration.getBotName() + "/" + configuration.getRepoName() + ".git");
 
 		if (configuration.getAnalysisService() != null) {
-			config.setAnalysisService(configuration.getAnalysisService().toLowerCase());
+			config.setAnalysisService(configuration.getAnalysisService());
 		}
 
 		return config;

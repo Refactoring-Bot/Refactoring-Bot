@@ -9,7 +9,7 @@ public class GitConfigurationDTO {
 	private String botName;
 	private String botEmail;
 	private String botToken;
-	private String analysisService;
+	private AnalysisProvider analysisService;
 	private String analysisServiceProjectKey;
 	private Integer maxAmountRequests;
 
@@ -61,11 +61,11 @@ public class GitConfigurationDTO {
 		this.maxAmountRequests = maxAmountRequests;
 	}
 
-	public String getAnalysisService() {
+	public AnalysisProvider getAnalysisService() {
 		return analysisService;
 	}
 
-	public void setAnalysisService(String analysisService) {
+	public void setAnalysisService(AnalysisProvider analysisService) {
 		this.analysisService = analysisService;
 	}
 

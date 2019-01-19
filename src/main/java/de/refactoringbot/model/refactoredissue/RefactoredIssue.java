@@ -1,5 +1,6 @@
 package de.refactoringbot.model.refactoredissue;
 
+import de.refactoringbot.model.configuration.AnalysisProvider;
 import de.refactoringbot.model.configuration.FileHoster;
 
 import javax.persistence.Entity;
@@ -21,7 +22,7 @@ public class RefactoredIssue {
 	private String repoOwner;
 	private FileHoster repoService;
 	private String dateOfRefactoring;
-	private String analysisService;
+	private AnalysisProvider analysisService;
 	private String analysisServiceProjectKey;
 	private String refactoringOperation;
 	private String status;
@@ -78,11 +79,11 @@ public class RefactoredIssue {
 		this.commentServiceID = commentServiceID;
 	}
 
-	public String getAnalysisService() {
+	public AnalysisProvider getAnalysisService() {
 		return analysisService;
 	}
 
-	public void setAnalysisService(String analysisService) {
+	public void setAnalysisService(AnalysisProvider analysisService) {
 		this.analysisService = analysisService;
 	}
 

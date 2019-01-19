@@ -26,7 +26,8 @@ public class GitConfiguration {
 	private String botToken;
 	private String forkApiLink;
 	private String forkGitLink;
-	private String analysisService;
+	@Enumerated(EnumType.STRING)
+	private AnalysisProvider analysisService;
 	private String analysisServiceProjectKey;
 	private Integer maxAmountRequests;
 
@@ -114,11 +115,11 @@ public class GitConfiguration {
 		this.maxAmountRequests = maxAmountRequests;
 	}
 
-	public String getAnalysisService() {
+	public AnalysisProvider getAnalysisService() {
 		return analysisService;
 	}
 
-	public void setAnalysisService(String analysisService) {
+	public void setAnalysisService(AnalysisProvider analysisService) {
 		this.analysisService = analysisService;
 	}
 
