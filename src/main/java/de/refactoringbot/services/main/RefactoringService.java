@@ -1,5 +1,8 @@
 package de.refactoringbot.services.main;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,6 +11,8 @@ import javax.transaction.NotSupportedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import de.refactoringbot.api.main.ApiGrabber;
@@ -18,6 +23,8 @@ import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
+import de.refactoringbot.model.exceptions.GitHubAPIException;
+import de.refactoringbot.model.exceptions.GitWorkflowException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -56,104 +63,152 @@ public class RefactoringService {
 	RefactoringPicker refactoring;
 	@Autowired
 	SonarQubeObjectTranslator sonarTranslator;
+	@Autowired
+	BotService botService;
 
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringService.class);
 
 	/**
-	 * This method checks if the database contains a configuration with given id and
-	 * returns it if it exists.
+	 * This method performs a refactoring from a comment or an analysis service
+	 * issue.
 	 * 
-	 * @param configurationId
-	 * @return savedConfig
-	 * @throws DatabaseConnectionException
-	 * @throws NotFoundException
+	 * @param configID
+	 * @param isCommentRefactoring
+	 * @return response
+	 * @throws Exception 
 	 */
-	public GitConfiguration checkConfigurationExistance(Long configurationId)
-			throws DatabaseConnectionException, NotFoundException {
+	public ResponseEntity<?> performRefactoring(Long configID, boolean isCommentRefactoring)
+			throws Exception {
 
-		Optional<GitConfiguration> gitConfig;
-		GitConfiguration savedConfig = null;
+		// Check and create configuration
+		GitConfiguration config = checkConfigurationExistance(configID);
 
+		// If analysis service data is missing
+		if (!isCommentRefactoring
+				&& (config.getAnalysisService() == null || config.getAnalysisServiceProjectKey() == null)) {
+			throw new BotRefactoringException("Configuration is missing analysis service data!");
+		}
+
+		// Get all pull requests
+		BotPullRequests allRequests = getPullRequests(config);
+		// Count all open pull requests created by bot
+		int amountOfBotRequests = botService.getAmountOfBotRequests(allRequests, config);
+
+		// Return all refactored issues
+		if (isCommentRefactoring) {
+			return processComments(config, allRequests, amountOfBotRequests);
+		} else {
+			return processAnalysisIssues(config, amountOfBotRequests);
+		}
+	}
+
+	/**
+	 * This method processes the refactoring of issues detected by an analysis
+	 * service.
+	 * 
+	 * @param config
+	 * @param allIssues
+	 * @return response
+	 */
+	public ResponseEntity<?> processAnalysisIssues(GitConfiguration config, int amountBotRequests) {
+		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 		try {
-			// Try to get the Git-Configuration with the given ID
-			gitConfig = configRepo.getByID(configurationId);
+			// Get issues from analysis service API
+			List<BotIssue> botIssues = getBotIssues(config);
+
+			// Iterate all issues
+			for (BotIssue botIssue : botIssues) {
+				// When Bot-Pull-Request-Limit reached -> return
+				if (amountBotRequests >= config.getMaxAmountRequests()) {
+					// Return all refactored issues
+					return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+				}
+
+				try {
+					// If issue was not already refactored
+					if (isAnalysisIssueValid(config, botIssue)) {
+						// Perform refactoring
+						allRefactoredIssues = refactorIssue(false, false, config, null, null, botIssue,
+								allRefactoredIssues);
+						amountBotRequests++;
+					}
+				} catch (Exception e) {
+					// Create failed Refactored-Object
+					botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
+					allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, null, null, botIssue,
+							false);
+					logger.error(e.getMessage(), e);
+				}
+			}
+
+			return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
 		} catch (Exception e) {
-			// Print exception and abort if database error occurs
 			logger.error(e.getMessage(), e);
-			throw new DatabaseConnectionException("Connection with database failed!");
-		}
-		// If Configuration does not exist
-		if (gitConfig.isPresent()) {
-			savedConfig = gitConfig.get();
-		} else {
-			throw new NotFoundException("Configuration with given ID does not exist in the database!");
-		}
-
-		return savedConfig;
-	}
-
-	public BotPullRequests getPullRequests(GitConfiguration config) throws Exception {
-		// Fetch target-Repository-Data
-		dataGetter.fetchRemote(config);
-
-		// Get Pull-Requests with comments
-		BotPullRequests allRequests = grabber.getRequestsWithComments(config);
-		Integer amountBotRequests = botController.getAmountOfBotRequests(allRequests, config);
-
-		// Check if max amount is reached
-		if (amountBotRequests >= config.getMaxAmountRequests()) {
-			throw new BotRefactoringException("Maximal amount of requests reached." + "(Maximum = "
-					+ config.getMaxAmountRequests() + "; Currently = " + amountBotRequests + " bot requests are open)");
-		}
-
-		return allRequests;
-	}
-
-	/**
-	 * This method checks if a comment is valid for refactoring. The service will
-	 * only refactor the comment if it was not already refactored in the past and if
-	 * the comment fulfills the bot grammar.
-	 * 
-	 * @param config
-	 * @param comment
-	 * @return isValid
-	 */
-	public boolean isCommentValid(GitConfiguration config, BotPullRequestComment comment) {
-		if (grammarController.checkComment(comment.getCommentBody()) && !issueRepo
-				.refactoredComment(config.getRepoService(), comment.getCommentID().toString()).isPresent()) {
-			return true;
-		} else {
-			return false;
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
 	/**
-	 * This method checks if a from a AnalysisServiceIssue translated BotIssue is
-	 * valid, e.g. not already refactored.
+	 * This method processes the comment driven refactoring.
 	 * 
 	 * @param config
-	 * @param issue
-	 * @return
+	 * @param allRequests
+	 * @param amountOfBotRequests 
+	 * @return response
 	 */
-	public boolean isAnalysisIssueValid(GitConfiguration config, BotIssue issue) {
-		if (!issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent()) {
-			return true;
-		} else {
-			return false;
-		}
-	}
+	public ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests, int amountBotRequests) {
+		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
+		// Iterate through all requests
+		for (BotPullRequest request : allRequests.getAllPullRequests()) {
+			// Iterate through all comments
+			for (BotPullRequestComment comment : request.getAllComments()) {
+				// When Bot-Pull-Request-Limit reached -> return
+				if (amountBotRequests >= config.getMaxAmountRequests()) {
+					// Return all refactored issues
+					return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+				}
 
-	/**
-	 * This method creates an BotIssue for refactoring from a PullRequest-Comment.
-	 * 
-	 * @param config
-	 * @param comment
-	 * @return botIssue
-	 * @throws Exception
-	 */
-	public BotIssue createIssueFromComment(GitConfiguration config, BotPullRequestComment comment) throws Exception {
-		BotIssue botIssue = grammarController.createIssueFromComment(comment, config);
-		return botIssue;
+				// Check if comment is valid and not already refactored
+				if (isCommentValid(config, comment)) {
+					// Create issue
+					BotIssue botIssue;
+					try {
+						botIssue = createIssueFromComment(config, comment);
+					} catch (Exception e) {
+						logger.error(e.getMessage(), e);
+						return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+					}
+
+					try {
+						// For Requests created by someone else
+						if (!request.getCreatorName().equals(config.getBotName())) {
+							// Perform refactoring
+							allRefactoredIssues = refactorIssue(false, true, config, comment, request, botIssue,
+									allRefactoredIssues);
+							amountBotRequests++;
+							// For Requests created by the bot
+						} else {
+							allRefactoredIssues = refactorIssue(true, true, config, comment, request, botIssue,
+									allRefactoredIssues);
+						}
+					} catch (BotRefactoringException e) {
+						// If refactoring failed
+						botIssue.setErrorMessage(e.getMessage());
+						allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
+								botIssue, true);
+						logger.error(e.getMessage(), e);
+						// Catch other errors
+					} catch (Exception e) {
+						// If botservice faild before or after the refactoring
+						botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
+						allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
+								botIssue, true);
+						logger.error(e.getMessage(), e);
+					}
+				}
+			}
+		}
+		return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
 	}
 
 	/**
@@ -248,6 +303,111 @@ public class RefactoringService {
 		}
 
 		return allRefactoredIssues;
+	}
+
+	/**
+	 * This method checks if the database contains a configuration with given id and
+	 * returns it if it exists.
+	 * 
+	 * @param configurationId
+	 * @return savedConfig
+	 * @throws DatabaseConnectionException
+	 * @throws NotFoundException
+	 */
+	public GitConfiguration checkConfigurationExistance(Long configurationId)
+			throws DatabaseConnectionException, NotFoundException {
+
+		Optional<GitConfiguration> gitConfig;
+		GitConfiguration savedConfig = null;
+
+		try {
+			// Try to get the Git-Configuration with the given ID
+			gitConfig = configRepo.getByID(configurationId);
+		} catch (Exception e) {
+			// Print exception and abort if database error occurs
+			logger.error(e.getMessage(), e);
+			throw new DatabaseConnectionException("Connection with database failed!");
+		}
+		// If Configuration does not exist
+		if (gitConfig.isPresent()) {
+			savedConfig = gitConfig.get();
+		} else {
+			throw new NotFoundException("Configuration with given ID does not exist in the database!");
+		}
+
+		return savedConfig;
+	}
+
+	/**
+	 * This method returns all pull requests from a filehosting service.
+	 * 
+	 * @param config
+	 * @return allRequests
+	 * @throws Exception
+	 */
+	public BotPullRequests getPullRequests(GitConfiguration config)
+			throws URISyntaxException, GitHubAPIException, IOException, BotRefactoringException, GitWorkflowException {
+		// Fetch target-Repository-Data
+		dataGetter.fetchRemote(config);
+
+		// Get Pull-Requests with comments
+		BotPullRequests allRequests = grabber.getRequestsWithComments(config);
+		Integer amountBotRequests = botController.getAmountOfBotRequests(allRequests, config);
+
+		// Check if max amount is reached
+		if (amountBotRequests >= config.getMaxAmountRequests()) {
+			throw new BotRefactoringException("Maximal amount of requests reached." + "(Maximum = "
+					+ config.getMaxAmountRequests() + "; Currently = " + amountBotRequests + " bot requests are open)");
+		}
+
+		return allRequests;
+	}
+
+	/**
+	 * This method checks if a comment is valid for refactoring. The service will
+	 * only refactor the comment if it was not already refactored in the past and if
+	 * the comment fulfills the bot grammar.
+	 * 
+	 * @param config
+	 * @param comment
+	 * @return isValid
+	 */
+	public boolean isCommentValid(GitConfiguration config, BotPullRequestComment comment) {
+		if (grammarController.checkComment(comment.getCommentBody()) && !issueRepo
+				.refactoredComment(config.getRepoService(), comment.getCommentID().toString()).isPresent()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * This method checks if a from a AnalysisServiceIssue translated BotIssue is
+	 * valid, e.g. not already refactored.
+	 * 
+	 * @param config
+	 * @param issue
+	 * @return
+	 */
+	public boolean isAnalysisIssueValid(GitConfiguration config, BotIssue issue) {
+		if (!issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * This method creates an BotIssue for refactoring from a PullRequest-Comment.
+	 * 
+	 * @param config
+	 * @param comment
+	 * @return botIssue
+	 * @throws Exception
+	 */
+	public BotIssue createIssueFromComment(GitConfiguration config, BotPullRequestComment comment) throws Exception {
+		BotIssue botIssue = grammarController.createIssueFromComment(comment, config);
+		return botIssue;
 	}
 
 	/**
