@@ -9,6 +9,8 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import de.refactoringbot.api.main.ApiGrabber;
@@ -185,15 +187,34 @@ public class ConfigurationService {
 	 * @return userFeedback
 	 * @throws DatabaseConnectionException
 	 */
-	public String deleteConfiguration(GitConfiguration config) throws DatabaseConnectionException {
+	public ResponseEntity<?> deleteConfiguration(GitConfiguration config) {
+		// Init feedback
+		String userFeedback = null;
+
 		// Delete configuration from the database
 		try {
 			repo.delete(config);
-			return "Configuration deleted from database!";
-		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
-			throw new DatabaseConnectionException("Connection with database failed!");
+			userFeedback = "Configuration deleted from database!";
+		} catch (Exception d) {
+			logger.error(d.getMessage(), d);
+			return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
+		// Delete repository from the filehoster bot account
+		try {
+			deleteConfigurationRepo(config);
+		} catch (GitHubAPIException e) {
+			logger.error(e.getMessage(), e);
+			userFeedback = userFeedback.concat(e.getMessage());
+		}
+		// Delete local folder
+		try {
+			deleteConfigurationFolder(config);
+		} catch (IOException e) {
+			logger.error(e.getMessage(), e);
+			userFeedback = userFeedback.concat(e.getMessage());
+		}
+		// Return feedback to user
+		return new ResponseEntity<>(userFeedback, HttpStatus.OK);
 	}
 
 	/**

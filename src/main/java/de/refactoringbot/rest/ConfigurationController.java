@@ -1,7 +1,5 @@
 package de.refactoringbot.rest;
 
-import java.io.IOException;
-
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +19,6 @@ import de.refactoringbot.services.main.ConfigurationService;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
-import de.refactoringbot.model.exceptions.GitHubAPIException;
 import io.swagger.annotations.ApiOperation;
 import javassist.NotFoundException;
 
@@ -127,35 +124,9 @@ public class ConfigurationController {
 		} catch (NotFoundException n) {
 			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
 		}
-		String userFeedback = null;
-		// If it does
-		if (config != null) {
-			// Delete configuration from the database
-			try {
-				userFeedback = configService.deleteConfiguration(config);
-			} catch (DatabaseConnectionException d) {
-				logger.error(d.getMessage(), d);
-				return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-			}
-			// Delete repository from the filehoster bot account
-			try {
-				configService.deleteConfigurationRepo(config);
-			} catch (GitHubAPIException e) {
-				logger.error(e.getMessage(), e);
-				userFeedback = userFeedback.concat(e.getMessage());
-			}
-			// Delete local folder
-			try {
-				configService.deleteConfigurationFolder(config);
-			} catch (IOException e) {
-				logger.error(e.getMessage(), e);
-				userFeedback = userFeedback.concat(e.getMessage());
-			}
-			// Return feedback to user
-			return new ResponseEntity<>(userFeedback, HttpStatus.OK);
-		} else {
-			return new ResponseEntity<>("Configuration with given ID does not exist!", HttpStatus.NOT_FOUND);
-		}
+		
+		// Remove Configuration and respond
+		return configService.deleteConfiguration(config);
 	}
 
 	/**
