@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.api.sonarqube.SonarQubeDataGrabber;
 import de.refactoringbot.controller.github.GithubObjectTranslator;
-import de.refactoringbot.controller.main.BotController;
 import de.refactoringbot.controller.sonarqube.SonarQubeObjectTranslator;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
@@ -23,6 +22,8 @@ import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
+
+import static de.refactoringbot.model.configuration.FileHoster.github;
 
 /**
  * This class transfers all Rest-Requests to correct APIs and returns all
@@ -42,8 +43,6 @@ public class ApiGrabber {
 	GithubObjectTranslator githubTranslator;
 	@Autowired
 	SonarQubeObjectTranslator sonarQubeTranslator;
-	@Autowired
-	BotController botController;
 
 	/**
 	 * This method gets all requests with all comments from an api translated into a
@@ -59,12 +58,12 @@ public class ApiGrabber {
 
 		// Pick correct filehoster
 		switch (gitConfig.getRepoService()) {
-		case "github":
-			// Get data from github
-			GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
-			// Translate github object
-			botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
-			break;
+			case github:
+				// Get data from github
+				GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
+				// Translate github object
+				botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
+				break;
 		}
 		return botRequests;
 	}
@@ -82,11 +81,11 @@ public class ApiGrabber {
 			GitConfiguration gitConfig) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-		case "github":
-			// Reply to comment
-			githubGrabber.responseToBotComment(githubTranslator.createReplyComment(comment, gitConfig, null), gitConfig,
-					request.getRequestNumber());
-			break;
+			case github:
+				// Reply to comment
+				githubGrabber.responseToBotComment(githubTranslator.createReplyComment(comment, gitConfig, null),
+						gitConfig, request.getRequestNumber());
+				break;
 		}
 	}
 
@@ -101,16 +100,16 @@ public class ApiGrabber {
 			String botBranchName) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-		case "github":
-			// Create createRequest
-			GithubCreateRequest createRequest = githubTranslator.makeCreateRequest(request, gitConfig, botBranchName);
-			// Create request
-			GithubPullRequest newGithubRequest = githubGrabber.createRequest(createRequest, gitConfig);
-			// Reply to comment
-			githubGrabber.responseToBotComment(
-					githubTranslator.createReplyComment(comment, gitConfig, newGithubRequest.getHtmlUrl()), gitConfig,
-					request.getRequestNumber());
-			break;
+			case github:
+				// Create createRequest
+				GithubCreateRequest createRequest = githubTranslator.makeCreateRequest(request, gitConfig, botBranchName);
+				// Create request
+				GithubPullRequest newGithubRequest = githubGrabber.createRequest(createRequest, gitConfig);
+				// Reply to comment
+				githubGrabber.responseToBotComment(
+						githubTranslator.createReplyComment(comment, gitConfig, newGithubRequest.getHtmlUrl()),
+						gitConfig, request.getRequestNumber());
+				break;
 		}
 	}
 
@@ -125,55 +124,44 @@ public class ApiGrabber {
 			GitConfiguration gitConfig, String errorMessage) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-		case "github":
-			// Reply to comment
-			githubGrabber.responseToBotComment(githubTranslator.createFailureReply(comment, errorMessage), gitConfig,
-					request.getRequestNumber());
-			break;
+			case github:
+				// Reply to comment
+				githubGrabber.responseToBotComment(githubTranslator.createFailureReply(comment, errorMessage),
+						gitConfig, request.getRequestNumber());
+				break;
 		}
 	}
 
 	/**
 	 * Check if Branch exists on repository.
 	 * 
-	 * @param request
 	 * @param gitConfig
 	 * @throws Exception
 	 */
 	public void checkBranch(GitConfiguration gitConfig, String branchName) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-		case "github":
-			// Reply to comment
-			githubGrabber.checkBranch(gitConfig, branchName);
-			break;
+			case github:
+				// Reply to comment
+				githubGrabber.checkBranch(gitConfig, branchName);
+				break;
 		}
 	}
 
 	/**
 	 * This method checks the user input and creates a git configuration.
 	 * 
-	 * @param repoName
-	 * @param repoOwner
-	 * @param repoService
-	 * @param botToken
-	 * @param sonarCubeProjectKey
-	 * @param maxAmountRequests
-	 * @param projectRootFolder
+	 * @param configuration
 	 * @return gitConfig
 	 * @throws Exception
 	 */
 	public GitConfiguration createConfigurationForRepo(GitConfigurationDTO configuration) throws Exception {
-
-		// Init object
-		GitConfiguration gitConfig = null;
-
 		// Check analysis service data
 		checkAnalysisService(configuration.getAnalysisService(), configuration.getAnalysisServiceProjectKey());
 
 		// Pick filehoster
-		switch (configuration.getRepoService().toLowerCase()) {
-		case "github":
+		switch (configuration.getRepoService()) {
+		case github:
 			// Check repository
 			githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
 					configuration.getBotToken());
@@ -183,7 +171,7 @@ public class ApiGrabber {
 					configuration.getBotEmail());
 
 			// Create git configuration and a fork
-			gitConfig = githubTranslator.createConfiguration(configuration);
+			GitConfiguration gitConfig = githubTranslator.createConfiguration(configuration);
 			return gitConfig;
 		default:
 			throw new Exception("Filehoster " + "'" + configuration.getRepoService() + "' is not supported!");
@@ -200,7 +188,7 @@ public class ApiGrabber {
 	public void deleteRepository(GitConfiguration gitConfig) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-		case "github":
+			case github:
 			// Delete repository
 			githubGrabber.deleteRepository(gitConfig);
 			break;
@@ -216,10 +204,10 @@ public class ApiGrabber {
 	public void createFork(GitConfiguration gitConfig) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-		case "github":
-			// Create fork if not already exists
-			githubGrabber.createFork(gitConfig);
-			break;
+			case github:
+				// Create fork if not already exists
+				githubGrabber.createFork(gitConfig);
+				break;
 		}
 	}
 
@@ -249,8 +237,8 @@ public class ApiGrabber {
 	/**
 	 * This method creates a request on a filehoster if the refactoring was
 	 * performed with issues from a analysis tool.
-	 * 
-	 * @param request
+	 *
+	 * @param issue
 	 * @param gitConfig
 	 * @param newBranch
 	 * @throws Exception
@@ -259,13 +247,13 @@ public class ApiGrabber {
 			throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-		case "github":
-			// Create createRequest
-			GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue, gitConfig,
-					newBranch);
-			// Create request on filehoster
-			githubGrabber.createRequest(createRequest, gitConfig);
-			break;
+			case github:
+				// Create createRequest
+				GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue,
+						gitConfig, newBranch);
+				// Create request on filehoster
+				githubGrabber.createRequest(createRequest, gitConfig);
+				break;
 		}
 	}
 

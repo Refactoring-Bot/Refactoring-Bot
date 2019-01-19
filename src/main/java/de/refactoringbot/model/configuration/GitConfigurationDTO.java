@@ -4,7 +4,7 @@ public class GitConfigurationDTO {
 
 	private String repoName;
 	private String repoOwner;
-	private String repoService;
+	private FileHoster repoService;
 
 	private String botName;
 	private String botEmail;
@@ -29,11 +29,11 @@ public class GitConfigurationDTO {
 		this.repoOwner = repoOwner;
 	}
 
-	public String getRepoService() {
+	public FileHoster getRepoService() {
 		return repoService;
 	}
 
-	public void setRepoService(String repoService) {
+	public void setRepoService(FileHoster repoService) {
 		this.repoService = repoService;
 	}
 

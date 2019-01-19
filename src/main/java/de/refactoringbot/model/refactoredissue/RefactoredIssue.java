@@ -1,5 +1,7 @@
 package de.refactoringbot.model.refactoredissue;
 
+import de.refactoringbot.model.configuration.FileHoster;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -17,7 +19,7 @@ public class RefactoredIssue {
 	private String commentServiceID;
 	private String repoName;
 	private String repoOwner;
-	private String repoService;
+	private FileHoster repoService;
 	private String dateOfRefactoring;
 	private String analysisService;
 	private String analysisServiceProjectKey;
@@ -44,11 +46,11 @@ public class RefactoredIssue {
 		this.repoOwner = repoOwner;
 	}
 
-	public String getRepoService() {
+	public FileHoster getRepoService() {
 		return repoService;
 	}
 
-	public void setRepoService(String repoService) {
+	public void setRepoService(FileHoster repoService) {
 		this.repoService = repoService;
 	}
 
