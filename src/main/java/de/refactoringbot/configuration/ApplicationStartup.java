@@ -1,4 +1,4 @@
-package de.refactoringbot.scheduling;
+package de.refactoringbot.configuration;
 
 import java.io.IOException;
 
