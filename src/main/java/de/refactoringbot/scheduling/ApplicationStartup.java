@@ -2,36 +2,34 @@ package de.refactoringbot.scheduling;
 
 import java.io.IOException;
 
-import javax.annotation.PostConstruct;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 /**
- * This class performs scheduled operations.
+ * This Opens the Swagger-UI on startup of the application.
  * 
  * @author Stefan Basaric
  *
  */
 @Component
-public class ScheduledOperations {
+class ApplicationStartup implements ApplicationListener<ApplicationReadyEvent> {
 
 	@Value("${server.port}")
-	Integer port;
+	private Integer port;
 
-	private static final Logger logger = LoggerFactory.getLogger(ScheduledOperations.class);
-	
+	private static final Logger logger = LoggerFactory.getLogger(ApplicationStartup.class);
+
 	/**
 	 * This method opens the Swagger-UI in the browser on startup of the
 	 * application.
 	 */
-	@PostConstruct
-	public void startSwaggerUI() {
-		// Start runtime
+	@Override
+	public void onApplicationEvent(ApplicationReadyEvent applicationReadyEvent) {
 		Runtime runtime = Runtime.getRuntime();
-		// Create URL
 		String url = "http://localhost:" + port + "/swagger-ui.html#";
 		// Check OS-System
 		String os = System.getProperty("os.name").toLowerCase();
@@ -49,8 +47,7 @@ public class ScheduledOperations {
 				runtime.exec("xdg-open " + url);
 			}
 		} catch (IOException e) {
-			logger.error("Could not start Swagger-UI in the browser!");
+			logger.error("Could not open Swagger-UI in the browser!");
 		}
 	}
-
 }
