@@ -21,5 +21,5 @@ public interface RefactoringImpl {
 	 * @return commitMessage
 	 * @throws Exception
 	 */
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception;
+	String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception;
 }

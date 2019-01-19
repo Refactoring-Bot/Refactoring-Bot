@@ -2,7 +2,7 @@ package de.refactoringbot.refactoring.supportedrefactorings;
 
 import java.io.FileNotFoundException;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import de.refactoringbot.refactoring.RefactoringImpl;
 import org.springframework.stereotype.Component;
 
 import com.github.javaparser.JavaParser;
@@ -11,7 +11,6 @@ import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
-import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 
@@ -31,12 +30,8 @@ import java.util.List;
  * @author Justin Kissling
  */
 @Component
-public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
+public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> implements RefactoringImpl {
 
-	Integer line;
-
-	@Autowired
-	BotConfiguration botConfig;
 
 	/**
 	 * This method performs the refactoring and returns a commit message.
@@ -46,12 +41,13 @@ public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
 	 * @return commitMessage
 	 * @throws FileNotFoundException
 	 */
+	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig)
 			throws FileNotFoundException, IOException {
 		// Prepare data
 		String path = issue.getFilePath();
 		path = gitConfig.getRepoFolder() + "/" + path;
-		line = issue.getLine();
+		Integer line = issue.getLine();
 		// Check and see if the commented out code is old enough to be removed. Newer
 		// code may still be in use
 		// TODO: Don't perform a refactoring on newer code
