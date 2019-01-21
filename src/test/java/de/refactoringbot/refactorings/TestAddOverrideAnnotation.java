@@ -1,6 +1,6 @@
 package de.refactoringbot.refactorings;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 
@@ -72,7 +72,7 @@ public class TestAddOverrideAnnotation extends AbstractRefactoringTests {
 
 		// assert
 		String lineContent = getStrippedContentFromFile(tempFile, lineNumberOfMethodWithMissingOverride);
-		assertEquals("@Override", lineContent);
+		assertThat(lineContent).isEqualTo("@Override");
 	}
 
 }

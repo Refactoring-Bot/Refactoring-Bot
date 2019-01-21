@@ -1,9 +1,6 @@
 package de.refactoringbot.refactorings;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -91,9 +88,9 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 				removeParameterTestClass.getLineNumberOfDummyMethod(0, 0, 0), cuOriginalFile);
 		MethodDeclaration originalCallerMethod = RefactoringHelper
 				.getMethodByLineNumberOfMethodName(removeParameterTestClass.getLineNumberOfCaller(), cuOriginalFile);
-		assertNotNull(originalMethod);
-		assertNotNull(originalDummyMethod);
-		assertNotNull(originalCallerMethod);
+		assertThat(originalMethod).isNotNull();
+		assertThat(originalDummyMethod).isNotNull();
+		assertThat(originalCallerMethod).isNotNull();
 
 		gitConfig.setRepoFolder("");
 		issue.setFilePath(tempFile.getAbsolutePath());
@@ -115,30 +112,30 @@ public class TestRemoveParameter extends AbstractRefactoringTests {
 		MethodDeclaration refactoredMethod = getMethodByName(methodName, cu);
 
 		// assert that parameter has been removed from the target method
-		assertNotNull(refactoredMethod);
-		assertFalse(refactoredMethod.getParameterByName(parameterName).isPresent());
+		assertThat(refactoredMethod).isNotNull();
+		assertThat(refactoredMethod.getParameterByName(parameterName).isPresent()).isFalse();
 
 		// assert that parameter has also been removed from the javadoc
 		List<JavadocBlockTag> javadocBlockTags = refactoredMethod.getJavadoc().get().getBlockTags();
 		for (JavadocBlockTag javadocBlockTag : javadocBlockTags) {
-			assertFalse(javadocBlockTag.getTagName().equals("param")
-					&& javadocBlockTag.getName().get().equals(parameterName));
+			assertThat(javadocBlockTag.getTagName().equals("param")
+					&& javadocBlockTag.getName().get().equals(parameterName)).isFalse();
 		}
 
 		// assert that dummy method is unchanged
 		MethodDeclaration dummyMethod = getMethodByName(dummyMethodName, cu);
-		assertNotNull(dummyMethod);
-		assertTrue(dummyMethod.getParameterByName(parameterName).isPresent());
+		assertThat(dummyMethod).isNotNull();
+		assertThat(dummyMethod.getParameterByName(parameterName)).isPresent();
 
 		// assert that caller method has been refactored as well
 		MethodDeclaration callerMethod = getMethodByName(callerMethodName, cu);
-		assertNotNull(callerMethod);
+		assertThat(callerMethod).isNotNull();
 		for (MethodCallExpr methodCall : callerMethod.getBody().get().findAll(MethodCallExpr.class)) {
 			if (methodCall.getNameAsString().equals(refactoredMethod.getNameAsString())) {
 				NodeList<Expression> callerMethodArguments = methodCall.getArguments();
 				NodeList<Parameter> refactoredMethodParameters = refactoredMethod.getParameters();
 
-				assertEquals(refactoredMethodParameters.size(), callerMethodArguments.size());
+				assertThat(callerMethodArguments).hasSameSizeAs(refactoredMethodParameters);
 			}
 		}
 	}

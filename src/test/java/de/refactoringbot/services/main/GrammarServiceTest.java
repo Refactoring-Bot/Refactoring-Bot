@@ -1,8 +1,6 @@
 package de.refactoringbot.services.main;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -19,8 +17,6 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.refactoring.RefactoringImpl;
 import de.refactoringbot.refactoring.RefactoringOperations;
-import de.refactoringbot.services.main.FileService;
-import de.refactoringbot.services.main.GrammarService;
 
 public class GrammarServiceTest {
 
@@ -53,9 +49,9 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Add Override Annotation";
-		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
-		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		assertEquals(Integer.valueOf(5), botIssue.getLine());
+		assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
+		assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
+		assertThat(botIssue.getLine()).isEqualTo(5);
 	}
 
 	@Test
@@ -65,9 +61,9 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Reorder Modifier";
-		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
-		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		assertEquals(Integer.valueOf(10), botIssue.getLine());
+		assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
+		assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
+		assertThat(botIssue.getLine()).isEqualTo(10);
 	}
 
 	@Test
@@ -77,10 +73,10 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Rename Method";
-		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
-		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		assertEquals(Integer.valueOf(15), botIssue.getLine());
-		assertEquals("newMethodName", botIssue.getRefactorString());
+		assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
+		assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
+		assertThat(botIssue.getLine()).isEqualTo(15);
+		assertThat(botIssue.getRefactorString()).isEqualTo("newMethodName");
 	}
 
 	@Test
@@ -90,23 +86,24 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Remove Parameter";
-		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
-		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		assertEquals(Integer.valueOf(20), botIssue.getLine());
-		assertEquals("unusedParam", botIssue.getRefactorString());
+		assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
+		assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
+		assertThat(botIssue.getLine()).isEqualTo(20);
+		assertThat(botIssue.getRefactorString()).isEqualTo("unusedParam");
 	}
 
 	@Test
 	public void testCheckComment() {
 		GrammarService grammarService = new GrammarService(fileService);
-		assertTrue(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE));
-		assertTrue(grammarService.checkComment(VALID_COMMENT_REORDER_MODIFIER));
-		assertTrue(grammarService.checkComment(VALID_COMMENT_RENAME_METHOD));
-		assertTrue(grammarService.checkComment(VALID_COMMENT_REMOVE_PARAM));
+		assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE)).isTrue();
+		assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE)).isTrue();
+		assertThat(grammarService.checkComment(VALID_COMMENT_REORDER_MODIFIER)).isTrue();
+		assertThat(grammarService.checkComment(VALID_COMMENT_RENAME_METHOD)).isTrue();
+		assertThat(grammarService.checkComment(VALID_COMMENT_REMOVE_PARAM)).isTrue();
 
-		assertFalse(grammarService.checkComment("BOT ADD ANNOTATION"));
-		assertFalse(grammarService.checkComment("BOT RENAME METHOD"));
-		assertFalse(grammarService.checkComment("BOT, BOT, on the wall, who's the fairest of them all?"));
+		assertThat(grammarService.checkComment("BOT ADD ANNOTATION")).isFalse();
+		assertThat(grammarService.checkComment("BOT RENAME METHOD")).isFalse();
+		assertThat(grammarService.checkComment("BOT, BOT, on the wall, who's the fairest of them all?")).isFalse();
 	}
 
 	private BotIssue getIssueAfterMapping(String commentBody) throws Exception {

@@ -1,7 +1,6 @@
 package de.refactoringbot.refactorings;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -53,7 +52,7 @@ public class TestRenameMethod extends AbstractRefactoringTests {
 		String originalSecondMethodName = RefactoringHelper
 				.getMethodByLineNumberOfMethodName(lineNumberOfSecondMethodNotToBeRenamed, cuOriginalFile)
 				.getNameAsString();
-		assertEquals(originalMethodName, originalSecondMethodName);
+		assertThat(originalSecondMethodName).isEqualTo(originalMethodName);
 
 		gitConfig.setRepoFolder("");
 		issue.setFilePath(tempFile.getAbsolutePath());
@@ -68,31 +67,31 @@ public class TestRenameMethod extends AbstractRefactoringTests {
 
 		// assert
 		CompilationUnit cu = JavaParser.parse(tempFile);
-		
+
 		// assert that method has been renamed
 		MethodDeclaration renamedMethodDeclaration = RefactoringHelper
 				.getMethodByLineNumberOfMethodName(lineNumberOfMethodToBeRenamed, cu);
-		assertNotNull(renamedMethodDeclaration);
-		assertEquals(newMethodName, renamedMethodDeclaration.getNameAsString());
+		assertThat(renamedMethodDeclaration).isNotNull();
+		assertThat(renamedMethodDeclaration.getNameAsString()).isEqualTo(newMethodName);
 
 		// assert that second method with same name has not been renamed
 		int lineNumberOfSecondMethodWithSameNameAsOriginalMethod = renameMethodTestClass.getLineOfMethodToBeRenamed();
 		MethodDeclaration secondMethodDeclaration = RefactoringHelper
 				.getMethodByLineNumberOfMethodName(lineNumberOfSecondMethodWithSameNameAsOriginalMethod, cu);
-		assertNotNull(secondMethodDeclaration);
-		assertEquals(originalSecondMethodName, secondMethodDeclaration.getNameAsString());
+		assertThat(secondMethodDeclaration).isNotNull();
+		assertThat(secondMethodDeclaration.getNameAsString()).isEqualTo(originalSecondMethodName);
 
 		// assert that caller method has been refactored as well
 		int lineNumberOfCallerMethod = renameMethodTestClass.getLineOfMethodThatCallsMethodToBeRenamed();
 		MethodDeclaration callerMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(lineNumberOfCallerMethod,
 				cu);
-		assertNotNull(callerMethod);
+		assertThat(callerMethod).isNotNull();
 		int numberOfMethodsWithNewMethodName = 0;
 		for (MethodCallExpr methodCall : callerMethod.getBody().get().findAll(MethodCallExpr.class)) {
 			if (methodCall.getNameAsString().equals(newMethodName)) {
 				numberOfMethodsWithNewMethodName++;
 			}
 		}
-		assertEquals(1, numberOfMethodsWithNewMethodName);
+		assertThat(numberOfMethodsWithNewMethodName).isEqualTo(1);
 	}
 }
