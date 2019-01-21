@@ -170,8 +170,37 @@ public class GithubObjectTranslator {
 	 */
 	public Integer getTrueCommentPosition(String diffHunk) {
 		Integer truePosition = 0;
+		Integer diffPos = 0;
 		// Seperate diffHunk at new line
 		String[] splittedDiffHunk = diffHunk.split("\\R");
+
+		// Add lines of cut file before snippet
+		if (splittedDiffHunk.length > 0) {
+			// Get first line of diffHunk
+			String firstLine = splittedDiffHunk[0];
+
+			// Read diff lines from diffHunk
+			String[] diffSizeStart = firstLine.split("\\+");
+			if (diffSizeStart.length >= 2) {
+				String[] diffSizeEnd = diffSizeStart[1].split(",");
+				if (diffSizeEnd.length > 0) {
+					try {
+						// Return diffhunk lines
+						diffPos = Integer.valueOf(diffSizeEnd[0]);
+					} catch (NumberFormatException n) {
+						diffPos = 0;
+					}
+				}
+			}
+			
+			// Calculate true starting position of diffhunk
+			truePosition = truePosition + diffPos;
+			
+			// Don't count the @@ line if diffhunk exists
+			if (diffPos > 0) {
+				truePosition--;
+			}
+		}
 
 		// Iterate all lines
 		for (String line : splittedDiffHunk) {
