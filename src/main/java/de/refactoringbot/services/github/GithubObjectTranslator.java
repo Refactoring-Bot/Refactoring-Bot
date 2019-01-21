@@ -71,7 +71,7 @@ public class GithubObjectTranslator {
 				"https://github.com/" + configuration.getBotName() + "/" + configuration.getRepoName() + ".git");
 
 		if (configuration.getAnalysisService() != null) {
-			config.setAnalysisService(configuration.getAnalysisService().toLowerCase());
+			config.setAnalysisService(configuration.getAnalysisService());
 		}
 
 		return config;
