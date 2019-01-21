@@ -25,9 +25,9 @@ import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.supportedrefactorings.ReorderModifier;
 import de.refactoringbot.resources.reordermodifiers.TestDataClassReorderModifiers;
 
-public class TestReorderModifiers extends AbstractRefactoringTests {
+public class ReorderModifiersTest extends AbstractRefactoringTests {
 
-	private static final Logger logger = LoggerFactory.getLogger(TestReorderModifiers.class);
+	private static final Logger logger = LoggerFactory.getLogger(ReorderModifiersTest.class);
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();

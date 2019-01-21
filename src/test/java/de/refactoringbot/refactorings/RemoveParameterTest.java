@@ -30,9 +30,9 @@ import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter;
 
-public class TestRemoveParameter extends AbstractRefactoringTests {
+public class RemoveParameterTest extends AbstractRefactoringTests {
 
-	private static final Logger logger = LoggerFactory.getLogger(TestRemoveParameter.class);
+	private static final Logger logger = LoggerFactory.getLogger(RemoveParameterTest.class);
 	private TestDataClassRemoveParameter removeParameterTestClass = new TestDataClassRemoveParameter();
 
 	@Rule

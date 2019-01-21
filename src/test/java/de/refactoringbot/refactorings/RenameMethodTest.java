@@ -23,9 +23,9 @@ import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.supportedrefactorings.RenameMethod;
 import de.refactoringbot.resources.renamemethod.TestDataClassRenameMethod;
 
-public class TestRenameMethod extends AbstractRefactoringTests {
+public class RenameMethodTest extends AbstractRefactoringTests {
 
-	private static final Logger logger = LoggerFactory.getLogger(TestRenameMethod.class);
+	private static final Logger logger = LoggerFactory.getLogger(RenameMethodTest.class);
 	private TestDataClassRenameMethod renameMethodTestClass = new TestDataClassRenameMethod();
 
 	@Rule

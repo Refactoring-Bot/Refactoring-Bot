@@ -16,9 +16,9 @@ import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.supportedrefactorings.AddOverrideAnnotation;
 import de.refactoringbot.resources.addoverrideannotation.TestDataClassMissingOverrideAnnotation;
 
-public class TestAddOverrideAnnotation extends AbstractRefactoringTests {
+public class AddOverrideAnnotationTest extends AbstractRefactoringTests {
 
-	private static final Logger logger = LoggerFactory.getLogger(TestAddOverrideAnnotation.class);
+	private static final Logger logger = LoggerFactory.getLogger(AddOverrideAnnotationTest.class);
 	private TestDataClassMissingOverrideAnnotation missingOverrideTestClass = new TestDataClassMissingOverrideAnnotation();
 
 	@Rule

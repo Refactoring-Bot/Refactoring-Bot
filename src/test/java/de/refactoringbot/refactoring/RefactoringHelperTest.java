@@ -21,7 +21,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.resources.refactoringhelper.TestDataClassRefactoringHelper;
 
-public class TestRefactoringHelper {
+public class RefactoringHelperTest {
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
