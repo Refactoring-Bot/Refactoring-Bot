@@ -125,7 +125,7 @@ public class RefactoringService {
 
 				try {
 					// If issue was not already refactored
-					if (isAnalysisIssueValid(config, botIssue)) {
+					if (isAnalysisIssueValid(botIssue)) {
 						// Perform refactoring
 						allRefactoredIssues = refactorIssue(false, false, config, null, null, botIssue,
 								allRefactoredIssues);
@@ -385,7 +385,7 @@ public class RefactoringService {
 	 * @param issue
 	 * @return
 	 */
-	public boolean isAnalysisIssueValid(GitConfiguration config, BotIssue issue) {
+	public boolean isAnalysisIssueValid(BotIssue issue) {
 		return (!issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent());
 	}
 
