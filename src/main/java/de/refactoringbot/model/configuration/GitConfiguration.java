@@ -1,10 +1,6 @@
 package de.refactoringbot.model.configuration;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "GIT_CONFIGURATIONS")
@@ -18,7 +14,9 @@ public class GitConfiguration {
 	private String repoOwner;
 	private String repoApiLink;
 	private String repoGitLink;
-	private String repoService;
+
+	@Enumerated(EnumType.STRING)
+	private FileHoster repoService;
 
 	private String repoFolder;
 	private String srcFolder;
@@ -28,7 +26,8 @@ public class GitConfiguration {
 	private String botToken;
 	private String forkApiLink;
 	private String forkGitLink;
-	private String analysisService;
+	@Enumerated(EnumType.STRING)
+	private AnalysisProvider analysisService;
 	private String analysisServiceProjectKey;
 	private Integer maxAmountRequests;
 
@@ -68,11 +67,11 @@ public class GitConfiguration {
 		this.repoOwner = repoOwner;
 	}
 
-	public String getRepoService() {
+	public FileHoster getRepoService() {
 		return repoService;
 	}
 
-	public void setRepoService(String repoService) {
+	public void setRepoService(FileHoster repoService) {
 		this.repoService = repoService;
 	}
 
@@ -116,11 +115,11 @@ public class GitConfiguration {
 		this.maxAmountRequests = maxAmountRequests;
 	}
 
-	public String getAnalysisService() {
+	public AnalysisProvider getAnalysisService() {
 		return analysisService;
 	}
 
-	public void setAnalysisService(String analysisService) {
+	public void setAnalysisService(AnalysisProvider analysisService) {
 		this.analysisService = analysisService;
 	}
 
