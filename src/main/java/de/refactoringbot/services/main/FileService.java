@@ -54,11 +54,10 @@ public class FileService {
 	 * the src/main/java folder from maven projects)
 	 * 
 	 * @param allJavaFiles
-	 * @param repoFolder
 	 * @return javaRoots
 	 * @throws FileNotFoundException
 	 */
-	public List<String> findJavaRoots(List<String> allJavaFiles, String repoFolder) throws FileNotFoundException {
+	public List<String> findJavaRoots(List<String> allJavaFiles) throws FileNotFoundException {
 
 		// Init roots list
 		List<String> javaRoots = new ArrayList<>();

@@ -9,12 +9,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import de.refactoringbot.services.main.FileService;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.sonarqube.SonarIssue;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
 import de.refactoringbot.refactoring.RefactoringOperations;
+import de.refactoringbot.services.main.FileService;
 
 /**
  * This class translates SonarCube Objects into Bot-Objects.
@@ -52,7 +52,7 @@ public class SonarQubeObjectTranslator {
 			// Set all Java-Files and Java-Roots
 			List<String> allJavaFiles = fileController.getAllJavaFiles(gitConfig.getRepoFolder());
 			botIssue.setAllJavaFiles(allJavaFiles);
-			botIssue.setJavaRoots(fileController.findJavaRoots(allJavaFiles, gitConfig.getRepoFolder()));
+			botIssue.setJavaRoots(fileController.findJavaRoots(allJavaFiles));
 
 			// Create full path for sonar issue
 			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3)

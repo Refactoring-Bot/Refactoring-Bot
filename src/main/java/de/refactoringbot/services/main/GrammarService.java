@@ -92,7 +92,7 @@ public class GrammarService {
 			// Set all Java-Files and Java-Roots
 			List<String> allJavaFiles = fileService.getAllJavaFiles(gitConfig.getRepoFolder());
 			issue.setAllJavaFiles(allJavaFiles);
-			issue.setJavaRoots(fileService.findJavaRoots(allJavaFiles, gitConfig.getRepoFolder()));
+			issue.setJavaRoots(fileService.findJavaRoots(allJavaFiles));
 
 			mapCommentBodyToIssue(issue, comment.getCommentBody());
 			return issue;

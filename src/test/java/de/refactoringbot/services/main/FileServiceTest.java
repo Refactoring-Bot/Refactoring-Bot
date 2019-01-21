@@ -9,8 +9,6 @@ import java.util.List;
 import org.junit.Test;
 import org.springframework.util.ClassUtils;
 
-import de.refactoringbot.services.main.FileService;
-
 public class FileServiceTest {
 
 	@Test
@@ -35,7 +33,7 @@ public class FileServiceTest {
 		List<String> allJavaFiles = fileService.getAllJavaFiles(repoFolderPath);
 
 		// act
-		List<String> javaRoots = fileService.findJavaRoots(allJavaFiles, repoFolderPath);
+		List<String> javaRoots = fileService.findJavaRoots(allJavaFiles);
 	
 		// assert
 		assertTrue(javaRoots.size() > 0);
