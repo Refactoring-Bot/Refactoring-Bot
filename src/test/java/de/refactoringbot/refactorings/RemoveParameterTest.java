@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -88,9 +89,12 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 				removeParameterTestClass.getLineNumberOfDummyMethod(0, 0, 0), cuOriginalFile);
 		MethodDeclaration originalCallerMethod = RefactoringHelper
 				.getMethodByLineNumberOfMethodName(removeParameterTestClass.getLineNumberOfCaller(), cuOriginalFile);
-		assertThat(originalMethod).isNotNull();
-		assertThat(originalDummyMethod).isNotNull();
-		assertThat(originalCallerMethod).isNotNull();
+		
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(originalMethod).isNotNull();
+		softAssertions.assertThat(originalDummyMethod).isNotNull();
+		softAssertions.assertThat(originalCallerMethod).isNotNull();
+		softAssertions.assertAll();
 
 		gitConfig.setRepoFolder("");
 		issue.setFilePath(tempFile.getAbsolutePath());
@@ -118,8 +122,9 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		// assert that parameter has also been removed from the javadoc
 		List<JavadocBlockTag> javadocBlockTags = refactoredMethod.getJavadoc().get().getBlockTags();
 		for (JavadocBlockTag javadocBlockTag : javadocBlockTags) {
-			assertThat(javadocBlockTag.getTagName().equals("param")
-					&& javadocBlockTag.getName().get().equals(parameterName)).isFalse();
+			if (javadocBlockTag.getTagName().equals("param")) {
+				assertThat(javadocBlockTag.getName().get()).isNotEqualTo(parameterName);
+			}
 		}
 
 		// assert that dummy method is unchanged

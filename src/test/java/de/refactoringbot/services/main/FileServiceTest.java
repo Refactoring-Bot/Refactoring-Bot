@@ -36,7 +36,6 @@ public class FileServiceTest {
 		List<String> javaRoots = fileService.findJavaRoots(allJavaFiles);
 
 		// assert
-		assertThat(javaRoots).size().isGreaterThan(0);
 		assertThat(javaRoots).contains(getAbsoluteJavaRootPathOfThis());
 	}
 
