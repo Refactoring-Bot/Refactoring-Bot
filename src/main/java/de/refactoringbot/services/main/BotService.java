@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.main;
+package de.refactoringbot.services.main;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,7 +11,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
@@ -26,10 +26,10 @@ import de.refactoringbot.model.refactoredissue.RefactoredIssue;
  * @author Stefan Basaric
  *
  */
-@Component
-public class BotController {
+@Service
+public class BotService {
 
-	private static final Logger logger = LoggerFactory.getLogger(BotController.class);
+	private static final Logger logger = LoggerFactory.getLogger(BotService.class);
 
 	/**
 	 * This method returns the maximal amount of pull requests created by the bot.

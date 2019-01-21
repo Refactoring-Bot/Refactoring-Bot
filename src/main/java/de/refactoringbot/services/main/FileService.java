@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.main;
+package de.refactoringbot.services.main;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -22,8 +22,8 @@ import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinte
  * @author Stefan Basaric
  *
  */
-@Component
-public class FileController {
+@Service
+public class FileService {
 
 	/**
 	 * This method returns all Javafile-Paths of a project from a configuration.
@@ -54,11 +54,10 @@ public class FileController {
 	 * the src/main/java folder from maven projects)
 	 * 
 	 * @param allJavaFiles
-	 * @param repoFolder
 	 * @return javaRoots
 	 * @throws FileNotFoundException
 	 */
-	public List<String> findJavaRoots(List<String> allJavaFiles, String repoFolder) throws FileNotFoundException {
+	public List<String> findJavaRoots(List<String> allJavaFiles) throws FileNotFoundException {
 
 		// Init roots list
 		List<String> javaRoots = new ArrayList<>();

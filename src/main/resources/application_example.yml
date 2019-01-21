@@ -4,9 +4,9 @@ spring:
   application:
     name: refactoringbot
   datasource:
-    url: jdbc:mysql://localhost:3306/refactoringbot_db?verifyServerCertificate=false&useSSL=true
-    username: root
-    password: root
+    url: jdbc:mysql://${DATABASE_HOST:localhost}:${DATABASE_PORT:3306}/${DATABASE_NAME:refactoringbot_db}?verifyServerCertificate=false&useSSL=true&createDatabaseIfNotExist=true
+    username: ${DATABASE_USER:root}
+    password: ${DATABASE_PASSWORD:root}
   jpa:
     open-in-view: false
     hibernate:
@@ -14,7 +14,7 @@ spring:
   profiles:
     active: "dev"
 server:
-  port: 8808
+  port: ${SERVER_PORT:8808}
 ---
 spring:
   profiles: dev

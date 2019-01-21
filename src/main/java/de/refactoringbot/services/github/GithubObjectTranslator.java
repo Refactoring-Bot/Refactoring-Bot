@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.github;
+package de.refactoringbot.services.github;
 
 import java.io.IOException;
 import java.net.URI;
@@ -10,7 +10,7 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.model.botissue.BotIssue;
@@ -35,7 +35,7 @@ import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestCommen
  * @author Stefan Basaric
  *
  */
-@Component
+@Service
 public class GithubObjectTranslator {
 
 	private static final Logger logger = LoggerFactory.getLogger(GithubObjectTranslator.class);
