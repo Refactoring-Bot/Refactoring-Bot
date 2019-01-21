@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.github;
+package de.refactoringbot.services.github;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -10,6 +10,7 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.github.pullrequestcomment.ReplyComment;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
+import de.refactoringbot.services.github.GithubObjectTranslator;
 
 public class GithubObjectTranslatorTest {
 

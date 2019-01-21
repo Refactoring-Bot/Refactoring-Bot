@@ -1,5 +1,7 @@
 package de.refactoringbot.api.main;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,12 +12,13 @@ import org.springframework.stereotype.Component;
 
 import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.api.sonarqube.SonarQubeDataGrabber;
-import de.refactoringbot.controller.github.GithubObjectTranslator;
-import de.refactoringbot.controller.main.BotController;
-import de.refactoringbot.controller.sonarqube.SonarQubeObjectTranslator;
+import de.refactoringbot.services.github.GithubObjectTranslator;
+import de.refactoringbot.services.main.BotService;
+import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
+import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
@@ -43,7 +46,7 @@ public class ApiGrabber {
 	@Autowired
 	SonarQubeObjectTranslator sonarQubeTranslator;
 	@Autowired
-	BotController botController;
+	BotService botController;
 
 	/**
 	 * This method gets all requests with all comments from an api translated into a
@@ -51,9 +54,11 @@ public class ApiGrabber {
 	 * 
 	 * @param gitConfig
 	 * @return botRequests
-	 * @throws Exception
+	 * @throws URISyntaxException
+	 * @throws GitHubAPIException
+	 * @throws IOException
 	 */
-	public BotPullRequests getRequestsWithComments(GitConfiguration gitConfig) throws Exception {
+	public BotPullRequests getRequestsWithComments(GitConfiguration gitConfig) throws URISyntaxException, GitHubAPIException, IOException {
 		// Init bot object
 		BotPullRequests botRequests = null;
 

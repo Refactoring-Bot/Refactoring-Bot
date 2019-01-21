@@ -1,4 +1,4 @@
-package de.refactoringbot.controller.main;
+package de.refactoringbot.services.main;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import de.refactoringbot.grammar.botgrammar.BotOperationsBaseListener;
 import de.refactoringbot.grammar.botgrammar.BotOperationsLexer;
@@ -27,16 +27,16 @@ import de.refactoringbot.refactoring.RefactoringOperations;
  * @author Stefan Basaric
  *
  */
-@Component
-public class GrammarController {
+@Service
+public class GrammarService {
 
-	private FileController fileController;
+	private FileService fileService;
 
-	private static final Logger logger = LoggerFactory.getLogger(GrammarController.class);
+	private static final Logger logger = LoggerFactory.getLogger(GrammarService.class);
 
 	@Autowired
-	public GrammarController(FileController fileController) {
-		this.fileController = fileController;
+	public GrammarService(FileService fileService) {
+		this.fileService = fileService;
 	}
 
 	/**
@@ -90,9 +90,9 @@ public class GrammarController {
 			issue.setFilePath(comment.getFilepath());
 
 			// Set all Java-Files and Java-Roots
-			List<String> allJavaFiles = fileController.getAllJavaFiles(gitConfig.getRepoFolder());
+			List<String> allJavaFiles = fileService.getAllJavaFiles(gitConfig.getRepoFolder());
 			issue.setAllJavaFiles(allJavaFiles);
-			issue.setJavaRoots(fileController.findJavaRoots(allJavaFiles, gitConfig.getRepoFolder()));
+			issue.setJavaRoots(fileService.findJavaRoots(allJavaFiles));
 
 			mapCommentBodyToIssue(issue, comment.getCommentBody());
 			return issue;
