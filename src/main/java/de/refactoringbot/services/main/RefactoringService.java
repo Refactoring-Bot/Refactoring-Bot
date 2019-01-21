@@ -75,10 +75,9 @@ public class RefactoringService {
 	 * @param configID
 	 * @param isCommentRefactoring
 	 * @return response
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public ResponseEntity<?> performRefactoring(Long configID, boolean isCommentRefactoring)
-			throws Exception {
+	public ResponseEntity<?> performRefactoring(Long configID, boolean isCommentRefactoring) throws Exception {
 
 		// Check and create configuration
 		GitConfiguration config = checkConfigurationExistance(configID);
@@ -153,10 +152,11 @@ public class RefactoringService {
 	 * 
 	 * @param config
 	 * @param allRequests
-	 * @param amountOfBotRequests 
+	 * @param amountOfBotRequests
 	 * @return response
 	 */
-	public ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests, int amountBotRequests) {
+	public ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests,
+			int amountBotRequests) {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 		// Iterate through all requests
 		for (BotPullRequest request : allRequests.getAllPullRequests()) {
@@ -373,12 +373,8 @@ public class RefactoringService {
 	 * @return isValid
 	 */
 	public boolean isCommentValid(GitConfiguration config, BotPullRequestComment comment) {
-		if (grammarController.checkComment(comment.getCommentBody()) && !issueRepo
-				.refactoredComment(config.getRepoService(), comment.getCommentID().toString()).isPresent()) {
-			return true;
-		} else {
-			return false;
-		}
+		return (grammarController.checkComment(comment.getCommentBody()) && !issueRepo
+				.refactoredComment(config.getRepoService(), comment.getCommentID().toString()).isPresent());
 	}
 
 	/**
@@ -390,11 +386,7 @@ public class RefactoringService {
 	 * @return
 	 */
 	public boolean isAnalysisIssueValid(GitConfiguration config, BotIssue issue) {
-		if (!issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent()) {
-			return true;
-		} else {
-			return false;
-		}
+		return (!issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent());
 	}
 
 	/**
@@ -406,8 +398,7 @@ public class RefactoringService {
 	 * @throws Exception
 	 */
 	public BotIssue createIssueFromComment(GitConfiguration config, BotPullRequestComment comment) throws Exception {
-		BotIssue botIssue = grammarController.createIssueFromComment(comment, config);
-		return botIssue;
+		return grammarController.createIssueFromComment(comment, config);
 	}
 
 	/**
