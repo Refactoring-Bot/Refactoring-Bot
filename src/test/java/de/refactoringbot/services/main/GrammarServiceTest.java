@@ -25,10 +25,10 @@ import de.refactoringbot.services.main.GrammarService;
 public class GrammarServiceTest {
 
 	private static Map<String, Class<? extends RefactoringImpl>> ruleToClassMapping;
-	private final static String VALID_COMMENT_ADD_OVERRIDE = "BOT ADD ANNOTATION Override LINE 5";
-	private final static String VALID_COMMENT_REORDER_MODIFIER = "BOT REORDER MODIFIER LINE 10";
-	private final static String VALID_COMMENT_RENAME_METHOD = "BOT RENAME METHOD LINE 15 TO newMethodName";
-	private final static String VALID_COMMENT_REMOVE_PARAM = "BOT REMOVE PARAMETER LINE 20 NAME unusedParam";
+	private final static String VALID_COMMENT_ADD_OVERRIDE = "BOT ADD ANNOTATION Override";
+	private final static String VALID_COMMENT_REORDER_MODIFIER = "BOT REORDER MODIFIER";
+	private final static String VALID_COMMENT_RENAME_METHOD = "BOT RENAME METHOD TO newMethodName";
+	private final static String VALID_COMMENT_REMOVE_PARAM = "BOT REMOVE PARAMETER unusedParam";
 
 	private FileService fileService;
 
@@ -55,7 +55,7 @@ public class GrammarServiceTest {
 		String refactoringOperationKey = "Add Override Annotation";
 		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
 		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		assertEquals(Integer.valueOf(5), botIssue.getLine());
+		// assertEquals(Integer.valueOf(5), botIssue.getLine());
 	}
 
 	@Test
@@ -67,7 +67,7 @@ public class GrammarServiceTest {
 		String refactoringOperationKey = "Reorder Modifier";
 		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
 		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		assertEquals(Integer.valueOf(10), botIssue.getLine());
+		// assertEquals(Integer.valueOf(10), botIssue.getLine());
 	}
 
 	@Test
@@ -79,7 +79,7 @@ public class GrammarServiceTest {
 		String refactoringOperationKey = "Rename Method";
 		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
 		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		assertEquals(Integer.valueOf(15), botIssue.getLine());
+		// assertEquals(Integer.valueOf(15), botIssue.getLine());
 		assertEquals("newMethodName", botIssue.getRefactorString());
 	}
 
@@ -92,7 +92,7 @@ public class GrammarServiceTest {
 		String refactoringOperationKey = "Remove Parameter";
 		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
 		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		assertEquals(Integer.valueOf(20), botIssue.getLine());
+		// assertEquals(Integer.valueOf(20), botIssue.getLine());
 		assertEquals("unusedParam", botIssue.getRefactorString());
 	}
 
