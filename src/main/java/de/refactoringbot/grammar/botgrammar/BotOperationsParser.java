@@ -98,6 +98,7 @@ public class BotOperationsParser extends Parser {
 	public static class BotCommandContext extends ParserRuleContext {
 		public TerminalNode WHITESPACE() { return getToken(BotOperationsParser.WHITESPACE, 0); }
 		public TerminalNode REFACTORING() { return getToken(BotOperationsParser.REFACTORING, 0); }
+		public TerminalNode EOF() { return getToken(BotOperationsParser.EOF, 0); }
 		public BotCommandContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -124,6 +125,8 @@ public class BotOperationsParser extends Parser {
 			match(WHITESPACE);
 			setState(4);
 			match(REFACTORING);
+			setState(5);
+			match(EOF);
 			}
 		}
 		catch (RecognitionException re) {
@@ -138,9 +141,9 @@ public class BotOperationsParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\26\t\4\2\t\2\3\2"+
-		"\3\2\3\2\3\2\3\2\2\2\3\2\2\2\2\7\2\4\3\2\2\2\4\5\7\3\2\2\5\6\7\26\2\2"+
-		"\6\7\7\4\2\2\7\3\3\2\2\2\2";
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\26\n\4\2\t\2\3\2"+
+		"\3\2\3\2\3\2\3\2\3\2\2\2\3\2\2\2\2\b\2\4\3\2\2\2\4\5\7\3\2\2\5\6\7\26"+
+		"\2\2\6\7\7\4\2\2\7\b\7\2\2\3\b\3\3\2\2\2\2";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

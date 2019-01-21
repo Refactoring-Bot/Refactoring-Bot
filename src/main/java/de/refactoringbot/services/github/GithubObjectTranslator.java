@@ -152,12 +152,36 @@ public class GithubObjectTranslator {
 			translatedComment.setFilepath(githubComment.getPath());
 			translatedComment.setUsername(githubComment.getUser().getLogin());
 			translatedComment.setCommentBody(githubComment.getBody());
+			translatedComment.setPosition(getTrueCommentPosition(githubComment.getDiffHunk()));
 
 			// Add comment to list
 			translatedComments.addComment(translatedComment);
 		}
 
 		return translatedComments;
+	}
+
+	/**
+	 * This methods returns the correct position of the comment with the help of the
+	 * diff_hunk string of the github comment object.
+	 * 
+	 * @param diffHunk
+	 * @return truePosition
+	 */
+	public Integer getTrueCommentPosition(String diffHunk) {
+		Integer truePosition = 0;
+		// Seperate diffHunk at new line
+		String[] splittedDiffHunk = diffHunk.split("\\R");
+
+		// Iterate all lines
+		for (String line : splittedDiffHunk) {
+			// If line added or left as is
+			if (line.startsWith("+") || line.startsWith(" ")) {
+				truePosition++;
+			}
+		}
+
+		return truePosition;
 	}
 
 	/**
