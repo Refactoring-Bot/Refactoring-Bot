@@ -29,8 +29,8 @@ public class BotOperationsParser extends Parser {
 
 	private static final String[] _LITERAL_NAMES = {
 		null, "'BOT'", null, null, null, null, null, null, null, null, null, "'METHOD'", 
-		"'CLASS'", "'VARIABLE'", null, "'MODIFIER'", "'PARAMETER'", "'LINE'", 
-		null, null, "' '"
+		"'CLASS'", "'VARIABLE'", null, "'MODIFIER'", null, "'LINE'", null, null, 
+		"' '"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
 		null, null, "REFACTORING", "ADD", "RENAME", "REORDER", "REMOVE", "ADDKIND", 

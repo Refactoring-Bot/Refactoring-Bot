@@ -147,7 +147,7 @@ public class GrammarService {
 			if (commentArr[2].equals("PARAMETER")) {
 				issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 				// Set name of the parameter
-				issue.setRefactorString(commentArr[4]);
+				issue.setRefactorString(commentArr[3]);
 			}
 		}
 	}
