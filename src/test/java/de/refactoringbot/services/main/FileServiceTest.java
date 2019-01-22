@@ -1,6 +1,6 @@
 package de.refactoringbot.services.main;
 
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,8 +21,8 @@ public class FileServiceTest {
 		List<String> allJavaFiles = fileService.getAllJavaFiles(repoFolderPath);
 
 		// assert
-		assertTrue(allJavaFiles.size() > 42);
-		assertTrue(allJavaFiles.contains(getAbsoluteFilePathOfThis()));
+		assertThat(allJavaFiles).size().isGreaterThan(42);
+		assertThat(allJavaFiles).contains(getAbsoluteFilePathOfThis());
 	}
 
 	@Test
@@ -34,10 +34,9 @@ public class FileServiceTest {
 
 		// act
 		List<String> javaRoots = fileService.findJavaRoots(allJavaFiles);
-	
+
 		// assert
-		assertTrue(javaRoots.size() > 0);
-		assertTrue(javaRoots.contains(getAbsoluteJavaRootPathOfThis()));
+		assertThat(javaRoots).contains(getAbsoluteJavaRootPathOfThis());
 	}
 
 	private String getAbsoluteFilePathOfThis() {
@@ -45,7 +44,7 @@ public class FileServiceTest {
 				+ ".java";
 		return new File(path).getAbsolutePath();
 	}
-	
+
 	private String getAbsoluteJavaRootPathOfThis() {
 		String path = System.getProperty("user.dir") + "/src/test/java";
 		return new File(path).getAbsolutePath();

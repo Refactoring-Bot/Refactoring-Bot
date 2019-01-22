@@ -1,6 +1,6 @@
 package de.refactoringbot.refactorings;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 
@@ -16,9 +16,9 @@ import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.supportedrefactorings.AddOverrideAnnotation;
 import de.refactoringbot.resources.addoverrideannotation.TestDataClassMissingOverrideAnnotation;
 
-public class TestAddOverrideAnnotation extends AbstractRefactoringTests {
+public class AddOverrideAnnotationTest extends AbstractRefactoringTests {
 
-	private static final Logger logger = LoggerFactory.getLogger(TestAddOverrideAnnotation.class);
+	private static final Logger logger = LoggerFactory.getLogger(AddOverrideAnnotationTest.class);
 	private TestDataClassMissingOverrideAnnotation missingOverrideTestClass = new TestDataClassMissingOverrideAnnotation();
 
 	@Rule
@@ -72,7 +72,7 @@ public class TestAddOverrideAnnotation extends AbstractRefactoringTests {
 
 		// assert
 		String lineContent = getStrippedContentFromFile(tempFile, lineNumberOfMethodWithMissingOverride);
-		assertEquals("@Override", lineContent);
+		assertThat(lineContent).isEqualTo("@Override");
 	}
 
 }
