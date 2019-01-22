@@ -203,4 +203,56 @@ public class GitService {
 			throw new GitWorkflowException("Could not successfully perform 'git push'!");
 		}
 	}
+	
+	/**
+	 * Calculates the absolute file line number of a PR comment from a given
+	 * diff_hunk
+	 * 
+	 * @param diffHunk
+	 * @return truePosition
+	 */
+	public Integer translateDiffHunkToPosition(String diffHunk) {
+		Integer truePosition = 0;
+		Integer diffPos = 0;
+		// Seperate diffHunk at new line
+		String[] splittedDiffHunk = diffHunk.split("\\R");
+
+		// Add lines of cut file before snippet
+		if (splittedDiffHunk.length > 0) {
+			// Get first line of diffHunk
+			String firstLine = splittedDiffHunk[0];
+
+			// Read diff lines from diffHunk
+			String[] diffSizeStart = firstLine.split("\\+");
+			if (diffSizeStart.length >= 2) {
+				String[] diffSizeEnd = diffSizeStart[1].split(",");
+				if (diffSizeEnd.length > 0) {
+					try {
+						// Return diffhunk lines
+						diffPos = Integer.valueOf(diffSizeEnd[0]);
+					} catch (NumberFormatException n) {
+						diffPos = 0;
+					}
+				}
+			}
+
+			// Calculate true starting position of diffhunk
+			truePosition = truePosition + diffPos;
+
+			// Don't count the @@ line if diffhunk exists
+			if (diffPos > 0) {
+				truePosition--;
+			}
+		}
+
+		// Iterate all lines
+		for (String line : splittedDiffHunk) {
+			// If line added or left as is
+			if (line.startsWith("+") || line.startsWith(" ")) {
+				truePosition++;
+			}
+		}
+
+		return truePosition;
+	}
 }

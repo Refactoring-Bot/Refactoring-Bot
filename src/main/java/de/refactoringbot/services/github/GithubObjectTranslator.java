@@ -28,6 +28,7 @@ import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComments;
+import de.refactoringbot.services.main.GitService;
 
 /**
  * This class translates all kinds of objects from GitHub to Bot-Objects
@@ -42,11 +43,13 @@ public class GithubObjectTranslator {
 
 	private final GithubDataGrabber grabber;
 	private final ModelMapper modelMapper;
+	private final GitService gitService;
 
 	@Autowired
-	public GithubObjectTranslator(GithubDataGrabber grabber, ModelMapper modelMapper) {
+	public GithubObjectTranslator(GithubDataGrabber grabber, ModelMapper modelMapper, GitService gitService) {
 		this.grabber = grabber;
 		this.modelMapper = modelMapper;
+		this.gitService = gitService;
 	}
 
 	/**
@@ -152,65 +155,13 @@ public class GithubObjectTranslator {
 			translatedComment.setFilepath(githubComment.getPath());
 			translatedComment.setUsername(githubComment.getUser().getLogin());
 			translatedComment.setCommentBody(githubComment.getBody());
-			translatedComment.setPosition(getAbsoluteLineNumberOfPullRequestComment(githubComment.getDiffHunk()));
+			translatedComment.setPosition(gitService.translateDiffHunkToPosition(githubComment.getDiffHunk()));
 
 			// Add comment to list
 			translatedComments.addComment(translatedComment);
 		}
 
 		return translatedComments;
-	}
-
-	/**
-	 * Calculates the absolute file line number of a PR comment from a given
-	 * diff_hunk
-	 * 
-	 * @param diffHunk
-	 * @return truePosition
-	 */
-	public Integer getAbsoluteLineNumberOfPullRequestComment(String diffHunk) {
-		Integer truePosition = 0;
-		Integer diffPos = 0;
-		// Seperate diffHunk at new line
-		String[] splittedDiffHunk = diffHunk.split("\\R");
-
-		// Add lines of cut file before snippet
-		if (splittedDiffHunk.length > 0) {
-			// Get first line of diffHunk
-			String firstLine = splittedDiffHunk[0];
-
-			// Read diff lines from diffHunk
-			String[] diffSizeStart = firstLine.split("\\+");
-			if (diffSizeStart.length >= 2) {
-				String[] diffSizeEnd = diffSizeStart[1].split(",");
-				if (diffSizeEnd.length > 0) {
-					try {
-						// Return diffhunk lines
-						diffPos = Integer.valueOf(diffSizeEnd[0]);
-					} catch (NumberFormatException n) {
-						diffPos = 0;
-					}
-				}
-			}
-
-			// Calculate true starting position of diffhunk
-			truePosition = truePosition + diffPos;
-
-			// Don't count the @@ line if diffhunk exists
-			if (diffPos > 0) {
-				truePosition--;
-			}
-		}
-
-		// Iterate all lines
-		for (String line : splittedDiffHunk) {
-			// If line added or left as is
-			if (line.startsWith("+") || line.startsWith(" ")) {
-				truePosition++;
-			}
-		}
-
-		return truePosition;
 	}
 
 	/**

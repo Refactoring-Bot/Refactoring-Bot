@@ -12,6 +12,7 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.github.pullrequestcomment.ReplyComment;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
+import de.refactoringbot.services.main.GitService;
 
 public class GithubObjectTranslatorTest {
 
@@ -32,7 +33,7 @@ public class GithubObjectTranslatorTest {
 		comment.setCommentID(commentId);
 		String errorMessage = "test error message";
 
-		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, null);
+		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, null, null);
 		ReplyComment failureReply = githubObjectTranslator.createFailureReply(comment, errorMessage);
 
 		SoftAssertions softAssertions = new SoftAssertions();
@@ -46,7 +47,7 @@ public class GithubObjectTranslatorTest {
 		GitConfigurationDTO configurationDto = createGitConfigurationDto();
 
 		ModelMapper modelMapper = new ModelMapper();
-		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, modelMapper);
+		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, modelMapper, null);
 		GitConfiguration gitConfiguration = githubObjectTranslator.createConfiguration(configurationDto);
 
 		GitConfiguration expectedGitConfiguration = createExpectedGitConfiguration();
@@ -70,14 +71,13 @@ public class GithubObjectTranslatorTest {
 		String diffHunk4 = "@@ -53,9 +49,9 @@ public void testCommentToIssueMappingOverrideAnnotation() throws Exception {\n \n \t\t// assert\n \t\tString refactoringOperationKey = \"Add Override Annotation\";\n-\t\tassertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));\n-\t\tassertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());\n-\t\tassertEquals(Integer.valueOf(5), botIssue.getLine());\n+\t\tassertThat(ruleToClassMapping).containsKey(refactoringOperationKey);";
 		Integer expectedCommentPosition4 = 52;
 
-		ModelMapper modelMapper = new ModelMapper();
-		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, modelMapper);
+		GitService gitService = new GitService();
 
-		Integer actual0 = githubObjectTranslator.getAbsoluteLineNumberOfPullRequestComment(diffHunk0);
-		Integer actual1 = githubObjectTranslator.getAbsoluteLineNumberOfPullRequestComment(diffHunk1);
-		Integer actual2 = githubObjectTranslator.getAbsoluteLineNumberOfPullRequestComment(diffHunk2);
-		Integer actual3 = githubObjectTranslator.getAbsoluteLineNumberOfPullRequestComment(diffHunk3);
-		Integer actual4 = githubObjectTranslator.getAbsoluteLineNumberOfPullRequestComment(diffHunk4);
+		Integer actual0 = gitService.translateDiffHunkToPosition(diffHunk0);
+		Integer actual1 = gitService.translateDiffHunkToPosition(diffHunk1);
+		Integer actual2 = gitService.translateDiffHunkToPosition(diffHunk2);
+		Integer actual3 = gitService.translateDiffHunkToPosition(diffHunk3);
+		Integer actual4 = gitService.translateDiffHunkToPosition(diffHunk4);
 
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(actual0).isEqualTo(expectedCommentPosition0);
