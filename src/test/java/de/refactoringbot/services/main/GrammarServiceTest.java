@@ -52,7 +52,6 @@ public class GrammarServiceTest {
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
 		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
-		softAssertions.assertThat(botIssue.getLine()).isEqualTo(5);
 		softAssertions.assertAll();
 	}
 
@@ -67,7 +66,6 @@ public class GrammarServiceTest {
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
 		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
-		softAssertions.assertThat(botIssue.getLine()).isEqualTo(10);
 		softAssertions.assertAll();
 	}
 
@@ -82,7 +80,6 @@ public class GrammarServiceTest {
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
 		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
-		softAssertions.assertThat(botIssue.getLine()).isEqualTo(15);
 		softAssertions.assertThat(botIssue.getRefactorString()).isEqualTo("newMethodName");
 		softAssertions.assertAll();
 	}
@@ -98,7 +95,6 @@ public class GrammarServiceTest {
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
 		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
-		softAssertions.assertThat(botIssue.getLine()).isEqualTo(20);
 		softAssertions.assertThat(botIssue.getRefactorString()).isEqualTo("unusedParam");
 		softAssertions.assertAll();
 	}

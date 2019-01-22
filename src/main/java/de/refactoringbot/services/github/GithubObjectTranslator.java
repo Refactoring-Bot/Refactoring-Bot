@@ -152,7 +152,7 @@ public class GithubObjectTranslator {
 			translatedComment.setFilepath(githubComment.getPath());
 			translatedComment.setUsername(githubComment.getUser().getLogin());
 			translatedComment.setCommentBody(githubComment.getBody());
-			translatedComment.setPosition(getTrueCommentPosition(githubComment.getDiffHunk()));
+			translatedComment.setPosition(getAbsoluteLineNumberOfPullRequestComment(githubComment.getDiffHunk()));
 
 			// Add comment to list
 			translatedComments.addComment(translatedComment);
@@ -162,13 +162,13 @@ public class GithubObjectTranslator {
 	}
 
 	/**
-	 * This methods returns the correct position of the comment with the help of the
-	 * diff_hunk string of the github comment object.
+	 * Calculates the absolute file line number of a PR comment from a given
+	 * diff_hunk
 	 * 
 	 * @param diffHunk
 	 * @return truePosition
 	 */
-	public Integer getTrueCommentPosition(String diffHunk) {
+	public Integer getAbsoluteLineNumberOfPullRequestComment(String diffHunk) {
 		Integer truePosition = 0;
 		Integer diffPos = 0;
 		// Seperate diffHunk at new line
@@ -192,10 +192,10 @@ public class GithubObjectTranslator {
 					}
 				}
 			}
-			
+
 			// Calculate true starting position of diffhunk
 			truePosition = truePosition + diffPos;
-			
+
 			// Don't count the @@ line if diffhunk exists
 			if (diffPos > 0) {
 				truePosition--;
