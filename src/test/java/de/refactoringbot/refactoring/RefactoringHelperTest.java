@@ -1,7 +1,6 @@
 package de.refactoringbot.refactoring;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,7 +21,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.resources.refactoringhelper.TestDataClassRefactoringHelper;
 
-public class TestRefactoringHelper {
+public class RefactoringHelperTest {
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
@@ -35,7 +34,7 @@ public class TestRefactoringHelper {
 		// arrange
 		String methodSignatureAsString = "getLineOfMethod(boolean)";
 		List<String> javaFiles = getJavaFilePathsForTest();
-		assertEquals("getLineOfMethod(boolean)", methodSignatureAsString);
+		assertThat(methodSignatureAsString).isEqualTo("getLineOfMethod(boolean)");
 
 		// act
 		RefactoringHelper.checkForDuplicatedMethodSignatures(javaFiles, methodSignatureAsString);
@@ -66,14 +65,14 @@ public class TestRefactoringHelper {
 		MethodDeclaration method = RefactoringHelper.getMethodByLineNumberOfMethodName(lineNumber, cu);
 
 		// assert
-		assertTrue(method != null);
-		assertEquals("public static int getLineOfMethod(boolean parm)", method.getDeclarationAsString());
-		
+		assertThat(method).isNotNull();
+		assertThat(method.getDeclarationAsString()).isEqualTo("public static int getLineOfMethod(boolean parm)");
+
 		// act
 		boolean isMethodDeclarationAtLineNumber = RefactoringHelper.isMethodDeclarationAtLine(method, lineNumber);
-		
+
 		// assert
-		assertTrue(isMethodDeclarationAtLineNumber);
+		assertThat(isMethodDeclarationAtLineNumber).isTrue();
 	}
 
 	@Test
@@ -88,8 +87,8 @@ public class TestRefactoringHelper {
 		FieldDeclaration field = RefactoringHelper.getFieldDeclarationByLineNumber(lineNumber, cu);
 
 		// assert
-		assertTrue(field != null);
-		assertEquals(expectedFieldAsString, field.toString());
+		assertThat(field).isNotNull();
+		assertThat(field.toString()).isEqualTo(expectedFieldAsString);
 	}
 
 	private List<String> getJavaFilePathsForTest() {

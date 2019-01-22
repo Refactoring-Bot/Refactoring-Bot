@@ -1,12 +1,9 @@
 package de.refactoringbot.services.main;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -19,8 +16,6 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.refactoring.RefactoringImpl;
 import de.refactoringbot.refactoring.RefactoringOperations;
-import de.refactoringbot.services.main.FileService;
-import de.refactoringbot.services.main.GrammarService;
 
 public class GrammarServiceTest {
 
@@ -53,9 +48,12 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Add Override Annotation";
-		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
-		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		// assertEquals(Integer.valueOf(5), botIssue.getLine());
+
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
+		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
+		softAssertions.assertThat(botIssue.getLine()).isEqualTo(5);
+		softAssertions.assertAll();
 	}
 
 	@Test
@@ -65,9 +63,12 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Reorder Modifier";
-		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
-		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		// assertEquals(Integer.valueOf(10), botIssue.getLine());
+
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
+		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
+		softAssertions.assertThat(botIssue.getLine()).isEqualTo(10);
+		softAssertions.assertAll();
 	}
 
 	@Test
@@ -77,10 +78,13 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Rename Method";
-		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
-		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		// assertEquals(Integer.valueOf(15), botIssue.getLine());
-		assertEquals("newMethodName", botIssue.getRefactorString());
+
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
+		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
+		softAssertions.assertThat(botIssue.getLine()).isEqualTo(15);
+		softAssertions.assertThat(botIssue.getRefactorString()).isEqualTo("newMethodName");
+		softAssertions.assertAll();
 	}
 
 	@Test
@@ -90,23 +94,31 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Remove Parameter";
-		assertTrue(ruleToClassMapping.containsKey(refactoringOperationKey));
-		assertEquals(refactoringOperationKey, botIssue.getRefactoringOperation());
-		// assertEquals(Integer.valueOf(20), botIssue.getLine());
-		assertEquals("unusedParam", botIssue.getRefactorString());
+
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
+		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
+		softAssertions.assertThat(botIssue.getLine()).isEqualTo(20);
+		softAssertions.assertThat(botIssue.getRefactorString()).isEqualTo("unusedParam");
+		softAssertions.assertAll();
 	}
 
 	@Test
 	public void testCheckComment() {
 		GrammarService grammarService = new GrammarService(fileService);
-		assertTrue(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE));
-		assertTrue(grammarService.checkComment(VALID_COMMENT_REORDER_MODIFIER));
-		assertTrue(grammarService.checkComment(VALID_COMMENT_RENAME_METHOD));
-		assertTrue(grammarService.checkComment(VALID_COMMENT_REMOVE_PARAM));
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE)).isTrue();
+		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE)).isTrue();
+		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_REORDER_MODIFIER)).isTrue();
+		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_RENAME_METHOD)).isTrue();
+		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_REMOVE_PARAM)).isTrue();
 
-		assertFalse(grammarService.checkComment("BOT ADD ANNOTATION"));
-		assertFalse(grammarService.checkComment("BOT RENAME METHOD"));
-		assertFalse(grammarService.checkComment("BOT, BOT, on the wall, who's the fairest of them all?"));
+		softAssertions.assertThat(grammarService.checkComment("BOT ADD ANNOTATION")).isFalse();
+		softAssertions.assertThat(grammarService.checkComment("BOT RENAME METHOD")).isFalse();
+		softAssertions.assertThat(grammarService.checkComment("BOT, BOT, on the wall, who's the fairest of them all?"))
+				.isFalse();
+
+		softAssertions.assertAll();
 	}
 
 	private BotIssue getIssueAfterMapping(String commentBody) throws Exception {
