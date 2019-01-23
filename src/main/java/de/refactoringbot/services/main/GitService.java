@@ -55,8 +55,7 @@ public class GitService {
 	 * @throws GitWorkflowException
 	 */
 	public void addRemote(GitConfiguration gitConfig) throws GitWorkflowException {
-		try (Git git = Git.open(
-				new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
+		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Add Remote as 'upstream'
 			RemoteAddCommand remoteAddCommand = git.remoteAdd();
 			remoteAddCommand.setName("upstream");
@@ -76,8 +75,7 @@ public class GitService {
 	 * @throws GitWorkflowException
 	 */
 	public void fetchRemote(GitConfiguration gitConfig) throws GitWorkflowException {
-		try (Git git = Git.open(
-				new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
+		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Fetch data
 			git.fetch().setRemote("upstream").call();
 		} catch (Exception e) {
@@ -93,8 +91,7 @@ public class GitService {
 	 * @throws GitWorkflowException
 	 */
 	public void stashChanges(GitConfiguration gitConfig) throws GitWorkflowException {
-		try (Git git = Git.open(
-				new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
+		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Open git folder
 			// Stash changes
 			git.stashApply().call();
@@ -203,52 +200,63 @@ public class GitService {
 			throw new GitWorkflowException("Could not successfully perform 'git push'!");
 		}
 	}
-	
+
 	/**
 	 * Calculates the absolute file line number of a PR comment from a given
-	 * diff_hunk
+	 * diff_hunk.
+	 * 
+	 * Every diffhunk starts like '@@ -50,7 +50,7 @@' followed by the changed lines
+	 * until the line where the comment is placed. This number located after the
+	 * first '+' is the linenumber where the diffhunk is located after the current
+	 * changes.
+	 * 
+	 * To get the correct line number we have to read that number and add all the
+	 * lines until our comment. However we only need the lines that are in our file
+	 * after the change was applied. So we need to ignore the lines that were
+	 * removed. Those lines start with a "-" inside the diffhunk.
 	 * 
 	 * @param diffHunk
 	 * @return truePosition
 	 */
 	public Integer translateDiffHunkToPosition(String diffHunk) {
+		// Initialize values
 		Integer truePosition = 0;
 		Integer diffPos = 0;
+
 		// Seperate diffHunk at new line
 		String[] splittedDiffHunk = diffHunk.split("\\R");
 
-		// Add lines of cut file before snippet
-		if (splittedDiffHunk.length > 0) {
-			// Get first line of diffHunk
-			String firstLine = splittedDiffHunk[0];
+		// Get first line of diffHunk (@@ - Line)
+		String firstLine = splittedDiffHunk[0];
 
-			// Read diff lines from diffHunk
-			String[] diffSizeStart = firstLine.split("\\+");
-			if (diffSizeStart.length >= 2) {
-				String[] diffSizeEnd = diffSizeStart[1].split(",");
-				if (diffSizeEnd.length > 0) {
-					try {
-						// Return diffhunk lines
-						diffPos = Integer.valueOf(diffSizeEnd[0]);
-					} catch (NumberFormatException n) {
-						diffPos = 0;
-					}
+		// Split the first line at the '+'
+		String[] diffSizeStart = firstLine.split("\\+");
+		if (diffSizeStart.length >= 2) {
+			// Splitt the string after the '5' at ','
+			String[] diffSizeEnd = diffSizeStart[1].split(",");
+			if (diffSizeEnd.length > 0) {
+				try {
+					// Read diffhunk position number
+					diffPos = Integer.valueOf(diffSizeEnd[0]);
+				} catch (NumberFormatException n) {
+					diffPos = 0;
 				}
 			}
+		}
 
-			// Calculate true starting position of diffhunk
-			truePosition = truePosition + diffPos;
+		// Add diffhunk value to our true position
+		truePosition += diffPos;
 
-			// Don't count the @@ line if diffhunk exists
-			if (diffPos > 0) {
-				truePosition--;
-			}
+		// Don't count the @@ line if diffhunk value != 0
+		if (diffPos > 0) {
+			truePosition--;
 		}
 
 		// Iterate all lines
 		for (String line : splittedDiffHunk) {
-			// If line added or left as is
+			// If line added or unchanged
 			if (line.startsWith("+") || line.startsWith(" ")) {
+				// Add lines inside diffhunk to comment position
 				truePosition++;
 			}
 		}
