@@ -210,10 +210,11 @@ public class GitService {
 	 * first '+' is the linenumber where the diffhunk is located after the current
 	 * changes.
 	 * 
-	 * To get the correct line number we have to read that number and add all the
-	 * lines until our comment. However we only need the lines that are in our file
-	 * after the change was applied. So we need to ignore the lines that were
-	 * removed. Those lines start with a "-" inside the diffhunk.
+	 * To get the correct line number we have to read that number and add the number
+	 * of following lines until we reach the line of our comment (which is the last
+	 * line of the diffhunk). However we only have to count the lines that are in
+	 * our file after the change was applied. So we need to ignore the lines that
+	 * were removed. Those lines start with a "-" inside the diffhunk.
 	 * 
 	 * @param diffHunk
 	 * @return truePosition
@@ -232,7 +233,7 @@ public class GitService {
 		// Split the first line at the '+'
 		String[] diffSizeStart = firstLine.split("\\+");
 		if (diffSizeStart.length >= 2) {
-			// Splitt the string after the '5' at ','
+			// Splitt the string after the '+' at ','
 			String[] diffSizeEnd = diffSizeStart[1].split(",");
 			if (diffSizeEnd.length > 0) {
 				try {
