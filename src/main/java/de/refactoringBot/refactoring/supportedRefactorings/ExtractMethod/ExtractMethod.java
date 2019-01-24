@@ -250,6 +250,22 @@ public class ExtractMethod implements RefactoringImpl {
 
 		// checks if the candidate has only one output parameter and continue, break or return are handled correct
 		private boolean isExtractable(RefactorCandidate candidate, Map<Long, LineMapVariable> variableMap) {
+			// check output parameters
+			Set<String> outVariables = new HashSet<>();
+			for (Long lineNumber = candidate.startLine; lineNumber <= candidate.endLine; lineNumber++) {
+				if (variableMap.get(lineNumber) != null) {
+					for (Map.Entry<String, Set<Long>> variable : variableMap.get(lineNumber).out.entrySet()) {
+						for (Long outNumber : variable.getValue()) {
+							if (outNumber > candidate.endLine) {
+								outVariables.add(variable.getKey());
+							}
+						}
+					}
+				}
+			}
+			if (outVariables.size() > 1) {
+				return false;
+			}
 			return true;
 		}
 
