@@ -20,10 +20,10 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 public class GrammarServiceTest {
 
 	private static Map<String, Class<? extends RefactoringImpl>> ruleToClassMapping;
-	private final static String VALID_COMMENT_ADD_OVERRIDE = "BOT ADD ANNOTATION Override LINE 5";
-	private final static String VALID_COMMENT_REORDER_MODIFIER = "BOT REORDER MODIFIER LINE 10";
-	private final static String VALID_COMMENT_RENAME_METHOD = "BOT RENAME METHOD LINE 15 TO newMethodName";
-	private final static String VALID_COMMENT_REMOVE_PARAM = "BOT REMOVE PARAMETER LINE 20 NAME unusedParam";
+	private final static String VALID_COMMENT_ADD_OVERRIDE = "BOT ADD ANNOTATION Override";
+	private final static String VALID_COMMENT_REORDER_MODIFIER = "BOT REORDER MODIFIER";
+	private final static String VALID_COMMENT_RENAME_METHOD = "BOT RENAME METHOD TO newMethodName";
+	private final static String VALID_COMMENT_REMOVE_PARAM = "BOT REMOVE PARAMETER unusedParam";
 
 	private FileService fileService;
 
@@ -48,10 +48,10 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Add Override Annotation";
+
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
 		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
-		softAssertions.assertThat(botIssue.getLine()).isEqualTo(5);
 		softAssertions.assertAll();
 	}
 
@@ -62,10 +62,10 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Reorder Modifier";
+
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
 		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
-		softAssertions.assertThat(botIssue.getLine()).isEqualTo(10);
 		softAssertions.assertAll();
 	}
 
@@ -76,10 +76,10 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Rename Method";
+
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
 		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
-		softAssertions.assertThat(botIssue.getLine()).isEqualTo(15);
 		softAssertions.assertThat(botIssue.getRefactorString()).isEqualTo("newMethodName");
 		softAssertions.assertAll();
 	}
@@ -91,10 +91,10 @@ public class GrammarServiceTest {
 
 		// assert
 		String refactoringOperationKey = "Remove Parameter";
+
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(ruleToClassMapping).containsKey(refactoringOperationKey);
 		softAssertions.assertThat(botIssue.getRefactoringOperation()).isEqualTo(refactoringOperationKey);
-		softAssertions.assertThat(botIssue.getLine()).isEqualTo(20);
 		softAssertions.assertThat(botIssue.getRefactorString()).isEqualTo("unusedParam");
 		softAssertions.assertAll();
 	}

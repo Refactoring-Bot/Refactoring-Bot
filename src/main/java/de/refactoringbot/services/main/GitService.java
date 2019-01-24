@@ -55,8 +55,7 @@ public class GitService {
 	 * @throws GitWorkflowException
 	 */
 	public void addRemote(GitConfiguration gitConfig) throws GitWorkflowException {
-		try (Git git = Git.open(
-				new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
+		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Add Remote as 'upstream'
 			RemoteAddCommand remoteAddCommand = git.remoteAdd();
 			remoteAddCommand.setName("upstream");
@@ -76,8 +75,7 @@ public class GitService {
 	 * @throws GitWorkflowException
 	 */
 	public void fetchRemote(GitConfiguration gitConfig) throws GitWorkflowException {
-		try (Git git = Git.open(
-				new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
+		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Fetch data
 			git.fetch().setRemote("upstream").call();
 		} catch (Exception e) {
@@ -93,8 +91,7 @@ public class GitService {
 	 * @throws GitWorkflowException
 	 */
 	public void stashChanges(GitConfiguration gitConfig) throws GitWorkflowException {
-		try (Git git = Git.open(
-				new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
+		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Open git folder
 			// Stash changes
 			git.stashApply().call();
@@ -202,5 +199,93 @@ public class GitService {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Could not successfully perform 'git push'!");
 		}
+	}
+
+	/**
+	 * Calculates the absolute line number of the last line in a given diffhunk (the
+	 * *new* line number after changes have been applied). This can be used, for
+	 * example, to calculate the position of a pull request comment, which is always
+	 * found in the last line of a diffhunk.
+	 * 
+	 * @param diffHunk
+	 * @return absolute line number after the changes have been applied, of the last
+	 *         line in a given diffhunk
+	 */
+	public Integer getLineNumberOfLastLineInDiffHunk(String diffHunk) {
+		validateDiffHunk(diffHunk);
+		String[] diffHunkLines = diffHunk.split("\\R"); // split at new line
+		Integer diffHunkStartPosition = getDiffHunkStartPosition(diffHunkLines[0]);
+		return calculateLineNumberOfLastDiffHunkLine(diffHunkStartPosition, diffHunkLines);
+	}
+
+	/**
+	 * Validates the given diffhunk and throws an exception in case of an invalid
+	 * argument
+	 * 
+	 * @param diffHunk
+	 */
+	private void validateDiffHunk(String diffHunk) {
+		if (!diffHunk.contains("@@")) {
+			throw new IllegalArgumentException("Diffhunk has to start with @@");
+		}
+	}
+
+	/**
+	 * 
+	 * @param firstLineOfDiffHunk
+	 * @return position of the given line (after code changes have been applied)
+	 */
+	private Integer getDiffHunkStartPosition(String firstLineOfDiffHunk) {
+		/*
+		 * Every diffhunk starts like '@@ -50,7 +50,7 @@' followed by the changed lines
+		 * until the line where the comment is placed. The number located after the
+		 * first '+' is the line number where the given diffhunk starts.
+		 */
+		Integer result = null;
+
+		// split the first line at the '+'
+		String[] diffSizeStart = firstLineOfDiffHunk.split("\\+");
+		if (diffSizeStart.length >= 2) {
+			// split the string after the '+' at ','
+			String[] diffSizeEnd = diffSizeStart[1].split(",");
+			if (diffSizeEnd.length > 0) {
+				try {
+					result = Integer.valueOf(diffSizeEnd[0]);
+				} catch (NumberFormatException n) {
+					return 0;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * Calculates the absolute new line number of the last line in the given diffHunkLines
+	 * 
+	 * @param diffHunkStartPosition
+	 * @param diffHunkLines
+	 * @return
+	 */
+	private Integer calculateLineNumberOfLastDiffHunkLine(Integer diffHunkStartPosition, String[] diffHunkLines) {
+		/*
+		 * To get the line number of the last line we have to count the lines that are
+		 * in our file after the changes have been applied, which means that we have to
+		 * ignore the lines that were removed. Those lines start with a "-".
+		 */
+		Integer lineNumber = diffHunkStartPosition;
+
+		if (diffHunkStartPosition != 0) {
+			lineNumber--; // don't count the @@ line if it is not the first line in the file
+		}
+
+		for (String line : diffHunkLines) {
+			if (line.startsWith("+") || line.startsWith(" ")) {
+				// line added or unchanged
+				lineNumber++;
+			}
+		}
+
+		return lineNumber;
 	}
 }

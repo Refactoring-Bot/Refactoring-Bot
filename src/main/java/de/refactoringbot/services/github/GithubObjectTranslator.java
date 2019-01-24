@@ -28,6 +28,7 @@ import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComments;
+import de.refactoringbot.services.main.GitService;
 
 /**
  * This class translates all kinds of objects from GitHub to Bot-Objects
@@ -42,11 +43,13 @@ public class GithubObjectTranslator {
 
 	private final GithubDataGrabber grabber;
 	private final ModelMapper modelMapper;
+	private final GitService gitService;
 
 	@Autowired
-	public GithubObjectTranslator(GithubDataGrabber grabber, ModelMapper modelMapper) {
+	public GithubObjectTranslator(GithubDataGrabber grabber, ModelMapper modelMapper, GitService gitService) {
 		this.grabber = grabber;
 		this.modelMapper = modelMapper;
+		this.gitService = gitService;
 	}
 
 	/**
@@ -152,6 +155,7 @@ public class GithubObjectTranslator {
 			translatedComment.setFilepath(githubComment.getPath());
 			translatedComment.setUsername(githubComment.getUser().getLogin());
 			translatedComment.setCommentBody(githubComment.getBody());
+			translatedComment.setPosition(gitService.getLineNumberOfLastLineInDiffHunk(githubComment.getDiffHunk()));
 
 			// Add comment to list
 			translatedComments.addComment(translatedComment);

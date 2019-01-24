@@ -102,6 +102,12 @@ public class GrammarService {
 		}
 	}
 
+	/**
+	 * This method maps the information of a comment to the issue.
+	 * 
+	 * @param issue
+	 * @param commentBody
+	 */
 	private void mapCommentBodyToIssue(BotIssue issue, String commentBody) {
 		// Split comment at whitespace
 		String[] commentArr = commentBody.split(" ");
@@ -114,8 +120,6 @@ public class GrammarService {
 				if (commentArr[3].equals("Override")) {
 					issue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
 				}
-				// Add line/position
-				issue.setLine(Integer.valueOf(commentArr[5]));
 			}
 		}
 
@@ -125,8 +129,6 @@ public class GrammarService {
 			if (commentArr[2].equals("MODIFIER")) {
 				issue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
 			}
-			// Add line/position
-			issue.setLine(Integer.valueOf(commentArr[4]));
 		}
 
 		// Rename operations
@@ -135,10 +137,8 @@ public class GrammarService {
 			if (commentArr[2].equals("METHOD")) {
 				issue.setRefactoringOperation(RefactoringOperations.RENAME_METHOD);
 				// Set new name of the method
-				issue.setRefactorString(commentArr[6]);
+				issue.setRefactorString(commentArr[4]);
 			}
-			// Add line/position
-			issue.setLine(Integer.valueOf(commentArr[4]));
 		}
 
 		// Remove operations
@@ -147,10 +147,8 @@ public class GrammarService {
 			if (commentArr[2].equals("PARAMETER")) {
 				issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 				// Set name of the parameter
-				issue.setRefactorString(commentArr[6]);
+				issue.setRefactorString(commentArr[3]);
 			}
-			// Add line/position
-			issue.setLine(Integer.valueOf(commentArr[4]));
 		}
 	}
 }

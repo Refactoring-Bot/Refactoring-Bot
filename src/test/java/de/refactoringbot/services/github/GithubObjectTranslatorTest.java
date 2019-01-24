@@ -2,17 +2,16 @@ package de.refactoringbot.services.github;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.refactoringbot.model.configuration.AnalysisProvider;
-import de.refactoringbot.model.configuration.FileHoster;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.Test;
 import org.modelmapper.ModelMapper;
 
+import de.refactoringbot.model.configuration.AnalysisProvider;
+import de.refactoringbot.model.configuration.FileHoster;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.github.pullrequestcomment.ReplyComment;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
-import de.refactoringbot.services.github.GithubObjectTranslator;
 
 public class GithubObjectTranslatorTest {
 
@@ -33,7 +32,7 @@ public class GithubObjectTranslatorTest {
 		comment.setCommentID(commentId);
 		String errorMessage = "test error message";
 
-		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, null);
+		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, null, null);
 		ReplyComment failureReply = githubObjectTranslator.createFailureReply(comment, errorMessage);
 
 		SoftAssertions softAssertions = new SoftAssertions();
@@ -47,7 +46,7 @@ public class GithubObjectTranslatorTest {
 		GitConfigurationDTO configurationDto = createGitConfigurationDto();
 
 		ModelMapper modelMapper = new ModelMapper();
-		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, modelMapper);
+		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, modelMapper, null);
 		GitConfiguration gitConfiguration = githubObjectTranslator.createConfiguration(configurationDto);
 
 		GitConfiguration expectedGitConfiguration = createExpectedGitConfiguration();
