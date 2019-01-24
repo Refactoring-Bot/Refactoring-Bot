@@ -147,8 +147,7 @@ public class ExtractMethod implements RefactoringImpl {
 				// find candidates
 				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap);
 
-				System.out.println(graph);
-				System.out.println(variableMap);
+				System.out.println(candidates);
 
 				/* DEBUG
 				ConstantPropagationTransfer transfer = new ConstantPropagationTransfer();
@@ -213,10 +212,21 @@ public class ExtractMethod implements RefactoringImpl {
 
 		// checks if the candidate contains only complete if/else and try/catch/finally statements
 		private boolean isValid(RefactorCandidate candidate, StatementGraphNode parentNode) {
+			// check beginning of candidate
+			StatementGraphNode firstNode = candidate.statements.get(0);
+			StatementGraphNode.StatementGraphNodeType firstType = firstNode.type;
+
+			if (firstType.equals(ELSENODE) ||
+					firstType.equals(CATCHNODE) ||
+					firstType.equals(FINALLYNODE)) {
+				return false;
+			}
+
+			// check end of candidate
 			StatementGraphNode lastNode = candidate.statements.get(candidate.statements.size() - 1);
 			StatementGraphNode.StatementGraphNodeType lastType = lastNode.type;
-
 			int parentIndex = parentNode.children.indexOf(lastNode);
+
 			if (lastType.equals(IFNODE)|| lastType.equals(ELSENODE)) {
 				if (parentIndex < parentNode.children.size() - 1 &&
 						parentNode.children.get(parentIndex + 1).type.equals(ELSENODE) ) {
@@ -225,16 +235,17 @@ public class ExtractMethod implements RefactoringImpl {
 			} else if (lastType.equals(TRYNODE) || lastType.equals(CATCHNODE)) {
 				if (parentIndex < parentNode.children.size() - 1 &&
 						(parentNode.children.get(parentIndex + 1).type.equals(CATCHNODE) ||
-								parentNode.children.get(parentIndex + 1).type.equals(FINALLYNODE)) {
+								parentNode.children.get(parentIndex + 1).type.equals(FINALLYNODE))) {
 					return false;
 				}
 			}
+
 			return true;
 		}
 
 		// checks if the candidate is long enough
 		private boolean isLongEnough(RefactorCandidate candidate) {
-			return (candidate.startLine - candidate.endLine) >= this.minLineLength;
+			return (candidate.endLine - candidate.startLine) >= this.minLineLength;
 		}
 
 		// checks if the candidate has only one output parameter and continue, break or return are handled correct
