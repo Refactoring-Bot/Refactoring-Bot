@@ -1,12 +1,17 @@
 package de.refactoringbot.services.main;
 
 import org.assertj.core.api.SoftAssertions;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class GitServiceTest {
 
+	@Rule
+	public final ExpectedException exception = ExpectedException.none();
+	
 	@Test
-	public void translateDiffHunkToPosition() {
+	public void getLineNumberOfLastLineInDiffHunk() {
 		// The following diffHunks are examples from PR #36 and returned by the API
 		// exactly like this.
 		// https://api.github.com/repos/Refactoring-Bot/Refactoring-Bot/pulls/36/comments
@@ -23,11 +28,11 @@ public class GitServiceTest {
 
 		GitService gitService = new GitService();
 
-		Integer actual0 = gitService.translateDiffHunkToPosition(diffHunk0);
-		Integer actual1 = gitService.translateDiffHunkToPosition(diffHunk1);
-		Integer actual2 = gitService.translateDiffHunkToPosition(diffHunk2);
-		Integer actual3 = gitService.translateDiffHunkToPosition(diffHunk3);
-		Integer actual4 = gitService.translateDiffHunkToPosition(diffHunk4);
+		Integer actual0 = gitService.getLineNumberOfLastLineInDiffHunk(diffHunk0);
+		Integer actual1 = gitService.getLineNumberOfLastLineInDiffHunk(diffHunk1);
+		Integer actual2 = gitService.getLineNumberOfLastLineInDiffHunk(diffHunk2);
+		Integer actual3 = gitService.getLineNumberOfLastLineInDiffHunk(diffHunk3);
+		Integer actual4 = gitService.getLineNumberOfLastLineInDiffHunk(diffHunk4);
 
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(actual0).isEqualTo(expectedCommentPosition0);
@@ -36,6 +41,16 @@ public class GitServiceTest {
 		softAssertions.assertThat(actual3).isEqualTo(expectedCommentPosition3);
 		softAssertions.assertThat(actual4).isEqualTo(expectedCommentPosition4);
 		softAssertions.assertAll();
+	}
+	
+	@Test
+	public void getLineNumberOfLastLineInDiffHunkExpectException() {
+		exception.expect(IllegalArgumentException.class);
+		
+		String invalidDiffHunk = "+ public void testRenameMethod()";
+		GitService gitService = new GitService();
+		
+		gitService.getLineNumberOfLastLineInDiffHunk(invalidDiffHunk);
 	}
 
 }

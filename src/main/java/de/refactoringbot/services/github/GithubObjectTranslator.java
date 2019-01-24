@@ -155,7 +155,7 @@ public class GithubObjectTranslator {
 			translatedComment.setFilepath(githubComment.getPath());
 			translatedComment.setUsername(githubComment.getUser().getLogin());
 			translatedComment.setCommentBody(githubComment.getBody());
-			translatedComment.setPosition(gitService.translateDiffHunkToPosition(githubComment.getDiffHunk()));
+			translatedComment.setPosition(gitService.getLineNumberOfLastLineInDiffHunk(githubComment.getDiffHunk()));
 
 			// Add comment to list
 			translatedComments.addComment(translatedComment);

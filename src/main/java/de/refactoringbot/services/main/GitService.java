@@ -202,66 +202,90 @@ public class GitService {
 	}
 
 	/**
-	 * Calculates the absolute file line number of a PR comment from a given
-	 * diff_hunk.
-	 * 
-	 * Every diffhunk starts like '@@ -50,7 +50,7 @@' followed by the changed lines
-	 * until the line where the comment is placed. This number located after the
-	 * first '+' is the linenumber where the diffhunk is located after the current
-	 * changes.
-	 * 
-	 * To get the correct line number we have to read that number and add the number
-	 * of following lines until we reach the line of our comment (which is the last
-	 * line of the diffhunk). However we only have to count the lines that are in
-	 * our file after the change was applied. So we need to ignore the lines that
-	 * were removed. Those lines start with a "-" inside the diffhunk.
+	 * Calculates the absolute line number of the last line in a given diffhunk (the
+	 * *new* line number after changes have been applied). This can be used, for
+	 * example, to calculate the position of a pull request comment, which is always
+	 * found in the last line of a diffhunk.
 	 * 
 	 * @param diffHunk
-	 * @return truePosition
+	 * @return absolute line number after the changes have been applied, of the last
+	 *         line in a given diffhunk
 	 */
-	public Integer translateDiffHunkToPosition(String diffHunk) {
-		// Initialize values
-		Integer truePosition = 0;
-		Integer diffPos = 0;
+	public Integer getLineNumberOfLastLineInDiffHunk(String diffHunk) {
+		validateDiffHunk(diffHunk);
+		String[] diffHunkLines = diffHunk.split("\\R"); // split at new line
+		Integer diffHunkStartPosition = getDiffHunkStartPosition(diffHunkLines[0]);
+		return calculateLineNumberOfLastDiffHunkLine(diffHunkStartPosition, diffHunkLines);
+	}
 
-		// Seperate diffHunk at new line
-		String[] splittedDiffHunk = diffHunk.split("\\R");
+	/**
+	 * Validates the given diffhunk and throws an exception in case of an invalid
+	 * argument
+	 * 
+	 * @param diffHunk
+	 */
+	private void validateDiffHunk(String diffHunk) {
+		if (!diffHunk.contains("@@")) {
+			throw new IllegalArgumentException("Diffhunk has to start with @@");
+		}
+	}
 
-		// Get first line of diffHunk (@@ - Line)
-		String firstLine = splittedDiffHunk[0];
+	/**
+	 * 
+	 * @param firstLineOfDiffHunk
+	 * @return position of the given line (after code changes have been applied)
+	 */
+	private Integer getDiffHunkStartPosition(String firstLineOfDiffHunk) {
+		/*
+		 * Every diffhunk starts like '@@ -50,7 +50,7 @@' followed by the changed lines
+		 * until the line where the comment is placed. The number located after the
+		 * first '+' is the line number where the given diffhunk starts.
+		 */
+		Integer result = null;
 
-		// Split the first line at the '+'
-		String[] diffSizeStart = firstLine.split("\\+");
+		// split the first line at the '+'
+		String[] diffSizeStart = firstLineOfDiffHunk.split("\\+");
 		if (diffSizeStart.length >= 2) {
-			// Splitt the string after the '+' at ','
+			// split the string after the '+' at ','
 			String[] diffSizeEnd = diffSizeStart[1].split(",");
 			if (diffSizeEnd.length > 0) {
 				try {
-					// Read diffhunk position number
-					diffPos = Integer.valueOf(diffSizeEnd[0]);
+					result = Integer.valueOf(diffSizeEnd[0]);
 				} catch (NumberFormatException n) {
-					diffPos = 0;
+					return 0;
 				}
 			}
 		}
 
-		// Add diffhunk value to our true position
-		truePosition += diffPos;
+		return result;
+	}
 
-		// Don't count the @@ line if diffhunk value != 0
-		if (diffPos > 0) {
-			truePosition--;
+	/**
+	 * Calculates the absolute new line number of the last line in the given diffHunkLines
+	 * 
+	 * @param diffHunkStartPosition
+	 * @param diffHunkLines
+	 * @return
+	 */
+	private Integer calculateLineNumberOfLastDiffHunkLine(Integer diffHunkStartPosition, String[] diffHunkLines) {
+		/*
+		 * To get the line number of the last line we have to count the lines that are
+		 * in our file after the changes have been applied, which means that we have to
+		 * ignore the lines that were removed. Those lines start with a "-".
+		 */
+		Integer lineNumber = diffHunkStartPosition;
+
+		if (diffHunkStartPosition != 0) {
+			lineNumber--; // don't count the @@ line if it is not the first line in the file
 		}
 
-		// Iterate all lines
-		for (String line : splittedDiffHunk) {
-			// If line added or unchanged
+		for (String line : diffHunkLines) {
 			if (line.startsWith("+") || line.startsWith(" ")) {
-				// Add lines inside diffhunk to comment position
-				truePosition++;
+				// line added or unchanged
+				lineNumber++;
 			}
 		}
 
-		return truePosition;
+		return lineNumber;
 	}
 }
