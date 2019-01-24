@@ -6,11 +6,8 @@ import java.util.List;
 import org.checkerframework.dataflow.cfg.block.*;
 
 public class StatementGraphNode {
-    public enum TryCatchMarker {
-        STATEMENTTRY, STARTTRY, ENDTRY, STARTCATCH, ENDCATCH, NONE
-    }
     public enum StatementGraphNodeType {
-        REGULARNODE, IFNODE, ELSENODE, EXITNODE, TRYNODE, CATCHNODE
+        REGULARNODE, IFNODE, ELSENODE, EXITNODE, TRYNODE, CATCHNODE, FINALLYNODE
     }
 
     public String code;

@@ -5,5 +5,4 @@ import java.util.List;
 
 public class LineMapBlock {
     List<Long> blocks = new ArrayList<>();
-    StatementGraphNode.TryCatchMarker tryCatchMarker = StatementGraphNode.TryCatchMarker.NONE;
 }

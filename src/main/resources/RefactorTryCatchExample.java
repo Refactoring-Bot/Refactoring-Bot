@@ -9,6 +9,8 @@ public class RefactorTryCatchExample {
             System.out.println(b);
         } catch (exception e) {
             e.printStackTrace();
+        } finally {
+            System.out.println("finally");
         }
 
         System.out.println(b);

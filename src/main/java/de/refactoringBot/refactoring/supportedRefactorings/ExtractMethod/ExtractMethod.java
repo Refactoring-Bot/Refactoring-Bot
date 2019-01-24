@@ -15,10 +15,16 @@ import org.checkerframework.dataflow.cfg.block.*;
 import org.checkerframework.dataflow.cfg.node.*;
 import org.springframework.stereotype.Component;
 
+import javax.lang.model.type.TypeMirror;
+import javax.sound.sampled.Line;
+import javax.swing.plaf.nimbus.State;
 import javax.tools.*;
 import java.io.*;
+import java.sql.Blob;
 import java.sql.Statement;
 import java.util.*;
+
+import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.StatementGraphNode.StatementGraphNodeType.*;
 
 /**
  * This refactoring class is used for renaming methods inside a java project.
@@ -99,6 +105,14 @@ public class ExtractMethod implements RefactoringImpl {
 		private final SourcePositions sourcePositions;
 		private final LineMap lineMap;
 		private ClassTree classTree;
+		private Integer currentTryIndex = 0;
+
+		// helper variables for try catch analysis
+        private Long tryCatchSuccessor = null;
+        private Set<Block> tryCatchSuccessors = new HashSet<>();
+
+        // constants
+		private final int minLineLength = 3;
 
 		private MethodRefactor(CompilationUnitTree compilationUnitTree, SourcePositions sourcePositions, int lineNumber) {
 			this.compilationUnitTree = compilationUnitTree;
@@ -115,16 +129,23 @@ public class ExtractMethod implements RefactoringImpl {
 			long endLine = lineMap.getLineNumber(endPosition);
 
 			if (startLine <= this.lineNumber && endLine >= this.lineNumber) {
+				// generate cfg
 				ControlFlowGraph cfg = CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv);
 
 				Map<Long, LineMapBlock> lineMapping = this.getLineToBlockMapping(cfg, this.lineMap);
 
+				// generate statement graph
 				StatementGraphNode graph = this.createStatementGraph(cfg, lineMapping);
 
-				this.analyseTryCatchRecursive(graph, lineMapping);
+				// add try catch structure to statement graph
+				this.analyseTryCatch(cfg, graph, this.lineMap);
 
+				// add data flow to statement graph
 				Set<String> localVariables = this.findLocalVariables(cfg);
 				Map<Long, LineMapVariable> variableMap = this.analyseLocalDataFlow(cfg, localVariables, this.lineMap);
+
+				// find candidates
+				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap);
 
 				System.out.println(graph);
 				System.out.println(variableMap);
@@ -151,6 +172,74 @@ public class ExtractMethod implements RefactoringImpl {
 		public Void visitClass(ClassTree node, Void aVoid) {
 			this.classTree = node;
 			return super.visitClass(node, aVoid);
+		}
+
+		private List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap) {
+			List<RefactorCandidate> candidates = new ArrayList<>();
+			for (int outerIndex = 0; outerIndex < graph.children.size(); outerIndex++) {
+				for (int innerIndex = graph.children.size() - 1; innerIndex >= outerIndex; innerIndex--) {
+
+					RefactorCandidate potentialCandidate = new RefactorCandidate();
+					potentialCandidate.startLine = graph.children.get(outerIndex).linenumber;
+					potentialCandidate.endLine = this.getLastLine(graph.children.get(innerIndex));
+					potentialCandidate.statements.addAll(this.getStatements(graph, outerIndex, innerIndex));
+
+					if (this.isLongEnough(potentialCandidate) &&
+						this.isValid(potentialCandidate, graph) &&
+						this.isExtractable(potentialCandidate, variableMap)) {
+						candidates.add(potentialCandidate);
+					}
+				}
+				candidates.addAll(this.findCandidates(graph.children.get(outerIndex), variableMap));
+			}
+			return candidates;
+		}
+
+		private List<StatementGraphNode> getStatements(StatementGraphNode graph, int startIndex, int endIndex) {
+			List<StatementGraphNode> statements = new ArrayList<>();
+			for (int index = startIndex; index <= endIndex; index++) {
+				statements.add(graph.children.get(index));
+			}
+			return statements;
+		}
+
+		private Long getLastLine(StatementGraphNode node) {
+			if (node.children.size() == 0) {
+				return node.linenumber;
+			} else {
+				return this.getLastLine(node.children.get(node.children.size() - 1));
+			}
+		}
+
+		// checks if the candidate contains only complete if/else and try/catch/finally statements
+		private boolean isValid(RefactorCandidate candidate, StatementGraphNode parentNode) {
+			StatementGraphNode lastNode = candidate.statements.get(candidate.statements.size() - 1);
+			StatementGraphNode.StatementGraphNodeType lastType = lastNode.type;
+
+			int parentIndex = parentNode.children.indexOf(lastNode);
+			if (lastType.equals(IFNODE)|| lastType.equals(ELSENODE)) {
+				if (parentIndex < parentNode.children.size() - 1 &&
+						parentNode.children.get(parentIndex + 1).type.equals(ELSENODE) ) {
+					return false;
+				}
+			} else if (lastType.equals(TRYNODE) || lastType.equals(CATCHNODE)) {
+				if (parentIndex < parentNode.children.size() - 1 &&
+						(parentNode.children.get(parentIndex + 1).type.equals(CATCHNODE) ||
+								parentNode.children.get(parentIndex + 1).type.equals(FINALLYNODE)) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		// checks if the candidate is long enough
+		private boolean isLongEnough(RefactorCandidate candidate) {
+			return (candidate.startLine - candidate.endLine) >= this.minLineLength;
+		}
+
+		// checks if the candidate has only one output parameter and continue, break or return are handled correct
+		private boolean isExtractable(RefactorCandidate candidate, Map<Long, LineMapVariable> variableMap) {
+			return true;
 		}
 
 		private Set<String> findLocalVariables(ControlFlowGraph cfg) {
@@ -272,39 +361,101 @@ public class ExtractMethod implements RefactoringImpl {
 			return false;
 		}
 
+		private void analyseTryCatch(ControlFlowGraph cfg, StatementGraphNode graph, LineMap lineMap) {
+		    List<Block> orderedBlocks = cfg.getDepthFirstOrderedBlocks();
+		    for (Block block : orderedBlocks) {
+		        switch (block.getType()) {
+                    case REGULAR_BLOCK:
+                        RegularBlock regularBlock = (RegularBlock) block;
+                        for (Node node : regularBlock.getContents()) {
+                            this.analyseTryCatchNode(node, graph, lineMap);
+                        }
+                        break;
+                    case EXCEPTION_BLOCK:
+                        ExceptionBlock exceptionBlock = (ExceptionBlock) block;
+                        this.analyseTryCatchNode(exceptionBlock.getNode(), graph, lineMap);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
 
-		private void analyseTryCatchRecursive(StatementGraphNode node, Map<Long, LineMapBlock> lineMapping) {
-			boolean inTry = false;
-			boolean inCatch = false;
-			StatementGraphNode parentNode = node;
-			for (int i = 0; i < node.children.size(); i++) {
-			    StatementGraphNode childNode = node.children.get(i);
-				StatementGraphNode.TryCatchMarker marker = lineMapping.get(childNode.linenumber).tryCatchMarker;
-				if (inTry) {
-					node.children.remove(childNode);
-					parentNode.children.add(childNode);
-					inTry = !(marker.equals(StatementGraphNode.TryCatchMarker.ENDTRY));
-				} else if (inCatch) {
-					node.children.remove(childNode);
-					parentNode.children.add(childNode);
-					inCatch = !(marker.equals(StatementGraphNode.TryCatchMarker.ENDCATCH));
-				} else {
-					if (marker.equals(StatementGraphNode.TryCatchMarker.STATEMENTTRY) || marker.equals(StatementGraphNode.TryCatchMarker.STARTTRY)) {
-						inTry = true;
-						childNode.type = StatementGraphNode.StatementGraphNodeType.TRYNODE;
-						parentNode = childNode;
-					} else if (marker.equals(StatementGraphNode.TryCatchMarker.STARTCATCH)) {
-						inCatch = true;
-						childNode.type = StatementGraphNode.StatementGraphNodeType.CATCHNODE;
-						parentNode = childNode;
-					} else {
-						if (!childNode.children.isEmpty()) {
-							this.analyseTryCatchRecursive(childNode, lineMapping);
-						}
-					}
-				}
-			}
-		}
+        private void analyseTryCatchNode(Node node, StatementGraphNode graph, LineMap lineMap) {
+            if (node.getClass().equals(MarkerNode.class)) {
+                MarkerNode markerNode = (MarkerNode) node;
+                String message = markerNode.getMessage();
+                if (message.startsWith("start of try statement")) {
+                    JCTree.JCTry tree = (JCTree.JCTry) markerNode.getTree();
+                    JCTree.JCBlock bodyBlock = tree.body;
+                    List<JCTree.JCCatch> catchBlocks = tree.catchers;
+                    JCTree.JCBlock finalBLock = tree.finalizer;
+                    LineRange tryRange = new LineRange(lineMap.getLineNumber(bodyBlock.pos), lineMap.getLineNumber(bodyBlock.endpos));
+                    List<LineRange> catchRanges = new ArrayList<>();
+                    for (JCTree.JCCatch catchBlock : catchBlocks) {
+                        JCTree.JCBlock block = catchBlock.body;
+                        LineRange catchRange = new LineRange(lineMap.getLineNumber(block.pos), lineMap.getLineNumber(block.endpos));
+                        catchRanges.add(catchRange);
+                    }
+                    LineRange finalRange = new LineRange(lineMap.getLineNumber(finalBLock.pos), lineMap.getLineNumber(finalBLock.endpos));
+                    // alter statement graph wit new try catch structure
+                    StatementGraphNode tryStartNode = this.findNodeForLine(graph, tryRange.from);
+                    tryStartNode.type = TRYNODE;
+                    List<StatementGraphNode> catchStartNodes = new ArrayList<>();
+                    for (LineRange catchRange : catchRanges) {
+                        StatementGraphNode catchStartNode = this.findNodeForLine(graph, catchRange.from);
+                        catchStartNode.type = CATCHNODE;
+                        catchStartNodes.add(catchStartNode);
+                    }
+                    Long endLineNumber = (finalBLock != null) ? finalRange.to : catchRanges.get(catchRanges.size() - 1).to;
+                    StatementGraphNode finallyStartNode = this.findNodeForLine(graph, finalRange.from);
+                    finallyStartNode.type = FINALLYNODE;
+
+                    for (Long lineNumber = tryRange.from; lineNumber <= endLineNumber; lineNumber++) {
+                        if (lineNumber > tryRange.from && lineNumber < catchRanges.get(0).from) {
+                            StatementGraphNode inTryNode = this.findNodeForLine(graph, lineNumber);
+                            tryStartNode.children.add(inTryNode);
+                            this.findParentNode(graph, inTryNode).children.remove(inTryNode);
+                        }
+                        for (int catchIndex = 0; catchIndex < catchRanges.size(); catchIndex++) {
+                            Long endLine = (catchRanges.size() - 1 == catchIndex) ? finalRange.from : catchRanges.get(catchIndex + 1).from;
+                            if (lineNumber > catchRanges.get(catchIndex).from && lineNumber < endLine) {
+                                StatementGraphNode inCatchNode = this.findNodeForLine(graph, lineNumber);
+                                catchStartNodes.get(catchIndex).children.add(inCatchNode);
+                                this.findParentNode(graph, inCatchNode).children.remove(inCatchNode);
+                            }
+                        }
+                        if (lineNumber > finalRange.from && lineNumber <= finalRange.to) {
+                            StatementGraphNode inFinalNode = this.findNodeForLine(graph, lineNumber);
+                            finallyStartNode.children.add(inFinalNode);
+                            this.findParentNode(graph, inFinalNode).children.remove(inFinalNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        private StatementGraphNode findParentNode(StatementGraphNode graph, StatementGraphNode node) {
+		    for (StatementGraphNode childNode : graph.children) {
+		        if (childNode.equals(node)) {
+		            return graph;
+                }
+		        StatementGraphNode childSearch = this.findParentNode(childNode, node);
+		        if (childSearch != null) { return childSearch; }
+            }
+		    return null;
+        }
+
+        private StatementGraphNode findNodeForLine(StatementGraphNode graph, Long lineNumber) {
+            for (StatementGraphNode node : graph.children) {
+                if (node.linenumber.equals(lineNumber)) {
+                    return node;
+                }
+                StatementGraphNode childSearch = this.findNodeForLine(node, lineNumber);
+                if (childSearch != null) { return childSearch; }
+            }
+            return null;
+        }
 
 		private StatementGraphNode createStatementGraph(ControlFlowGraph cfg, Map<Long, LineMapBlock> lineMapping) {
 			List<Block> orderedBlocks = cfg.getDepthFirstOrderedBlocks();
@@ -320,6 +471,14 @@ public class ExtractMethod implements RefactoringImpl {
 			Map<Long, Block> orderedBlocksMap = this.mapBlocksToID(orderedBlocks);
 			while (orderedBlocks.get(index).getId() != exitID) {
 				Block nextBlock = orderedBlocks.get(index);
+				if (this.tryCatchSuccessor != null && nextBlock.getId() == this.tryCatchSuccessor) {
+                    for (Block successor : this.tryCatchSuccessors) {
+						lastNode = this.addNextBlock(lastNode, parentNode, nextBlock, blockMapping, successor);
+					}
+                    // reset try catch successors
+                    this.tryCatchSuccessors = new HashSet<>();
+                    this.tryCatchSuccessor = null;
+                }
 				switch (nextBlock.getType()) {
 					case SPECIAL_BLOCK:
 						break;
@@ -353,6 +512,10 @@ public class ExtractMethod implements RefactoringImpl {
 					case EXCEPTION_BLOCK:
 						ExceptionBlock exceptionBlock = (ExceptionBlock) nextBlock;
 						lastNode = this.addNextBlock(lastNode, parentNode, nextBlock, blockMapping, exceptionBlock.getSuccessor());
+						this.tryCatchSuccessor = this.findSuccessor(exceptionBlock, orderedBlocksMap);
+						for (Set<Block> excSuccesors : exceptionBlock.getExceptionalSuccessors().values()) {
+							this.tryCatchSuccessors.addAll(excSuccesors);
+						}
 						break;
 				}
 
@@ -364,12 +527,14 @@ public class ExtractMethod implements RefactoringImpl {
 		}
 
 		private Long findSuccessor(ConditionalBlock block, Map<Long, Block> orderedBlocksMap) {
-			Set<Long> visitedBlocks = new HashSet<>();
-			visitedBlocks.add(block.getId());
 			// find all ordered successors of thenBlock
-			List<Long> thenSuccessors = this.findSuccessors(block.getThenSuccessor(), orderedBlocksMap, visitedBlocks);
+			Set<Long> visitedThenBlocks = new HashSet<>();
+			visitedThenBlocks.add(block.getId());
+			List<Long> thenSuccessors = this.findSuccessors(block.getThenSuccessor(), orderedBlocksMap, visitedThenBlocks);
 			// find all ordered successors of ifBlock
-			List<Long> elseSuccessors = this.findSuccessors(block.getElseSuccessor(), orderedBlocksMap, visitedBlocks);
+			Set<Long> visitedElseBlocks = new HashSet<>();
+			visitedElseBlocks.add(block.getId());
+			List<Long> elseSuccessors = this.findSuccessors(block.getElseSuccessor(), orderedBlocksMap, visitedElseBlocks);
 			// compare all successors
 			Set<Long> thenSuccessorsSet = new HashSet<>(thenSuccessors);
 			for (Long id : elseSuccessors) {
@@ -379,6 +544,34 @@ public class ExtractMethod implements RefactoringImpl {
 			}
 			return null;
 		}
+
+		private Long findSuccessor(ExceptionBlock block, Map<Long, Block> orderedBlocksMap) {
+		    // find all ordered regular successors
+			Set<Long> visitedRegBlocks = new HashSet<>();
+			visitedRegBlocks.add(block.getId());
+            List<Long> regSuccessors = this.findSuccessors(block.getSuccessor(), orderedBlocksMap, visitedRegBlocks);
+            // find all ordered exceptional successors
+			Set<Long> visitedExBlocks = new HashSet<>();
+			visitedExBlocks.add(block.getId());
+            List<Long> excSuccessors = new ArrayList<>();
+            for (Set<Block> blocks : block.getExceptionalSuccessors().values()) {
+                Iterator<Block> it = blocks.iterator();
+                while (it.hasNext()) {
+                    Block nextBlock = it.next();
+                    if (!nextBlock.getType().equals(Block.BlockType.SPECIAL_BLOCK)) {
+                        excSuccessors.addAll(this.findSuccessors(nextBlock, orderedBlocksMap, visitedExBlocks));
+                    }
+                }
+            }
+            // compare all successors
+            Set<Long> regSuccessorsSet = new HashSet<>(regSuccessors);
+            for (Long id: excSuccessors) {
+                if (regSuccessorsSet.contains(id)) {
+                    return id;
+                }
+            }
+            return null;
+        }
 
 		private List<Long> findSuccessors(Block block, Map<Long, Block> orderedBlocksMap, Set<Long> visitedBlocks) {
 			Block nextBlock = block;
@@ -446,15 +639,13 @@ public class ExtractMethod implements RefactoringImpl {
 					case REGULAR_BLOCK:
 						RegularBlock regularBlock = (RegularBlock) block;
 						for (Node node : regularBlock.getContents()) {
-							StatementGraphNode.TryCatchMarker tryCatchType = this.checkTryCatch(node);
-							currentLineNumber = this.addLineNumber(lineMap, lineMapping, currentLineNumber, block, node, tryCatchType);
+							currentLineNumber = this.addLineNumber(lineMap, lineMapping, currentLineNumber, block, node);
 						}
 						break;
 					case EXCEPTION_BLOCK:
 						ExceptionBlock exceptionBlock = (ExceptionBlock) block;
 						Node node = exceptionBlock.getNode();
-						StatementGraphNode.TryCatchMarker tryCatchType = this.checkTryCatch(node);
-						currentLineNumber = this.addLineNumber(lineMap, lineMapping, currentLineNumber, block, node, tryCatchType);
+						currentLineNumber = this.addLineNumber(lineMap, lineMapping, currentLineNumber, block, node);
 						break;
 					case CONDITIONAL_BLOCK:
 						lineMapping.computeIfAbsent(currentLineNumber, k -> new LineMapBlock());
@@ -465,36 +656,45 @@ public class ExtractMethod implements RefactoringImpl {
 			return lineMapping;
 		}
 
-
-		private StatementGraphNode.TryCatchMarker checkTryCatch(Node node) {
-			if (node.getClass().equals(MarkerNode.class)) {
-				MarkerNode markerNode = (MarkerNode) node;
-				String message = markerNode.getMessage();
-				if (message.startsWith("start of try statement")) {
-					return StatementGraphNode.TryCatchMarker.STATEMENTTRY;
-				} else if (message.startsWith("start of try block")) {
-					return StatementGraphNode.TryCatchMarker.STARTTRY;
-				} else if (message.startsWith("end of try block")) {
-					return StatementGraphNode.TryCatchMarker.ENDTRY;
-				} else if (message.startsWith("start of catch block")) {
-					return StatementGraphNode.TryCatchMarker.STARTCATCH;
-				} else if (message.startsWith("end of catch block")) {
-					return StatementGraphNode.TryCatchMarker.ENDCATCH;
-				}
-			}
-			return StatementGraphNode.TryCatchMarker.NONE;
-		}
-
-		private Long addLineNumber(LineMap lineMap, Map<Long, LineMapBlock> lineMapping, Long currentLineNumber, Block block, Node node, StatementGraphNode.TryCatchMarker tryCatchMarker) {
-			Long lineNumber = this.getLineNumber(lineMap, node);
+		private Long addLineNumber(LineMap lineMap, Map<Long, LineMapBlock> lineMapping, Long currentLineNumber, Block block, Node node) {
+		    Long lineNumber = null;
+		    // handle try catch nodes
+            if (node.getClass().equals(MarkerNode.class)) {
+                MarkerNode markerNode = (MarkerNode) node;
+                String message = markerNode.getMessage();
+                JCTree.JCTry tree = (JCTree.JCTry) markerNode.getTree();
+                List<JCTree.JCCatch> catchBlocks = tree.catchers;
+                if (message.startsWith("start of try statement")) {
+                    System.out.println("test");
+                } else if (message.startsWith("start of try block")) {
+                    JCTree.JCBlock bodyBlock = tree.body;
+                    lineNumber = lineMap.getLineNumber(bodyBlock.pos);
+                } else if (message.startsWith("end of try block")) {
+                    JCTree.JCBlock bodyBlock = tree.body;
+                    lineNumber = lineMap.getLineNumber(bodyBlock.endpos);
+                } else if (message.startsWith("start of catch block")) {
+                    JCTree.JCBlock catchBlock = tree.catchers.get(this.currentTryIndex).body;
+                    lineNumber = lineMap.getLineNumber(catchBlock.pos);
+                } else if (message.startsWith("end of catch block")) {
+                    JCTree.JCBlock catchBlock = tree.catchers.get(this.currentTryIndex).body;
+                    lineNumber = lineMap.getLineNumber(catchBlock.endpos);
+                    this.currentTryIndex++;
+                } else if (message.startsWith("start of finally block")) {
+                    this.currentTryIndex = 0;
+                    JCTree.JCBlock finalBLock = tree.finalizer;
+                    lineNumber = lineMap.getLineNumber(finalBLock.pos);
+                } else if (message.startsWith("end of finally block")) {
+                    JCTree.JCBlock finalBLock = tree.finalizer;
+                    lineNumber = lineMap.getLineNumber(finalBLock.endpos);
+                }
+            } else {
+                lineNumber = this.getLineNumber(lineMap, node);
+            }
 			if (lineNumber != null) {
 				currentLineNumber = lineNumber;
 			}
 			lineMapping.computeIfAbsent(currentLineNumber, k -> new LineMapBlock());
 			lineMapping.get(currentLineNumber).blocks.add(block.getId());
-			if (lineMapping.get(currentLineNumber).tryCatchMarker.equals(StatementGraphNode.TryCatchMarker.NONE)) {
-                lineMapping.get(currentLineNumber).tryCatchMarker = tryCatchMarker;
-            }
 			return currentLineNumber;
 		}
 
