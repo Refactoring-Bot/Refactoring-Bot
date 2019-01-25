@@ -20,10 +20,10 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 public class GrammarServiceTest {
 
 	private static Map<String, Class<? extends RefactoringImpl>> ruleToClassMapping;
-	private final static String VALID_COMMENT_ADD_OVERRIDE = "BOT ADD ANNOTATION Override";
-	private final static String VALID_COMMENT_REORDER_MODIFIER = "BOT REORDER MODIFIER";
-	private final static String VALID_COMMENT_RENAME_METHOD = "BOT RENAME METHOD TO newMethodName";
-	private final static String VALID_COMMENT_REMOVE_PARAM = "BOT REMOVE PARAMETER unusedParam";
+	private final static String VALID_COMMENT_ADD_OVERRIDE = "@SomeBotUserName ADD ANNOTATION Override";
+	private final static String VALID_COMMENT_REORDER_MODIFIER = "@SomeBotUserName REORDER MODIFIER";
+	private final static String VALID_COMMENT_RENAME_METHOD = "@SomeBotUserName RENAME METHOD TO newMethodName";
+	private final static String VALID_COMMENT_REMOVE_PARAM = "@SomeBotUserName REMOVE PARAMETER unusedParam";
 
 	private FileService fileService;
 
