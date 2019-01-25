@@ -44,14 +44,16 @@ public class WitService {
 
 	/**
 	 * This method checks if a comment is meant for the bot to understand. That is
-	 * the case, if someone tags the bot inside the comment with '@Botname'.
+	 * the case, if someone (not the bot himself) tags the bot inside the comment
+	 * with '@Botname'.
 	 * 
 	 * @param comment
 	 * @param gitConfig
 	 * @return isBotComment
 	 */
 	public boolean isBotComment(BotPullRequestComment comment, GitConfiguration gitConfig) {
-		return comment.getCommentBody().contains("@" + gitConfig.getBotName());
+		return (comment.getCommentBody().contains("@" + gitConfig.getBotName())
+				&& !comment.getUsername().equals(gitConfig.getBotName()));
 	}
 
 	/**
@@ -67,6 +69,11 @@ public class WitService {
 	public BotIssue createBotIssue(GitConfiguration gitConfig, BotPullRequestComment comment)
 			throws WitAPIException, CommentUnderstandingMessage, IOException {
 		try {
+			if (3 > 2) {
+				throw new CommentUnderstandingMessage(
+						"Could not create a BotIssue from the comment '" + comment.getCommentBody() + "'!");
+			}
+
 			// Create object
 			BotIssue issue = new BotIssue();
 
@@ -88,7 +95,7 @@ public class WitService {
 		} catch (IOException e) {
 			logger.error(e.getMessage(), e);
 			throw new IOException("Could not create a BotIssue from the comment '" + comment.getCommentBody() + "'!");
-		} 
+		}
 	}
 
 	/**
@@ -129,7 +136,7 @@ public class WitService {
 			} else {
 				throw new CommentUnderstandingMessage("Adding '" + javaAnnot.getValue() + "' is not supported!");
 			}
-		} 
+		}
 
 		// If Reorder-Modifier
 		else if (refOp.getValue().equals("reorder") && refObj.getValue().equals("modifier")) {

@@ -32,6 +32,7 @@ import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.model.refactoredissue.RefactoredIssue;
 import de.refactoringbot.model.refactoredissue.RefactoredIssueRepository;
+import de.refactoringbot.refactoring.RefactoringOperations;
 import de.refactoringbot.refactoring.RefactoringPicker;
 import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
 import de.refactoringbot.services.wit.WitService;
@@ -188,6 +189,9 @@ public class RefactoringService {
 						botIssue = witService.createBotIssue(config, comment);
 					} catch (IOException e) {
 						logger.error(e.getMessage(), e);
+						botIssue = returnInvalidCommentIssue(config, comment, request, e.getMessage());
+						allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
+								botIssue, true);
 						return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 					} catch (CommentUnderstandingMessage | WitAPIException e) {
 						logger.warn("Comment translation with 'wit.ai' failed! Comment: " + comment.getCommentBody());
@@ -489,6 +493,7 @@ public class RefactoringService {
 		issue.setLine(comment.getPosition());
 		issue.setFilePath(comment.getFilepath());
 		issue.setErrorMessage(errorMessage);
+		issue.setRefactoringOperation(RefactoringOperations.UNKNOWN);
 
 		return issue;
 	}

@@ -20,7 +20,7 @@ grammar BotOperations;
   }
 }
 
-botCommand: 'BOT' WHITESPACE REFACTORING EOF;
+botCommand: USERNAME WHITESPACE REFACTORING EOF;
 
 REFACTORING: (ADD | RENAME | REORDER | REMOVE);
 
@@ -56,10 +56,16 @@ LINE: 'LINE';
 
 WORD: (LOWERCASE | UPPERCASE)+;
 
+USERNAME: (UPPERCASE | LOWERCASE | NUMBER | SYMBOL)+;
+
 fragment UPPERCASE: [A-Z];
 
 fragment LOWERCASE: [a-z];
 
 DIGIT: [0-9]+;
+
+NUMBER: [0-9];
+
+SYMBOL: ('-' | '_' | '%' | '&' | '/' | 'ß' | '@');
 
 WHITESPACE: ' ';

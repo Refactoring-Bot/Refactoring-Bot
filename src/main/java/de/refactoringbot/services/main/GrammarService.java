@@ -65,6 +65,7 @@ public class GrammarService {
 			// Walk path tree
 			BotOperationsBaseListener listener = new BotOperationsBaseListener();
 			walker.walk(listener, tree);
+			
 			return true;
 		} catch (Exception e) {
 			return false;
