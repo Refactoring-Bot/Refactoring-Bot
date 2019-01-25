@@ -1,5 +1,5 @@
 
-package de.refactoringbot.model.github.pullrequest;
+package de.refactoringbot.model.github.shared;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
     "href"
 })
-public class Statuses {
+public class Html {
 
     @JsonProperty("href")
     private String href;

@@ -1,5 +1,5 @@
 
-package de.refactoringbot.model.github.pullrequest;
+package de.refactoringbot.model.github.shared;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,23 +13,49 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-    "href"
+    "admin",
+    "push",
+    "pull"
 })
-public class ReviewComments {
+public class Permissions {
 
-    @JsonProperty("href")
-    private String href;
+    @JsonProperty("admin")
+    private Boolean admin;
+    @JsonProperty("push")
+    private Boolean push;
+    @JsonProperty("pull")
+    private Boolean pull;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<>();
 
-    @JsonProperty("href")
-    public String getHref() {
-        return href;
+    @JsonProperty("admin")
+    public Boolean getAdmin() {
+        return admin;
     }
 
-    @JsonProperty("href")
-    public void setHref(String href) {
-        this.href = href;
+    @JsonProperty("admin")
+    public void setAdmin(Boolean admin) {
+        this.admin = admin;
+    }
+
+    @JsonProperty("push")
+    public Boolean getPush() {
+        return push;
+    }
+
+    @JsonProperty("push")
+    public void setPush(Boolean push) {
+        this.push = push;
+    }
+
+    @JsonProperty("pull")
+    public Boolean getPull() {
+        return pull;
+    }
+
+    @JsonProperty("pull")
+    public void setPull(Boolean pull) {
+        this.pull = pull;
     }
 
     @JsonAnyGetter

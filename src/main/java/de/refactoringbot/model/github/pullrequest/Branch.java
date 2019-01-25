@@ -11,6 +11,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.github.repository.GithubRepository;
+import de.refactoringbot.model.github.user.GithubUser;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "label",
@@ -19,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "user",
     "repo"
 })
-public class Head {
+public class Branch {
 
     @JsonProperty("label")
     private String label;
@@ -28,9 +31,9 @@ public class Head {
     @JsonProperty("sha")
     private String sha;
     @JsonProperty("user")
-    private User user;
+    private GithubUser user;
     @JsonProperty("repo")
-    private Repo repo;
+    private GithubRepository repo;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -65,22 +68,22 @@ public class Head {
     }
 
     @JsonProperty("user")
-    public User getUser() {
+    public GithubUser getUser() {
         return user;
     }
 
     @JsonProperty("user")
-    public void setUser(User user) {
+    public void setUser(GithubUser user) {
         this.user = user;
     }
 
     @JsonProperty("repo")
-    public Repo getRepo() {
+    public GithubRepository getRepo() {
         return repo;
     }
 
     @JsonProperty("repo")
-    public void setRepo(Repo repo) {
+    public void setRepo(GithubRepository repo) {
         this.repo = repo;
     }
 

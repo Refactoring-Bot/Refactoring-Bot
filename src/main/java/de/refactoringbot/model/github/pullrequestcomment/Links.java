@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.github.shared.Html;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "self",
@@ -20,21 +22,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class Links {
 
     @JsonProperty("self")
-    private Self self;
+    private Html self;
     @JsonProperty("html")
     private Html html;
     @JsonProperty("pull_request")
-    private PullRequest pullRequest;
+    private Html pullRequest;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("self")
-    public Self getSelf() {
+    public Html getSelf() {
         return self;
     }
 
     @JsonProperty("self")
-    public void setSelf(Self self) {
+    public void setSelf(Html self) {
         this.self = self;
     }
 
@@ -49,12 +51,12 @@ public class Links {
     }
 
     @JsonProperty("pull_request")
-    public PullRequest getPullRequest() {
+    public Html getPullRequest() {
         return pullRequest;
     }
 
     @JsonProperty("pull_request")
-    public void setPullRequest(PullRequest pullRequest) {
+    public void setPullRequest(Html pullRequest) {
         this.pullRequest = pullRequest;
     }
 

@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.github.user.GithubUser;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "url",
@@ -55,7 +57,7 @@ public class PullRequestComment {
     @JsonProperty("original_commit_id")
     private String originalCommitId;
     @JsonProperty("user")
-    private User user;
+    private GithubUser user;
     @JsonProperty("body")
     private String body;
     @JsonProperty("created_at")
@@ -174,12 +176,12 @@ public class PullRequestComment {
     }
 
     @JsonProperty("user")
-    public User getUser() {
+    public GithubUser getUser() {
         return user;
     }
 
     @JsonProperty("user")
-    public void setUser(User user) {
+    public void setUser(GithubUser user) {
         this.user = user;
     }
 

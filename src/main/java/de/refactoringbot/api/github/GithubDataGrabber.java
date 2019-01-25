@@ -25,7 +25,6 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.ValidationException;
-import de.refactoringbot.model.github.fork.GithubFork;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
@@ -402,7 +401,7 @@ public class GithubDataGrabber {
 
 		// Send request to the Github-API
 		try {
-			rest.exchange(forksUri, HttpMethod.POST, null, GithubFork.class).getBody();
+			rest.exchange(forksUri, HttpMethod.POST, null, GithubRepository.class).getBody();
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not create fork on Github!", r);
 		}
