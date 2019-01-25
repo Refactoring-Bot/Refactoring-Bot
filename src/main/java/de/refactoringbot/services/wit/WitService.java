@@ -69,11 +69,6 @@ public class WitService {
 	public BotIssue createBotIssue(GitConfiguration gitConfig, BotPullRequestComment comment)
 			throws WitAPIException, CommentUnderstandingMessage, IOException {
 		try {
-			if (3 > 2) {
-				throw new CommentUnderstandingMessage(
-						"Could not create a BotIssue from the comment '" + comment.getCommentBody() + "'!");
-			}
-
 			// Create object
 			BotIssue issue = new BotIssue();
 
