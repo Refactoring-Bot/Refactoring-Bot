@@ -181,7 +181,7 @@ public class RefactoringService {
 				if (grammarService.isBotComment(comment, config)) {
 					// If can NOT parse comment with ANTLR
 					if (!grammarService.checkComment(comment.getCommentBody())) {
-                        // Try to parse with wit.ai
+						// Try to parse with wit.ai
 						try {
 							botIssue = witService.createBotIssue(config, comment);
 							logger.info("Comment translated with 'wit.ai': " + comment.getCommentBody());
@@ -209,12 +209,12 @@ public class RefactoringService {
 							logger.error(g.getMessage(), g);
 							// If refactoring failed
 							botIssue = returnInvalidCommentIssue(config, comment, request, g.getMessage());
-							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
-									botIssue, true);
-                            continue;
+							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment,
+									request, botIssue, true);
+							continue;
 						}
 					}
-                    // Refactor the created BotIssue
+					// Refactor the created BotIssue
 					try {
 						// For Requests created by someone else
 						if (!request.getCreatorName().equals(config.getBotName())) {
