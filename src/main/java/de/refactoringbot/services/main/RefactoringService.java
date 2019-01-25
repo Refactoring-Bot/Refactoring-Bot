@@ -184,40 +184,43 @@ public class RefactoringService {
 				BotIssue botIssue;
 
 				// Check if comment is meant for the bot
-				if (witService.isBotComment(comment, config)) {
-					try {
-						botIssue = witService.createBotIssue(config, comment);
-					} catch (IOException e) {
-						logger.error(e.getMessage(), e);
-						botIssue = returnInvalidCommentIssue(config, comment, request, e.getMessage());
-						allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
-								botIssue, true);
-						return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-					} catch (CommentUnderstandingMessage | WitAPIException e) {
-						logger.warn("Comment translation with 'wit.ai' failed! Comment: " + comment.getCommentBody());
-						// Try to parse comment with ANTLR
-						if (!grammarService.checkComment(comment.getCommentBody())) {
+				if (grammarService.isBotComment(comment, config)) {
+					// If can NOT parse comment with ANTLR
+					if (!grammarService.checkComment(comment.getCommentBody())) {
+                        // Try to parse with wit.ai
+						try {
+							botIssue = witService.createBotIssue(config, comment);
+							logger.info("Comment translated with 'wit.ai': " + comment.getCommentBody());
+						} catch (IOException e) {
+							logger.error(e.getMessage(), e);
 							botIssue = returnInvalidCommentIssue(config, comment, request, e.getMessage());
-							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
-									botIssue, true);
+							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment,
+									request, botIssue, true);
+							return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+						} catch (CommentUnderstandingMessage | WitAPIException e) {
+							logger.warn(
+									"Comment translation with 'wit.ai' failed! Comment: " + comment.getCommentBody());
+							botIssue = returnInvalidCommentIssue(config, comment, request, e.getMessage());
+							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment,
+									request, botIssue, true);
 							continue;
 						}
+					} else {
 						// Try to refactor with ANTRL4
 						try {
 							// If ANTLR can parse -> create Issue
 							botIssue = createIssueFromComment(config, comment);
+							logger.info("Comment translated with 'ANTLR': " + comment.getCommentBody());
 						} catch (Exception g) {
 							logger.error(g.getMessage(), g);
 							// If refactoring failed
 							botIssue = returnInvalidCommentIssue(config, comment, request, g.getMessage());
 							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
 									botIssue, true);
-							continue;
+                            continue;
 						}
 					}
-
-					// Check if comment is valid and not already refactored
-
+                    // Refactor the created BotIssue
 					try {
 						// For Requests created by someone else
 						if (!request.getCreatorName().equals(config.getBotName())) {

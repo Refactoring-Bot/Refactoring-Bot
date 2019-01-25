@@ -38,6 +38,20 @@ public class GrammarService {
 	public GrammarService(FileService fileService) {
 		this.fileService = fileService;
 	}
+	
+	/**
+	 * This method checks if a comment is meant for the bot to understand. That is
+	 * the case, if someone (not the bot himself) tags the bot inside the comment
+	 * with '@Botname'.
+	 * 
+	 * @param comment
+	 * @param gitConfig
+	 * @return isBotComment
+	 */
+	public boolean isBotComment(BotPullRequestComment comment, GitConfiguration gitConfig) {
+		return (comment.getCommentBody().contains("@" + gitConfig.getBotName())
+				&& !comment.getUsername().equals(gitConfig.getBotName()));
+	}
 
 	/**
 	 * This method checks if a comment has a valid bot grammar and returns if the
