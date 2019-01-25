@@ -168,12 +168,6 @@ public class RefactoringService {
 		for (BotPullRequest request : allRequests.getAllPullRequests()) {
 			// Iterate through all comments
 			for (BotPullRequestComment comment : request.getAllComments()) {
-				// When Bot-Pull-Request-Limit reached -> return
-				if (amountBotRequests >= config.getMaxAmountRequests()) {
-					// Return all refactored issues
-					return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
-				}
-
 				// If comment was already refactored in past
 				if (isAlreadyRefactored(config, comment)) {
 					// Continue with next comment.
@@ -224,6 +218,11 @@ public class RefactoringService {
 					try {
 						// For Requests created by someone else
 						if (!request.getCreatorName().equals(config.getBotName())) {
+							// When Bot-Pull-Request-Limit reached -> return
+							if (amountBotRequests >= config.getMaxAmountRequests()) {
+								// Return all refactored issues
+								return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+							}
 							// Perform refactoring
 							allRefactoredIssues = refactorIssue(false, true, config, comment, request, botIssue,
 									allRefactoredIssues);
@@ -395,13 +394,6 @@ public class RefactoringService {
 
 		// Get Pull-Requests with comments
 		BotPullRequests allRequests = grabber.getRequestsWithComments(config);
-		Integer amountBotRequests = botController.getAmountOfBotRequests(allRequests, config);
-
-		// Check if max amount is reached
-		if (amountBotRequests >= config.getMaxAmountRequests()) {
-			throw new BotRefactoringException("Maximal amount of requests reached." + "(Maximum = "
-					+ config.getMaxAmountRequests() + "; Currently = " + amountBotRequests + " bot requests are open)");
-		}
 
 		return allRequests;
 	}
