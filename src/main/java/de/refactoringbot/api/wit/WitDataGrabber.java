@@ -12,8 +12,15 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import de.refactoringbot.configuration.BotConfiguration;
+import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.wit.WitObject;
 
+/**
+ * This class communicates with the wit.ai REST-Api to exchange data.
+ * 
+ * @author Stefan Basaric
+ *
+ */
 @Component
 public class WitDataGrabber {
 
@@ -30,7 +37,7 @@ public class WitDataGrabber {
 	 * @return witObject
 	 * @throws RestClientException
 	 */
-	public WitObject getWitObjectFromMessage(String message) throws RestClientException {
+	public WitObject getWitObjectFromMessage(String message) throws WitAPIException {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("api.wit.ai")
 				.path("/message");
@@ -48,8 +55,12 @@ public class WitDataGrabber {
 		headers.set("Authorization", "Bearer " + botConfig.getWitClientToken());
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
-		// Send request to the Wit-API
-		return rest.exchange(witUri, HttpMethod.GET, entity, WitObject.class).getBody();
+		try {
+			// Send request to the Wit-API
+			return rest.exchange(witUri, HttpMethod.GET, entity, WitObject.class).getBody();
+		} catch (RestClientException r) {
+			throw new WitAPIException("Could not exchange data with wit.ai!");
+		}
 
 	}
 }

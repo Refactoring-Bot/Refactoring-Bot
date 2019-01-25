@@ -1,6 +1,7 @@
 
 package de.refactoringbot.model.wit;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,16 +16,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
     "refactoringObject",
     "refactoringOperation",
-    "refactoringString"
+    "refactoringString",
+    "javaAnnotations"
 })
 public class Entities {
 
     @JsonProperty("refactoringObject")
-    private List<RefactoringObject> refactoringObject = null;
+    private List<RefactoringObject> refactoringObject = new ArrayList<RefactoringObject>();
     @JsonProperty("refactoringOperation")
-    private List<RefactoringOperation> refactoringOperation = null;
+    private List<RefactoringOperation> refactoringOperation = new ArrayList<RefactoringOperation>();
     @JsonProperty("refactoringString")
-    private List<RefactoringString> refactoringString = null;
+    private List<RefactoringString> refactoringString = new ArrayList<RefactoringString>();
+    @JsonProperty("javaAnnotations")
+    private List<JavaAnnotation> javaAnnotations = new ArrayList<JavaAnnotation>();
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
@@ -56,6 +60,16 @@ public class Entities {
     @JsonProperty("refactoringString")
     public void setRefactoringString(List<RefactoringString> refactoringString) {
         this.refactoringString = refactoringString;
+    }
+    
+    @JsonProperty("javaAnnotations")
+    public List<JavaAnnotation> getJavaAnnotations() {
+    return javaAnnotations;
+    }
+
+    @JsonProperty("javaAnnotations")
+    public void setJavaAnnotations(List<JavaAnnotation> javaAnnotations) {
+    this.javaAnnotations = javaAnnotations;
     }
 
     @JsonAnyGetter
