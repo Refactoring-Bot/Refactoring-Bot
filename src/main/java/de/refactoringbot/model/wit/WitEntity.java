@@ -1,8 +1,8 @@
-
 package de.refactoringbot.model.wit;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -12,12 +12,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
+    "suggested",
     "confidence",
     "value",
     "type"
 })
-public class RefactoringObject {
+public class WitEntity {
 
+	@JsonProperty("suggested")
+    private Boolean suggested;
     @JsonProperty("confidence")
     private Double confidence;
     @JsonProperty("value")
@@ -26,6 +29,16 @@ public class RefactoringObject {
     private String type;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+
+    @JsonProperty("suggested")
+    public Boolean getSuggested() {
+        return suggested;
+    }
+
+    @JsonProperty("suggested")
+    public void setSuggested(Boolean suggested) {
+        this.suggested = suggested;
+    }
 
     @JsonProperty("confidence")
     public Double getConfidence() {
@@ -66,5 +79,5 @@ public class RefactoringObject {
     public void setAdditionalProperty(String name, Object value) {
         this.additionalProperties.put(name, value);
     }
-
+	
 }

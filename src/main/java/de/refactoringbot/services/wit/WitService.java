@@ -14,10 +14,7 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.CommentUnderstandingMessage;
 import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
-import de.refactoringbot.model.wit.JavaAnnotation;
-import de.refactoringbot.model.wit.RefactoringObject;
-import de.refactoringbot.model.wit.RefactoringOperation;
-import de.refactoringbot.model.wit.RefactoringString;
+import de.refactoringbot.model.wit.WitEntity;
 import de.refactoringbot.model.wit.WitObject;
 import de.refactoringbot.refactoring.RefactoringOperations;
 import de.refactoringbot.services.main.FileService;
@@ -99,8 +96,8 @@ public class WitService {
 		}
 
 		// Read unique operation + object
-		RefactoringOperation refOp = witObject.getEntities().getRefactoringOperation().get(0);
-		RefactoringObject refObj = witObject.getEntities().getRefactoringObject().get(0);
+		WitEntity refOp = witObject.getEntities().getRefactoringOperation().get(0);
+		WitEntity refObj = witObject.getEntities().getRefactoringObject().get(0);
 
 		// If Add-Annotation refactoring is sure
 		if (refOp.getValue().equals("add") && refObj.getValue().equals("annotation")) {
@@ -109,7 +106,7 @@ public class WitService {
 				throw new CommentUnderstandingMessage("Not sure which annotation you want to add!");
 			}
 			// Read unique java annotation
-			JavaAnnotation javaAnnot = witObject.getEntities().getJavaAnnotations().get(0);
+			WitEntity javaAnnot = witObject.getEntities().getJavaAnnotations().get(0);
 			// If override annotation returned
 			if (javaAnnot.getValue().equals("Override")) {
 				issue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
@@ -142,7 +139,7 @@ public class WitService {
 				logger.warn("Wit detected an 'annotation' on a 'rename method' refactoring! Comment: " + commentBody);
 			}
 			// Read unique refactoring string (method name object)
-			RefactoringString refStr = witObject.getEntities().getRefactoringString().get(0);
+			WitEntity refStr = witObject.getEntities().getRefactoringString().get(0);
 			issue.setRefactoringOperation(RefactoringOperations.RENAME_METHOD);
 			issue.setRefactorString(refStr.getValue());
 		}
@@ -159,7 +156,7 @@ public class WitService {
 						"Wit detected an 'annotation' on a 'remove parameter' refactoring! Comment: " + commentBody);
 			}
 			// Read unique refactoring string (parameter name object)
-			RefactoringString refStr = witObject.getEntities().getRefactoringString().get(0);
+			WitEntity refStr = witObject.getEntities().getRefactoringString().get(0);
 			issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 			issue.setRefactorString(refStr.getValue());
 		} else {

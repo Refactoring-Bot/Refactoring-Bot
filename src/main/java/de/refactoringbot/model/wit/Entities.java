@@ -22,53 +22,53 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class Entities {
 
     @JsonProperty("refactoringObject")
-    private List<RefactoringObject> refactoringObject = new ArrayList<RefactoringObject>();
+    private List<WitEntity> refactoringObject = new ArrayList<WitEntity>();
     @JsonProperty("refactoringOperation")
-    private List<RefactoringOperation> refactoringOperation = new ArrayList<RefactoringOperation>();
+    private List<WitEntity> refactoringOperation = new ArrayList<WitEntity>();
     @JsonProperty("refactoringString")
-    private List<RefactoringString> refactoringString = new ArrayList<RefactoringString>();
+    private List<WitEntity> refactoringString = new ArrayList<WitEntity>();
     @JsonProperty("javaAnnotations")
-    private List<JavaAnnotation> javaAnnotations = new ArrayList<JavaAnnotation>();
+    private List<WitEntity> javaAnnotations = new ArrayList<WitEntity>();
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     @JsonProperty("refactoringObject")
-    public List<RefactoringObject> getRefactoringObject() {
+    public List<WitEntity> getRefactoringObject() {
         return refactoringObject;
     }
 
     @JsonProperty("refactoringObject")
-    public void setRefactoringObject(List<RefactoringObject> refactoringObject) {
+    public void setRefactoringObject(List<WitEntity> refactoringObject) {
         this.refactoringObject = refactoringObject;
     }
 
     @JsonProperty("refactoringOperation")
-    public List<RefactoringOperation> getRefactoringOperation() {
+    public List<WitEntity> getRefactoringOperation() {
         return refactoringOperation;
     }
 
     @JsonProperty("refactoringOperation")
-    public void setRefactoringOperation(List<RefactoringOperation> refactoringOperation) {
+    public void setRefactoringOperation(List<WitEntity> refactoringOperation) {
         this.refactoringOperation = refactoringOperation;
     }
 
     @JsonProperty("refactoringString")
-    public List<RefactoringString> getRefactoringString() {
+    public List<WitEntity> getRefactoringString() {
         return refactoringString;
     }
 
     @JsonProperty("refactoringString")
-    public void setRefactoringString(List<RefactoringString> refactoringString) {
+    public void setRefactoringString(List<WitEntity> refactoringString) {
         this.refactoringString = refactoringString;
     }
     
     @JsonProperty("javaAnnotations")
-    public List<JavaAnnotation> getJavaAnnotations() {
+    public List<WitEntity> getJavaAnnotations() {
     return javaAnnotations;
     }
 
     @JsonProperty("javaAnnotations")
-    public void setJavaAnnotations(List<JavaAnnotation> javaAnnotations) {
+    public void setJavaAnnotations(List<WitEntity> javaAnnotations) {
     this.javaAnnotations = javaAnnotations;
     }
 
