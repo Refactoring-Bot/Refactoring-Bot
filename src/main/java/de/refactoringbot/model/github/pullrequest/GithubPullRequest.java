@@ -12,6 +12,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.github.user.GithubUser;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "id",
@@ -79,7 +81,7 @@ public class GithubPullRequest {
     @JsonProperty("body")
     private String body;
     @JsonProperty("assignee")
-    private Assignee assignee;
+    private GithubUser assignee;
     @JsonProperty("labels")
     private List<Label> labels = null;
     @JsonProperty("milestone")
@@ -97,13 +99,13 @@ public class GithubPullRequest {
     @JsonProperty("merged_at")
     private String mergedAt;
     @JsonProperty("head")
-    private Head head;
+    private Branch head;
     @JsonProperty("base")
-    private Base base;
+    private Branch base;
     @JsonProperty("_links")
     private Links links;
     @JsonProperty("user")
-    private User user;
+    private GithubUser user;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -268,12 +270,12 @@ public class GithubPullRequest {
     }
 
     @JsonProperty("assignee")
-    public Assignee getAssignee() {
+    public GithubUser getAssignee() {
         return assignee;
     }
 
     @JsonProperty("assignee")
-    public void setAssignee(Assignee assignee) {
+    public void setAssignee(GithubUser assignee) {
         this.assignee = assignee;
     }
 
@@ -358,22 +360,22 @@ public class GithubPullRequest {
     }
 
     @JsonProperty("head")
-    public Head getHead() {
+    public Branch getHead() {
         return head;
     }
 
     @JsonProperty("head")
-    public void setHead(Head head) {
+    public void setHead(Branch head) {
         this.head = head;
     }
 
     @JsonProperty("base")
-    public Base getBase() {
+    public Branch getBase() {
         return base;
     }
 
     @JsonProperty("base")
-    public void setBase(Base base) {
+    public void setBase(Branch base) {
         this.base = base;
     }
 
@@ -388,12 +390,12 @@ public class GithubPullRequest {
     }
 
     @JsonProperty("user")
-    public User getUser() {
+    public GithubUser getUser() {
         return user;
     }
 
     @JsonProperty("user")
-    public void setUser(User user) {
+    public void setUser(GithubUser user) {
         this.user = user;
     }
 

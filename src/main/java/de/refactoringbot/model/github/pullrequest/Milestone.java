@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.github.user.GithubUser;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "url",
@@ -51,7 +53,7 @@ public class Milestone {
     @JsonProperty("description")
     private String description;
     @JsonProperty("creator")
-    private Creator creator;
+    private GithubUser creator;
     @JsonProperty("open_issues")
     private Integer openIssues;
     @JsonProperty("closed_issues")
@@ -158,12 +160,12 @@ public class Milestone {
     }
 
     @JsonProperty("creator")
-    public Creator getCreator() {
+    public GithubUser getCreator() {
         return creator;
     }
 
     @JsonProperty("creator")
-    public void setCreator(Creator creator) {
+    public void setCreator(GithubUser creator) {
         this.creator = creator;
     }
 

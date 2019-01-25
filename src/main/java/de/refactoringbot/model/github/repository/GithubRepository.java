@@ -11,6 +11,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.github.shared.Permissions;
+import de.refactoringbot.model.github.user.GithubUser;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "id",
@@ -105,7 +108,7 @@ public class GithubRepository {
     @JsonProperty("private")
     private Boolean _private;
     @JsonProperty("owner")
-    private Owner owner;
+    private GithubUser owner;
     @JsonProperty("html_url")
     private String htmlUrl;
     @JsonProperty("description")
@@ -304,12 +307,12 @@ public class GithubRepository {
     }
 
     @JsonProperty("owner")
-    public Owner getOwner() {
+    public GithubUser getOwner() {
         return owner;
     }
 
     @JsonProperty("owner")
-    public void setOwner(Owner owner) {
+    public void setOwner(GithubUser owner) {
         this.owner = owner;
     }
 

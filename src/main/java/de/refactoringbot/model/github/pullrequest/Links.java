@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.github.shared.Html;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "self",
@@ -25,31 +27,31 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class Links {
 
     @JsonProperty("self")
-    private Self self;
+    private Html self;
     @JsonProperty("html")
     private Html html;
     @JsonProperty("issue")
-    private Issue issue;
+    private Html issue;
     @JsonProperty("comments")
-    private Comments comments;
+    private Html comments;
     @JsonProperty("review_comments")
-    private ReviewComments reviewComments;
+    private Html reviewComments;
     @JsonProperty("review_comment")
-    private ReviewComment reviewComment;
+    private Html reviewComment;
     @JsonProperty("commits")
-    private Commits commits;
+    private Html commits;
     @JsonProperty("statuses")
-    private Statuses statuses;
+    private Html statuses;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("self")
-    public Self getSelf() {
+    public Html getSelf() {
         return self;
     }
 
     @JsonProperty("self")
-    public void setSelf(Self self) {
+    public void setSelf(Html self) {
         this.self = self;
     }
 
@@ -64,62 +66,62 @@ public class Links {
     }
 
     @JsonProperty("issue")
-    public Issue getIssue() {
+    public Html getIssue() {
         return issue;
     }
 
     @JsonProperty("issue")
-    public void setIssue(Issue issue) {
+    public void setIssue(Html issue) {
         this.issue = issue;
     }
 
     @JsonProperty("comments")
-    public Comments getComments() {
+    public Html getComments() {
         return comments;
     }
 
     @JsonProperty("comments")
-    public void setComments(Comments comments) {
+    public void setComments(Html comments) {
         this.comments = comments;
     }
 
     @JsonProperty("review_comments")
-    public ReviewComments getReviewComments() {
+    public Html getReviewComments() {
         return reviewComments;
     }
 
     @JsonProperty("review_comments")
-    public void setReviewComments(ReviewComments reviewComments) {
+    public void setReviewComments(Html reviewComments) {
         this.reviewComments = reviewComments;
     }
 
     @JsonProperty("review_comment")
-    public ReviewComment getReviewComment() {
+    public Html getReviewComment() {
         return reviewComment;
     }
 
     @JsonProperty("review_comment")
-    public void setReviewComment(ReviewComment reviewComment) {
+    public void setReviewComment(Html reviewComment) {
         this.reviewComment = reviewComment;
     }
 
     @JsonProperty("commits")
-    public Commits getCommits() {
+    public Html getCommits() {
         return commits;
     }
 
     @JsonProperty("commits")
-    public void setCommits(Commits commits) {
+    public void setCommits(Html commits) {
         this.commits = commits;
     }
 
     @JsonProperty("statuses")
-    public Statuses getStatuses() {
+    public Html getStatuses() {
         return statuses;
     }
 
     @JsonProperty("statuses")
-    public void setStatuses(Statuses statuses) {
+    public void setStatuses(Html statuses) {
         this.statuses = statuses;
     }
 
