@@ -17,6 +17,7 @@ import de.refactoringbot.grammar.botgrammar.BotOperationsLexer;
 import de.refactoringbot.grammar.botgrammar.BotOperationsParser;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
+import de.refactoringbot.model.exceptions.CommentUnderstandingMessage;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.refactoring.RefactoringOperations;
 
@@ -45,9 +46,9 @@ public class GrammarService {
 	 * 
 	 * @param comment
 	 * @return valid
-	 * @throws Exception
+	 * @throws CommentUnderstandingMessage 
 	 */
-	public Boolean checkComment(String comment) {
+	public boolean checkComment(String comment) {
 		try {
 			// Create lexer and disable console logs
 			BotOperationsLexer lexer = new BotOperationsLexer(CharStreams.fromString(comment));

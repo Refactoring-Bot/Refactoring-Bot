@@ -1,5 +1,6 @@
 package de.refactoringbot.services.wit;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -42,13 +43,29 @@ public class WitService {
 	}
 
 	/**
+	 * This method checks if a comment is meant for the bot to understand. That is
+	 * the case, if someone tags the bot inside the comment with '@Botname'.
 	 * 
 	 * @param comment
 	 * @param gitConfig
-	 * @return
-	 * @throws Exception
+	 * @return isBotComment
 	 */
-	public BotIssue createBotIssue(BotPullRequestComment comment, GitConfiguration gitConfig) throws Exception {
+	public boolean isBotComment(BotPullRequestComment comment, GitConfiguration gitConfig) {
+		return comment.getCommentBody().contains("@" + gitConfig.getBotName());
+	}
+
+	/**
+	 * This method creates an BotIssue from a Message with the help of the wit.ai
+	 * service.
+	 * 
+	 * @param gitConfig
+	 * @param comment
+	 * @return botIssue
+	 * @throws WitAPIException
+	 * @throws CommentUnderstandingMessage
+	 */
+	public BotIssue createBotIssue(GitConfiguration gitConfig, BotPullRequestComment comment)
+			throws WitAPIException, CommentUnderstandingMessage, IOException {
 		try {
 			// Create object
 			BotIssue issue = new BotIssue();
@@ -65,10 +82,13 @@ public class WitService {
 
 			mapCommentBodyToIssue(issue, comment.getCommentBody());
 			return issue;
-		} catch (Exception e) {
+		} catch (WitAPIException | CommentUnderstandingMessage e) {
 			logger.error(e.getMessage(), e);
-			throw new Exception("Could not create a BotIssue from the comment '" + comment.getCommentBody() + "'!");
-		}
+			throw new CommentUnderstandingMessage(e.getMessage());
+		} catch (IOException e) {
+			logger.error(e.getMessage(), e);
+			throw new IOException("Could not create a BotIssue from the comment '" + comment.getCommentBody() + "'!");
+		} 
 	}
 
 	/**
@@ -109,12 +129,10 @@ public class WitService {
 			} else {
 				throw new CommentUnderstandingMessage("Adding '" + javaAnnot.getValue() + "' is not supported!");
 			}
-		} else {
-			throw new CommentUnderstandingMessage("Can not '" + refOp + "' an '" + refObj + "'!");
-		}
+		} 
 
 		// If Reorder-Modifier
-		if (refOp.getValue().equals("reorder") && refObj.getValue().equals("modifier")) {
+		else if (refOp.getValue().equals("reorder") && refObj.getValue().equals("modifier")) {
 			// Annotations or refactoring strings are not involved
 			if (witObject.getEntities().getRefactoringString().size() != 0
 					|| witObject.getEntities().getJavaAnnotations().size() != 0) {
@@ -123,12 +141,10 @@ public class WitService {
 								+ commentBody);
 			}
 			issue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
-		} else {
-			throw new CommentUnderstandingMessage("Can not '" + refOp + "' an '" + refObj + "'!");
 		}
 
 		// If rename method
-		if (refOp.getValue().equals("rename") && refObj.getValue().equals("method")) {
+		else if (refOp.getValue().equals("rename") && refObj.getValue().equals("method")) {
 			// If new method name is uncertain
 			if (witObject.getEntities().getRefactoringString().size() != 1) {
 				throw new CommentUnderstandingMessage("Not sure what the new method name is!");
@@ -141,12 +157,10 @@ public class WitService {
 			RefactoringString refStr = witObject.getEntities().getRefactoringString().get(0);
 			issue.setRefactoringOperation(RefactoringOperations.RENAME_METHOD);
 			issue.setRefactorString(refStr.getValue());
-		} else {
-			throw new CommentUnderstandingMessage("Can not '" + refOp + "' an '" + refObj + "'!");
 		}
 
 		// If remove parameter
-		if (refOp.getValue().equals("remove") && refObj.getValue().equals("parameter")) {
+		else if (refOp.getValue().equals("remove") && refObj.getValue().equals("parameter")) {
 			// If parameter name is uncertain
 			if (witObject.getEntities().getRefactoringString().size() != 1) {
 				throw new CommentUnderstandingMessage("Not sure what the parameter name is!");

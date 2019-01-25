@@ -22,9 +22,11 @@ import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
+import de.refactoringbot.model.exceptions.CommentUnderstandingMessage;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
+import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -32,6 +34,7 @@ import de.refactoringbot.model.refactoredissue.RefactoredIssue;
 import de.refactoringbot.model.refactoredissue.RefactoredIssueRepository;
 import de.refactoringbot.refactoring.RefactoringPicker;
 import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
+import de.refactoringbot.services.wit.WitService;
 import javassist.NotFoundException;
 
 /**
@@ -58,13 +61,15 @@ public class RefactoringService {
 	@Autowired
 	BotService botController;
 	@Autowired
-	GrammarService grammarController;
+	GrammarService grammarService;
 	@Autowired
 	RefactoringPicker refactoring;
 	@Autowired
 	SonarQubeObjectTranslator sonarTranslator;
 	@Autowired
 	BotService botService;
+	@Autowired
+	WitService witService;
 
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringService.class);
 
@@ -168,16 +173,46 @@ public class RefactoringService {
 					return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
 				}
 
-				// Check if comment is valid and not already refactored
-				if (isCommentValid(config, comment)) {
-					// Create issue
-					BotIssue botIssue;
+				// If comment was already refactored in past
+				if (isAlreadyRefactored(config, comment)) {
+					// Continue with next comment.
+					continue;
+				}
+
+				// Create issue
+				BotIssue botIssue;
+
+				// Check if comment is meant for the bot
+				if (witService.isBotComment(comment, config)) {
 					try {
-						botIssue = createIssueFromComment(config, comment);
-					} catch (Exception e) {
+						botIssue = witService.createBotIssue(config, comment);
+					} catch (IOException e) {
 						logger.error(e.getMessage(), e);
 						return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+					} catch (CommentUnderstandingMessage | WitAPIException e) {
+						logger.warn("Comment translation with 'wit.ai' failed! Comment: " + comment.getCommentBody());
+						// Try to parse comment with ANTLR
+						if (!grammarService.checkComment(comment.getCommentBody())) {
+							botIssue = returnInvalidCommentIssue(config, comment, request, e.getMessage());
+							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
+									botIssue, true);
+							continue;
+						}
+						// Try to refactor with ANTRL4
+						try {
+							// If ANTLR can parse -> create Issue
+							botIssue = createIssueFromComment(config, comment);
+						} catch (Exception g) {
+							logger.error(g.getMessage(), g);
+							// If refactoring failed
+							botIssue = returnInvalidCommentIssue(config, comment, request, g.getMessage());
+							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
+									botIssue, true);
+							continue;
+						}
 					}
+
+					// Check if comment is valid and not already refactored
 
 					try {
 						// For Requests created by someone else
@@ -208,6 +243,7 @@ public class RefactoringService {
 				}
 			}
 		}
+
 		return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
 	}
 
@@ -364,17 +400,14 @@ public class RefactoringService {
 	}
 
 	/**
-	 * This method checks if a comment is valid for refactoring. The service will
-	 * only refactor the comment if it was not already refactored in the past and if
-	 * the comment fulfills the bot grammar.
+	 * This method checks if a comment was already refactored in the past.
 	 * 
 	 * @param config
 	 * @param comment
-	 * @return isValid
+	 * @return isAlreadyRefactored
 	 */
-	public boolean isCommentValid(GitConfiguration config, BotPullRequestComment comment) {
-		return (grammarController.checkComment(comment.getCommentBody()) && !issueRepo
-				.refactoredComment(config.getRepoService(), comment.getCommentID().toString()).isPresent());
+	public boolean isAlreadyRefactored(GitConfiguration config, BotPullRequestComment comment) {
+		return issueRepo.refactoredComment(config.getRepoService(), comment.getCommentID().toString()).isPresent();
 	}
 
 	/**
@@ -398,7 +431,7 @@ public class RefactoringService {
 	 * @throws Exception
 	 */
 	public BotIssue createIssueFromComment(GitConfiguration config, BotPullRequestComment comment) throws Exception {
-		return grammarController.createIssueFromComment(comment, config);
+		return grammarService.createIssueFromComment(comment, config);
 	}
 
 	/**
@@ -434,6 +467,30 @@ public class RefactoringService {
 		allRefactoredIssues.add(savedFailIssue);
 
 		return allRefactoredIssues;
+	}
+
+	/**
+	 * This method creates an BotIssue for a failed refactoring because of a invalid
+	 * comment that the bot can not understand.
+	 * 
+	 * @param config
+	 * @param comment
+	 * @param request
+	 * @param errorMessage
+	 * @return issue
+	 */
+	public BotIssue returnInvalidCommentIssue(GitConfiguration config, BotPullRequestComment comment,
+			BotPullRequest request, String errorMessage) {
+		// Create object
+		BotIssue issue = new BotIssue();
+
+		// Add data to comment
+		issue.setCommentServiceID(comment.getCommentID().toString());
+		issue.setLine(comment.getPosition());
+		issue.setFilePath(comment.getFilepath());
+		issue.setErrorMessage(errorMessage);
+
+		return issue;
 	}
 
 	/**
