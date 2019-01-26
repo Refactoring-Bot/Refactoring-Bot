@@ -38,7 +38,7 @@ public class GrammarService {
 	public GrammarService(FileService fileService) {
 		this.fileService = fileService;
 	}
-	
+
 	/**
 	 * This method checks if a comment is meant for the bot to understand. That is
 	 * the case, if someone (not the bot himself) tags the bot inside the comment
@@ -60,7 +60,7 @@ public class GrammarService {
 	 * @param comment
 	 * @return valid
 	 */
-	public Boolean checkComment(String comment) {
+	public Boolean checkComment(String comment, GitConfiguration gitConfig) {
 		try {
 			// Create lexer and disable console logs
 			BotOperationsLexer lexer = new BotOperationsLexer(CharStreams.fromString(comment));
@@ -79,6 +79,12 @@ public class GrammarService {
 			// Walk path tree
 			BotOperationsBaseListener listener = new BotOperationsBaseListener();
 			walker.walk(listener, tree);
+
+			// Check if USERNAME-Keyword equals tagged Botname
+			if (comment.split(" ").length > 1 && !comment.split(" ")[0].equals("@" + gitConfig.getBotName())) {
+				return false;
+			}
+
 			return true;
 		} catch (Exception e) {
 			return false;

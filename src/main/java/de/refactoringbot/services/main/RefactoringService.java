@@ -180,7 +180,7 @@ public class RefactoringService {
 				// Check if comment is meant for the bot
 				if (grammarService.isBotComment(comment, config)) {
 					// If can NOT parse comment with ANTLR
-					if (!grammarService.checkComment(comment.getCommentBody())) {
+					if (!grammarService.checkComment(comment.getCommentBody(), config)) {
 						// Try to parse with wit.ai
 						try {
 							botIssue = witService.createBotIssue(config, comment);
