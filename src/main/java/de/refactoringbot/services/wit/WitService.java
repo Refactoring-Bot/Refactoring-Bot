@@ -87,7 +87,7 @@ public class WitService {
 	private void mapCommentBodyToIssue(BotIssue issue, String commentBody)
 			throws WitAPIException, CommentUnderstandingMessage {
 		// Get Wit-Object from Wit-API
-		WitObject witObject = witDataGrabber.getWitObjectFromMessage(commentBody);
+		WitObject witObject = witDataGrabber.getWitObjectFromComment(commentBody);
 
 		// If wit returns multiple operations or multiple objects (or 0)
 		if (witObject.getEntities().getRefactoringObject().size() != 1

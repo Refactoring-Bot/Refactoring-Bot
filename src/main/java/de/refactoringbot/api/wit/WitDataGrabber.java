@@ -31,19 +31,19 @@ public class WitDataGrabber {
 
 	/**
 	 * This method communicates with the wit-API. It returns an WitObject with the
-	 * input of an message.
+	 * input of a comment.
 	 * 
-	 * @param message
+	 * @param comment
 	 * @return witObject
 	 * @throws RestClientException
 	 */
-	public WitObject getWitObjectFromMessage(String message) throws WitAPIException {
+	public WitObject getWitObjectFromComment(String comment) throws WitAPIException {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("api.wit.ai")
 				.path("/message");
 
 		apiUriBuilder.queryParam("v", "20190122");
-		apiUriBuilder.queryParam("q", message);
+		apiUriBuilder.queryParam("q", comment);
 
 		URI witUri = apiUriBuilder.build().encode().toUri();
 
