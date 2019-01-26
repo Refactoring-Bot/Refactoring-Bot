@@ -106,7 +106,7 @@ public class GrammarServiceTest {
 		// Init gitconfig with bot username
 		GitConfiguration gitConfig = new GitConfiguration();
 		gitConfig.setBotName(CORRECT_BOT_USERNAME);
-		
+
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE, gitConfig)).isTrue();
 		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE, gitConfig)).isTrue();
@@ -116,8 +116,16 @@ public class GrammarServiceTest {
 
 		softAssertions.assertThat(grammarService.checkComment("@IncorrectBotName ADD ANNOTATION", gitConfig)).isFalse();
 		softAssertions.assertThat(grammarService.checkComment("BOT RENAME METHOD", gitConfig)).isFalse();
-		softAssertions.assertThat(grammarService.checkComment("BOT, BOT, on the wall, who's the fairest of them all?", gitConfig))
+		softAssertions
+				.assertThat(
+						grammarService.checkComment("BOT, BOT, on the wall, who's the fairest of them all?", gitConfig))
 				.isFalse();
+		softAssertions.assertThat(grammarService.checkComment("@IncorrectBotName ADD ANNOTATION Override", gitConfig))
+				.isFalse();
+		softAssertions.assertThat(grammarService.checkComment("@CorrectBotName RENAME METHOD newMethodName", gitConfig))
+				.isFalse();
+		softAssertions.assertThat(grammarService.checkComment("BOT REMOVE PARAMETER param", gitConfig)).isFalse();
+		softAssertions.assertThat(grammarService.checkComment("CorrectBotName REORDER MODIFIER", gitConfig)).isFalse();
 
 		softAssertions.assertAll();
 	}

@@ -62,6 +62,11 @@ public class GrammarService {
 	 */
 	public Boolean checkComment(String comment, GitConfiguration gitConfig) {
 		try {
+			// Check if USERNAME-Keyword equals tagged Botname
+			if (comment.split(" ").length > 1 && !comment.split(" ")[0].equals("@" + gitConfig.getBotName())) {
+				return false;
+			}
+
 			// Create lexer and disable console logs
 			BotOperationsLexer lexer = new BotOperationsLexer(CharStreams.fromString(comment));
 			lexer.removeErrorListener(ConsoleErrorListener.INSTANCE);
@@ -79,11 +84,6 @@ public class GrammarService {
 			// Walk path tree
 			BotOperationsBaseListener listener = new BotOperationsBaseListener();
 			walker.walk(listener, tree);
-
-			// Check if USERNAME-Keyword equals tagged Botname
-			if (comment.split(" ").length > 1 && !comment.split(" ")[0].equals("@" + gitConfig.getBotName())) {
-				return false;
-			}
 
 			return true;
 		} catch (Exception e) {
