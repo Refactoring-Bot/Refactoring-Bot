@@ -15,13 +15,8 @@ import org.checkerframework.dataflow.cfg.block.*;
 import org.checkerframework.dataflow.cfg.node.*;
 import org.springframework.stereotype.Component;
 
-import javax.lang.model.type.TypeMirror;
-import javax.sound.sampled.Line;
-import javax.swing.plaf.nimbus.State;
 import javax.tools.*;
 import java.io.*;
-import java.sql.Blob;
-import java.sql.Statement;
 import java.util.*;
 
 import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.StatementGraphNode.StatementGraphNodeType.*;
@@ -147,6 +142,9 @@ public class ExtractMethod implements RefactoringImpl {
 				// find candidates
 				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap);
 
+				// score each candidate
+				this.scoreCandidates(candidates);
+
 				System.out.println(candidates);
 
 				/* DEBUG
@@ -171,6 +169,10 @@ public class ExtractMethod implements RefactoringImpl {
 		public Void visitClass(ClassTree node, Void aVoid) {
 			this.classTree = node;
 			return super.visitClass(node, aVoid);
+		}
+
+		private void scoreCandidates(List<RefactorCandidate> candidates) {
+
 		}
 
 		private List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap) {
@@ -266,7 +268,55 @@ public class ExtractMethod implements RefactoringImpl {
 			if (outVariables.size() > 1) {
 				return false;
 			}
+			// check return
+			if (!this.isExtractableReturnCheck(candidate)) { return false; }
+			// check return, continue, break
+
+
 			return true;
+		}
+
+		private boolean isExtractableReturnCheck(RefactorCandidate candidate) {
+			Set<Block> blocks = new HashSet<>();
+			for (StatementGraphNode statement : candidate.statements) {
+				blocks.addAll(statement.cfgBlocks);
+			}
+			Set<Long> ids = new HashSet<>();
+			for (Block block : blocks) {
+				ids.add(block.getId());
+			}
+			int regularSuccessor = 0;
+			int exitSuccessor = 0;
+			for (Block block : blocks) {
+				List<Block> successors = new ArrayList<>();
+				switch (block.getType()) {
+					case CONDITIONAL_BLOCK:
+						ConditionalBlock condBlock = (ConditionalBlock) block;
+						successors.add(condBlock.getElseSuccessor());
+						successors.add(condBlock.getThenSuccessor());
+						break;
+					case EXCEPTION_BLOCK:
+						ExceptionBlock exceptionBlock = (ExceptionBlock) block;
+						successors.add(exceptionBlock.getSuccessor());
+						break;
+					case REGULAR_BLOCK:
+						RegularBlock regularBlock = (RegularBlock) block;
+						successors.add(regularBlock);
+						break;
+					case SPECIAL_BLOCK:
+						break;
+				}
+				for (Block successor : successors) {
+					if (successor.getType().equals(Block.BlockType.SPECIAL_BLOCK)) {
+						exitSuccessor++;
+					} else {
+						if (!ids.contains(successor.getId())) {
+							regularSuccessor++;
+						}
+					}
+				}
+			}
+			return !(regularSuccessor > 0 && exitSuccessor > 0);
 		}
 
 		private Set<String> findLocalVariables(ControlFlowGraph cfg) {
