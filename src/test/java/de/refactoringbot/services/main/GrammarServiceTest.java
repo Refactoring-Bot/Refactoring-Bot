@@ -109,7 +109,6 @@ public class GrammarServiceTest {
 
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE, gitConfig)).isTrue();
-		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE, gitConfig)).isTrue();
 		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_REORDER_MODIFIER, gitConfig)).isTrue();
 		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_RENAME_METHOD, gitConfig)).isTrue();
 		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_REMOVE_PARAM, gitConfig)).isTrue();
