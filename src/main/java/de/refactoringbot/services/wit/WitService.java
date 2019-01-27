@@ -30,13 +30,15 @@ public class WitService {
 
 	private FileService fileService;
 	private WitDataGrabber witDataGrabber;
+	private DataAnonymizer dataAnonymizer;
 
 	private static final Logger logger = LoggerFactory.getLogger(WitService.class);
 
 	@Autowired
-	public WitService(FileService fileService, WitDataGrabber witDataGrabber) {
+	public WitService(FileService fileService, WitDataGrabber witDataGrabber, DataAnonymizer dataAnonymizer) {
 		this.fileService = fileService;
 		this.witDataGrabber = witDataGrabber;
+		this.dataAnonymizer = dataAnonymizer;
 	}
 
 	/**
@@ -86,6 +88,8 @@ public class WitService {
 	 */
 	private void mapCommentBodyToIssue(BotIssue issue, String commentBody)
 			throws WitAPIException, CommentUnderstandingMessage {
+		// Anonymize possible sensitive data
+		commentBody = dataAnonymizer.anonymizeComment(commentBody);
 		// Get Wit-Object from Wit-API
 		WitObject witObject = witDataGrabber.getWitObjectFromComment(commentBody);
 
