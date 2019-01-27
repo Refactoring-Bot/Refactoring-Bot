@@ -27,7 +27,7 @@ public class DataAnonymizer {
 		// Remove email addresses
 		comment = anonymizeEmails(comment);
 		// Remove all URLs
-		comment = anonymizeURLs(comment);
+		// comment = anonymizeURLs(comment);
 		// Remove all tagged words (usually usernames)
 		comment = anonymizeTaggedUser(comment);
 		// Remove all words that could be access tokens

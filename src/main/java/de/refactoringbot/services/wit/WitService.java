@@ -164,7 +164,7 @@ public class WitService {
 			issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 			issue.setRefactorString(refStr.getValue());
 		} else {
-			throw new CommentUnderstandingMessage("Can not '" + refOp + "' an '" + refObj + "'!");
+			throw new CommentUnderstandingMessage("Can not '" + refOp.getValue() + "' an '" + refObj.getValue() + "'!");
 		}
 	}
 }
