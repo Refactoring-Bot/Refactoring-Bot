@@ -8,6 +8,9 @@ public class RefactorForLoopExample {
         for (int c : b) {
             a += c;
             System.out.println(a);
+            if (a == 10) {
+                break;
+            }
         }
 
         System.out.println(b);

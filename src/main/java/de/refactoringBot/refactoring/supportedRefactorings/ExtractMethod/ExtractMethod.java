@@ -130,6 +130,7 @@ public class ExtractMethod implements RefactoringImpl {
 
 				Map<Long, LineMapBlock> lineMapping = this.getLineToBlockMapping(cfg, this.lineMap);
 
+
 				// generate statement graph
 				StatementGraphNode graph = this.createStatementGraph(cfg, lineMapping);
 
@@ -271,8 +272,13 @@ public class ExtractMethod implements RefactoringImpl {
 			}
 			// check return
 			if (!this.isExtractableReturnCheck(candidate)) { return false; }
-			// check return, continue, break
+			// check continue and break
+			if (!this.isExtractableContinueBreakCheck(candidate)) { return false; }
 
+			return true;
+		}
+
+		private boolean isExtractableContinueBreakCheck(RefactorCandidate candidate) {
 
 			return true;
 		}
@@ -492,8 +498,10 @@ public class ExtractMethod implements RefactoringImpl {
                     for (Long lineNumber = tryRange.from; lineNumber <= endLineNumber; lineNumber++) {
                         if (lineNumber > tryRange.from && lineNumber < catchRanges.get(0).from) {
                             StatementGraphNode inTryNode = this.findNodeForLine(graph, lineNumber);
-							this.findParentNode(graph, inTryNode).children.remove(inTryNode);
-                            tryStartNode.children.add(inTryNode);
+                            if (inTryNode != null){
+								this.findParentNode(graph, inTryNode).children.remove(inTryNode);
+								tryStartNode.children.add(inTryNode);
+							}
                         }
                         for (int catchIndex = 0; catchIndex < catchRanges.size(); catchIndex++) {
                             Long endLine = (catchRanges.size() - 1 == catchIndex) ? finalRange.from : catchRanges.get(catchIndex + 1).from;
@@ -507,8 +515,10 @@ public class ExtractMethod implements RefactoringImpl {
                         }
                         if (lineNumber > finalRange.from && lineNumber <= finalRange.to) {
                             StatementGraphNode inFinalNode = this.findNodeForLine(graph, lineNumber);
-							this.findParentNode(graph, inFinalNode).children.remove(inFinalNode);
-                            finallyStartNode.children.add(inFinalNode);
+                            if (inFinalNode != null) {
+								this.findParentNode(graph, inFinalNode).children.remove(inFinalNode);
+								finallyStartNode.children.add(inFinalNode);
+							}
                         }
                     }
                 }
@@ -557,7 +567,8 @@ public class ExtractMethod implements RefactoringImpl {
 					case CONDITIONAL_BLOCK:
 						ConditionalBlock conditionalBlock = (ConditionalBlock) nextBlock;
 						// find the block which is the first successor of both paths
-						Long realSuccessor = this.findSuccessor(conditionalBlock, orderedBlocksMap);
+						Set<Long> visitedBlocks = new HashSet<>();
+						Long realSuccessor = this.findSuccessor(conditionalBlock, orderedBlocksMap, visitedBlocks);
 						// check which successor is the next in the ordered blocks
 						long nextID = orderedBlocks.get(index + 1).getId();
 						long newExitID = (conditionalBlock.getThenSuccessor().getId() == nextID) ? conditionalBlock.getElseSuccessor().getId() : nextID;
@@ -594,13 +605,13 @@ public class ExtractMethod implements RefactoringImpl {
 			return parentNode;
 		}
 
-		private Long findSuccessor(ConditionalBlock block, Map<Long, Block> orderedBlocksMap) {
+		private Long findSuccessor(ConditionalBlock block, Map<Long, Block> orderedBlocksMap, Set<Long> visitedBlocks) {
 			// find all ordered successors of thenBlock
-			Set<Long> visitedThenBlocks = new HashSet<>();
+			Set<Long> visitedThenBlocks = visitedBlocks;
 			visitedThenBlocks.add(block.getId());
 			List<Long> thenSuccessors = this.findSuccessors(block.getThenSuccessor(), orderedBlocksMap, visitedThenBlocks);
 			// find all ordered successors of ifBlock
-			Set<Long> visitedElseBlocks = new HashSet<>();
+			Set<Long> visitedElseBlocks = visitedBlocks;
 			visitedElseBlocks.add(block.getId());
 			List<Long> elseSuccessors = this.findSuccessors(block.getElseSuccessor(), orderedBlocksMap, visitedElseBlocks);
 			// compare all successors
@@ -612,34 +623,6 @@ public class ExtractMethod implements RefactoringImpl {
 			}
 			return null;
 		}
-
-		private Long findSuccessor(ExceptionBlock block, Map<Long, Block> orderedBlocksMap) {
-		    // find all ordered regular successors
-			Set<Long> visitedRegBlocks = new HashSet<>();
-			visitedRegBlocks.add(block.getId());
-            List<Long> regSuccessors = this.findSuccessors(block.getSuccessor(), orderedBlocksMap, visitedRegBlocks);
-            // find all ordered exceptional successors
-			Set<Long> visitedExBlocks = new HashSet<>();
-			visitedExBlocks.add(block.getId());
-            List<Long> excSuccessors = new ArrayList<>();
-            for (Set<Block> blocks : block.getExceptionalSuccessors().values()) {
-                Iterator<Block> it = blocks.iterator();
-                while (it.hasNext()) {
-                    Block nextBlock = it.next();
-                    if (!nextBlock.getType().equals(Block.BlockType.SPECIAL_BLOCK)) {
-                        excSuccessors.addAll(this.findSuccessors(nextBlock, orderedBlocksMap, visitedExBlocks));
-                    }
-                }
-            }
-            // compare all successors
-            Set<Long> regSuccessorsSet = new HashSet<>(regSuccessors);
-            for (Long id: excSuccessors) {
-                if (regSuccessorsSet.contains(id)) {
-                    return id;
-                }
-            }
-            return null;
-        }
 
 		private List<Long> findSuccessors(Block block, Map<Long, Block> orderedBlocksMap, Set<Long> visitedBlocks) {
 			Block nextBlock = block;
@@ -659,7 +642,7 @@ public class ExtractMethod implements RefactoringImpl {
 						break;
 					case CONDITIONAL_BLOCK:
 						ConditionalBlock conditionalBlock = (ConditionalBlock) nextBlock;
-						Long nextID = this.findSuccessor(conditionalBlock, orderedBlocksMap);
+						Long nextID = this.findSuccessor(conditionalBlock, orderedBlocksMap, visitedBlocks);
 						if (nextID != null) {
 							nextBlock = orderedBlocksMap.get(nextID);
 						} else {
@@ -727,7 +710,7 @@ public class ExtractMethod implements RefactoringImpl {
 		private Long addLineNumber(LineMap lineMap, Map<Long, LineMapBlock> lineMapping, Long currentLineNumber, Block block, Node node) {
 		    Long lineNumber = null;
 		    // handle try catch nodes
-            if (node.getClass().equals(MarkerNode.class)) {
+            if (node.getClass().equals(MarkerNode.class) && (node.getTree().getClass().equals(JCTree.JCTry.class))) {
                 MarkerNode markerNode = (MarkerNode) node;
                 String message = markerNode.getMessage();
                 JCTree.JCTry tree = (JCTree.JCTry) markerNode.getTree();
