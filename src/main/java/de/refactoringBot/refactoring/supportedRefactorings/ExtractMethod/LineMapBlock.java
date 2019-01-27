@@ -1,8 +1,9 @@
 package de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod;
 
-import java.util.ArrayList;
-import java.util.List;
+
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class LineMapBlock {
-    List<Long> blocks = new ArrayList<>();
+    SortedSet<Long> blocks = new TreeSet<>();
 }

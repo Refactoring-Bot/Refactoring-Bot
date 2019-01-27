@@ -9,10 +9,15 @@ import com.sun.tools.javac.tree.JCTree;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.refactoring.RefactoringImpl;
+import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.cfg.CFGBuilder;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.cfg.DOTCFGVisualizer;
 import org.checkerframework.dataflow.cfg.block.*;
 import org.checkerframework.dataflow.cfg.node.*;
+import org.checkerframework.dataflow.constantpropagation.Constant;
+import org.checkerframework.dataflow.constantpropagation.ConstantPropagationStore;
+import org.checkerframework.dataflow.constantpropagation.ConstantPropagationTransfer;
 import org.springframework.stereotype.Component;
 
 import javax.tools.*;
@@ -101,10 +106,6 @@ public class ExtractMethod implements RefactoringImpl {
 		private final LineMap lineMap;
 		private ClassTree classTree;
 		private Integer currentTryIndex = 0;
-
-		// helper variables for try catch analysis
-        private Long tryCatchSuccessor = null;
-        private Set<Block> tryCatchSuccessors = new HashSet<>();
 
         // constants
 		private final int minLineLength = 3;
@@ -491,21 +492,23 @@ public class ExtractMethod implements RefactoringImpl {
                     for (Long lineNumber = tryRange.from; lineNumber <= endLineNumber; lineNumber++) {
                         if (lineNumber > tryRange.from && lineNumber < catchRanges.get(0).from) {
                             StatementGraphNode inTryNode = this.findNodeForLine(graph, lineNumber);
+							this.findParentNode(graph, inTryNode).children.remove(inTryNode);
                             tryStartNode.children.add(inTryNode);
-                            this.findParentNode(graph, inTryNode).children.remove(inTryNode);
                         }
                         for (int catchIndex = 0; catchIndex < catchRanges.size(); catchIndex++) {
                             Long endLine = (catchRanges.size() - 1 == catchIndex) ? finalRange.from : catchRanges.get(catchIndex + 1).from;
                             if (lineNumber > catchRanges.get(catchIndex).from && lineNumber < endLine) {
                                 StatementGraphNode inCatchNode = this.findNodeForLine(graph, lineNumber);
-                                catchStartNodes.get(catchIndex).children.add(inCatchNode);
-                                this.findParentNode(graph, inCatchNode).children.remove(inCatchNode);
+                                if (inCatchNode != null) {
+									this.findParentNode(graph, inCatchNode).children.remove(inCatchNode);
+                                	catchStartNodes.get(catchIndex).children.add(inCatchNode);
+                                }
                             }
                         }
                         if (lineNumber > finalRange.from && lineNumber <= finalRange.to) {
                             StatementGraphNode inFinalNode = this.findNodeForLine(graph, lineNumber);
+							this.findParentNode(graph, inFinalNode).children.remove(inFinalNode);
                             finallyStartNode.children.add(inFinalNode);
-                            this.findParentNode(graph, inFinalNode).children.remove(inFinalNode);
                         }
                     }
                 }
@@ -539,23 +542,15 @@ public class ExtractMethod implements RefactoringImpl {
 			StatementGraphNode methodHead = new StatementGraphNode();
 
 			long lastID = orderedBlocks.get(orderedBlocks.size() - 1).getId();
-			Map<Long, List<Long>> blockMapping = this.reverseLineToBlockMapping(lineMapping);
+			Map<Long, SortedSet<Long>> blockMapping = this.reverseLineToBlockMapping(lineMapping);
 			return createStatementGraphNodeRecursive(orderedBlocks, 1, lastID, methodHead, blockMapping, lineMapping);
 		}
 
-		private StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, List<Long>> blockMapping, Map<Long, LineMapBlock> lineMapping) {
+		private StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, SortedSet<Long>> blockMapping, Map<Long, LineMapBlock> lineMapping) {
 			StatementGraphNode lastNode = null;
 			Map<Long, Block> orderedBlocksMap = this.mapBlocksToID(orderedBlocks);
 			while (orderedBlocks.get(index).getId() != exitID) {
 				Block nextBlock = orderedBlocks.get(index);
-				if (this.tryCatchSuccessor != null && nextBlock.getId() == this.tryCatchSuccessor) {
-                    for (Block successor : this.tryCatchSuccessors) {
-						lastNode = this.addNextBlock(lastNode, parentNode, nextBlock, blockMapping, successor);
-					}
-                    // reset try catch successors
-                    this.tryCatchSuccessors = new HashSet<>();
-                    this.tryCatchSuccessor = null;
-                }
 				switch (nextBlock.getType()) {
 					case SPECIAL_BLOCK:
 						break;
@@ -589,10 +584,6 @@ public class ExtractMethod implements RefactoringImpl {
 					case EXCEPTION_BLOCK:
 						ExceptionBlock exceptionBlock = (ExceptionBlock) nextBlock;
 						lastNode = this.addNextBlock(lastNode, parentNode, nextBlock, blockMapping, exceptionBlock.getSuccessor());
-						this.tryCatchSuccessor = this.findSuccessor(exceptionBlock, orderedBlocksMap);
-						for (Set<Block> excSuccesors : exceptionBlock.getExceptionalSuccessors().values()) {
-							this.tryCatchSuccessors.addAll(excSuccesors);
-						}
 						break;
 				}
 
@@ -687,9 +678,9 @@ public class ExtractMethod implements RefactoringImpl {
 			return map;
 		}
 
-		private StatementGraphNode addNextBlock(StatementGraphNode lastNode, StatementGraphNode parentNode, Block block, Map<Long, List<Long>> blockMapping, Block successor) {
+		private StatementGraphNode addNextBlock(StatementGraphNode lastNode, StatementGraphNode parentNode, Block block, Map<Long, SortedSet<Long>> blockMapping, Block successor) {
 			boolean exitNode = (successor.getType().equals(Block.BlockType.SPECIAL_BLOCK) && ((SpecialBlock) successor).getSpecialType().equals(SpecialBlock.SpecialBlockType.EXIT));
-			List<Long> lineNumbers = blockMapping.get(block.getId());
+			Set<Long> lineNumbers = blockMapping.get(block.getId());
 			for (Long lineNumber : lineNumbers) {
 				if (lastNode != null && lineNumber.equals(lastNode.linenumber)) {
 					lastNode.cfgBlocks.add(block);
@@ -742,13 +733,14 @@ public class ExtractMethod implements RefactoringImpl {
                 JCTree.JCTry tree = (JCTree.JCTry) markerNode.getTree();
                 List<JCTree.JCCatch> catchBlocks = tree.catchers;
                 if (message.startsWith("start of try statement")) {
-                    System.out.println("test");
+					lineNumber = lineMap.getLineNumber(tree.pos);
                 } else if (message.startsWith("start of try block")) {
                     JCTree.JCBlock bodyBlock = tree.body;
                     lineNumber = lineMap.getLineNumber(bodyBlock.pos);
                 } else if (message.startsWith("end of try block")) {
                     JCTree.JCBlock bodyBlock = tree.body;
                     lineNumber = lineMap.getLineNumber(bodyBlock.endpos);
+                    this.currentTryIndex = 0;
                 } else if (message.startsWith("start of catch block")) {
                     JCTree.JCBlock catchBlock = tree.catchers.get(this.currentTryIndex).body;
                     lineNumber = lineMap.getLineNumber(catchBlock.pos);
@@ -757,7 +749,6 @@ public class ExtractMethod implements RefactoringImpl {
                     lineNumber = lineMap.getLineNumber(catchBlock.endpos);
                     this.currentTryIndex++;
                 } else if (message.startsWith("start of finally block")) {
-                    this.currentTryIndex = 0;
                     JCTree.JCBlock finalBLock = tree.finalizer;
                     lineNumber = lineMap.getLineNumber(finalBLock.pos);
                 } else if (message.startsWith("end of finally block")) {
@@ -784,23 +775,17 @@ public class ExtractMethod implements RefactoringImpl {
 			}
 			return null;
 		}
-		private Map<Long, List<Long>> reverseLineToBlockMapping(Map<Long, LineMapBlock> lineMapping) {
-			Map<Long, List<Long>> blockMapping = new HashMap<>();
+		private Map<Long, SortedSet<Long>> reverseLineToBlockMapping(Map<Long, LineMapBlock> lineMapping) {
+			Map<Long, SortedSet<Long>> blockMapping = new HashMap<>();
 			for (Map.Entry<Long, LineMapBlock> blocks : lineMapping.entrySet()) {
 				for (Long block : blocks.getValue().blocks) {
-					blockMapping.computeIfAbsent(block, k -> new ArrayList<>());
+					blockMapping.computeIfAbsent(block, k -> new TreeSet<>());
 					blockMapping.get(block).add(blocks.getKey());
 				}
 			}
-			// remove duplicate lines for each block
-			for (Map.Entry<Long, List<Long>> blocks : blockMapping.entrySet()) {
-				Set<Long> set = new HashSet<>(blocks.getValue());
-				blocks.getValue().clear();
-				blocks.getValue().addAll(set);
-			}
 			return blockMapping;
 		}
-		private Map<Long, List<Long>> getBlockToLineMapping(ControlFlowGraph cfg, LineMap lineMap) {
+		private Map<Long, SortedSet<Long>> getBlockToLineMapping(ControlFlowGraph cfg, LineMap lineMap) {
 			return this.reverseLineToBlockMapping(this.getLineToBlockMapping(cfg, lineMap));
 		}
 	}
