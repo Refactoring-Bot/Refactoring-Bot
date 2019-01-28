@@ -90,6 +90,8 @@ public class WitService {
 			throws WitAPIException, CommentUnderstandingMessage {
 		// Anonymize possible sensitive data
 		commentBody = dataAnonymizer.anonymizeComment(commentBody);
+		// Log anonymized message as info
+		logger.info("Anonymized comment: " + commentBody);
 		// Get Wit-Object from Wit-API
 		WitObject witObject = witDataGrabber.getWitObjectFromComment(commentBody);
 

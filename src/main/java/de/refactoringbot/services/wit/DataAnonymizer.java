@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class DataAnonymizer {
 
-	public static final String URLEXP = "^(http://|https://)?(www.)?([a-zA-Z0-9]+).[a-zA-Z0-9]*.[a-z]{3}.([a-z]+)$";
+	public static final String URLEXP = "^(http:\\/\\/|https:\\/\\/)?(www.)?[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\\.[a-zA-Z]{2,}$";
 	public static final String TOKENEXP = "^[a-z0-9]{40}$";
 
 	/**
@@ -27,7 +27,7 @@ public class DataAnonymizer {
 		// Remove email addresses
 		comment = anonymizeEmails(comment);
 		// Remove all URLs
-		// comment = anonymizeURLs(comment);
+		comment = anonymizeURLs(comment);
 		// Remove all tagged words (usually usernames)
 		comment = anonymizeTaggedUser(comment);
 		// Remove all words that could be access tokens
