@@ -34,7 +34,7 @@ import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.
 @Component
 public class ExtractMethod implements RefactoringImpl {
 
-	private ControlFlowGraph cfg;
+	private CFGContainer cfgContainer;
 	private LineMap lineMap;
 
 	// helper var for line to block map generation
@@ -42,6 +42,13 @@ public class ExtractMethod implements RefactoringImpl {
 
 	// constants
 	private final int minLineLength = 3;
+
+	private final long lengthScoreWeight = 1L;
+	private final long maxLineLengthScore = 30L;
+	private final long nestingScoreWeight = 1L;
+	private final long paramScoreWeight = 1L;
+	private final long paramSemanticsWeight = 1L;
+	
 	private final String debugDir = "/Users/johanneshubert/Documents/projects/refactoring-bot/test";
 
 	/**
@@ -69,21 +76,21 @@ public class ExtractMethod implements RefactoringImpl {
 			// get classTree
 			ClassTree classTree = compilationUnitTree.accept(new ClassVisitor(), null);
 			// get cfg
-			this.cfg = compilationUnitTree.accept(new ControlFlowGraphGenerator(compilationUnitTree, parseResult.sourcePositions, Long.valueOf(lineNumber), classTree), null);
-			if (this.cfg != null) {
+			this.cfgContainer = compilationUnitTree.accept(new ControlFlowGraphGenerator(compilationUnitTree, parseResult.sourcePositions, Long.valueOf(lineNumber), classTree), null);
+			if (this.cfgContainer.cfg != null) {
 				this.lineMap = compilationUnitTree.getLineMap();
 
-				Map<Long, LineMapBlock> lineMapping = this.getLineToBlockMapping(cfg, this.lineMap);
+				Map<Long, LineMapBlock> lineMapping = this.getLineToBlockMapping(this.cfgContainer.cfg, this.lineMap);
 
 				// generate statement graph
-				StatementGraphNode graph = this.createStatementGraph(cfg, lineMapping);
+				StatementGraphNode graph = this.createStatementGraph(this.cfgContainer.cfg, lineMapping);
 
 				// add try catch structure to statement graph
-				this.analyseTryCatch(cfg, graph, this.lineMap);
+				this.analyseTryCatch(this.cfgContainer.cfg, graph, this.lineMap);
 
 				// add data flow to statement graph
-				Set<String> localVariables = this.findLocalVariables(cfg);
-				Map<Long, LineMapVariable> variableMap = this.analyseLocalDataFlow(cfg, localVariables, this.lineMap);
+				Set<String> localVariables = this.findLocalVariables(this.cfgContainer.cfg);
+				Map<Long, LineMapVariable> variableMap = this.analyseLocalDataFlow(this.cfgContainer.cfg, localVariables, this.lineMap);
 
 				// find candidates
 				Map<Long, Long> breakContinueMap = compilationUnitTree.accept(new BreakContinueVisitor(this.lineMap), null);
@@ -94,7 +101,7 @@ public class ExtractMethod implements RefactoringImpl {
 
 				System.out.println(candidates);
 
-				// this.printGraphToFile(this.debugDir);
+				// this.printGraphToFile(this.debugDir, this.cfgContainer.cfg);
 
 				return "extracted method";
 			}
@@ -110,7 +117,7 @@ public class ExtractMethod implements RefactoringImpl {
 		return null;
 	}
 
-	private void printGraphToFile(String path) {
+	private void printGraphToFile(String path, ControlFlowGraph cfg) {
 		ConstantPropagationTransfer transfer = new ConstantPropagationTransfer();
 		Analysis<Constant, ConstantPropagationStore, ConstantPropagationTransfer> analysis = new Analysis<>(transfer, DummyTypeProcessor.processingEnv);
 		analysis.performAnalysis(cfg);
@@ -126,7 +133,31 @@ public class ExtractMethod implements RefactoringImpl {
 
 	// MARK: begin candidate scoring
 	private void scoreCandidates(List<RefactorCandidate> candidates) {
+		for (RefactorCandidate candidate : candidates) {
+			Long lengthScore = this.scoreLength(candidate, this.cfgContainer.startLine, this.cfgContainer.endLine);
+			Long nestingScore = this.scoreNesting(candidate);
+			Long parameterScore = this.scoreParameters(candidate);
+			Long semanticScore = this.scoreSemantics(candidate);
+			candidate.score = lengthScore + nestingScore + parameterScore + semanticScore;
+		}
+	}
 
+	private Long scoreLength(RefactorCandidate candidate, long methodStartLine, long methodEndLine) {
+		long lengthCandidate = candidate.endLine - candidate.startLine;
+		long lengthRemainder = (methodEndLine - methodStartLine) - lengthCandidate;
+		return this.lengthScoreWeight * (Math.min(Math.min(lengthCandidate, lengthRemainder), this.maxLineLengthScore));
+	}
+
+	private Long scoreNesting(RefactorCandidate candidate) {
+		return 0L;
+	}
+
+	private Long scoreParameters(RefactorCandidate candidate) {
+		return 0L;
+	}
+
+	private Long scoreSemantics(RefactorCandidate candidate) {
+		return 0L;
 	}
 	// MARK: end candidate scoring
 
@@ -816,7 +847,7 @@ public class ExtractMethod implements RefactoringImpl {
 		}
 	}
 
-	private static class ControlFlowGraphGenerator extends TreeScanner<ControlFlowGraph, Void> {
+	private static class ControlFlowGraphGenerator extends TreeScanner<CFGContainer, Void> {
 		private final CompilationUnitTree compilationUnitTree;
 		private final Long lineNumber;
 		private final SourcePositions sourcePositions;
@@ -830,7 +861,7 @@ public class ExtractMethod implements RefactoringImpl {
 		}
 
 		@Override
-		public ControlFlowGraph visitMethod(MethodTree node, Void aVoid) {
+		public CFGContainer visitMethod(MethodTree node, Void aVoid) {
 			LineMap lineMap = this.compilationUnitTree.getLineMap();
 			long startPosition = sourcePositions.getStartPosition(compilationUnitTree, node);
 			long startLine = lineMap.getLineNumber(startPosition);
@@ -839,7 +870,7 @@ public class ExtractMethod implements RefactoringImpl {
 
 			if (startLine <= this.lineNumber && endLine >= this.lineNumber) {
 				// generate cfg
-				return CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv);
+				return new CFGContainer(CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv), startLine, endLine);
 			} else {
 				return super.visitMethod(node, aVoid);
 			}
