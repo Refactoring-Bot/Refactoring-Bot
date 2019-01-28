@@ -83,12 +83,11 @@ public class ExtractMethod implements RefactoringImpl {
 
 				// add data flow to statement graph
 				Set<String> localVariables = this.findLocalVariables(cfg);
-				Map<Long, Long> breakMap = compilationUnitTree.accept(new BreakContinueVisitor(this.lineMap), null);
 				Map<Long, LineMapVariable> variableMap = this.analyseLocalDataFlow(cfg, localVariables, this.lineMap);
 
 				// find candidates
-
-				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap);
+				Map<Long, Long> breakContinueMap = compilationUnitTree.accept(new BreakContinueVisitor(this.lineMap), null);
+				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap, breakContinueMap);
 
 				// score each candidate
 				this.scoreCandidates(candidates);
@@ -132,7 +131,7 @@ public class ExtractMethod implements RefactoringImpl {
 	// MARK: end candidate scoring
 
 	// MARK: begin candidate generation
-	private List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap) {
+	private List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap) {
 		List<RefactorCandidate> candidates = new ArrayList<>();
 		for (int outerIndex = 0; outerIndex < graph.children.size(); outerIndex++) {
 			for (int innerIndex = graph.children.size() - 1; innerIndex >= outerIndex; innerIndex--) {
@@ -144,11 +143,11 @@ public class ExtractMethod implements RefactoringImpl {
 
 				if (this.isLongEnough(potentialCandidate) &&
 						this.isValid(potentialCandidate, graph) &&
-						this.isExtractable(potentialCandidate, variableMap)) {
+						this.isExtractable(potentialCandidate, variableMap, breakContinueMap)) {
 					candidates.add(potentialCandidate);
 				}
 			}
-			candidates.addAll(this.findCandidates(graph.children.get(outerIndex), variableMap));
+			candidates.addAll(this.findCandidates(graph.children.get(outerIndex), variableMap, breakContinueMap));
 		}
 		return candidates;
 	}
@@ -208,7 +207,7 @@ public class ExtractMethod implements RefactoringImpl {
 	}
 
 	// checks if the candidate has only one output parameter and continue, break or return are handled correct
-	private boolean isExtractable(RefactorCandidate candidate, Map<Long, LineMapVariable> variableMap) {
+	private boolean isExtractable(RefactorCandidate candidate, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap) {
 		// check output parameters
 		Set<String> outVariables = new HashSet<>();
 		for (Long lineNumber = candidate.startLine; lineNumber <= candidate.endLine; lineNumber++) {
@@ -228,13 +227,17 @@ public class ExtractMethod implements RefactoringImpl {
 		// check return
 		if (!this.isExtractableReturnCheck(candidate)) { return false; }
 		// check continue and break
-		if (!this.isExtractableContinueBreakCheck(candidate)) { return false; }
+		if (!this.isExtractableContinueBreakCheck(candidate, breakContinueMap)) { return false; }
 
 		return true;
 	}
 
-	private boolean isExtractableContinueBreakCheck(RefactorCandidate candidate) {
-
+	private boolean isExtractableContinueBreakCheck(RefactorCandidate candidate, Map<Long, Long> breakContinueMap) {
+		for (Map.Entry<Long, Long> breakContinueLine : breakContinueMap.entrySet()) {
+			if (candidate.containsLine(breakContinueLine.getKey()) && !candidate.containsLine(breakContinueLine.getValue())) {
+				return false;
+			}
+		}
 		return true;
 	}
 
@@ -808,9 +811,7 @@ public class ExtractMethod implements RefactoringImpl {
 			if (r1 == null) { return r2; }
 			else if (r2 == null) { return r1; }
 
-			for (Map.Entry<Long, Long> breakLine: r2.entrySet()) {
-				r1.put(breakLine.getKey(), breakLine.getValue());
-			}
+			r1.putAll(r2);
 			return r1;
 		}
 	}

@@ -7,4 +7,8 @@ public class RefactorCandidate {
     List<StatementGraphNode> statements = new ArrayList<>();
     Long startLine;
     Long endLine;
+
+    public boolean containsLine(Long lineNumber) {
+        return startLine <= lineNumber && endLine >= lineNumber;
+    }
 }
