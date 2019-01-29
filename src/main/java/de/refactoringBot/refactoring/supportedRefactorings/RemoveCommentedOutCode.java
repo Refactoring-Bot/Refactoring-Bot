@@ -8,12 +8,13 @@ import org.springframework.stereotype.Component;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.comments.Comment;
-import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 
 import de.refactoringBot.configuration.BotConfiguration;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.refactoring.RefactoringImpl;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,166 +31,171 @@ import java.util.List;
  * @author Justin Kissling
  */
 @Component
-public class RemoveCommentedOutCode extends VoidVisitorAdapter<Object> {
+public class RemoveCommentedOutCode implements RefactoringImpl {
 
-	Integer line;
+    Integer line;
 
-	@Autowired
-	BotConfiguration botConfig;
+    @Autowired
+    BotConfiguration botConfig;
 
-	/**
-	 * This method performs the refactoring and returns a commit message.
-	 *
-	 * @param issue
-	 * @param gitConfig
-	 * @return commitMessage
-	 * @throws FileNotFoundException
-	 */
-	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig)
-			throws FileNotFoundException, IOException {
-		// Prepare data
-		String path = issue.getFilePath();
-		path = gitConfig.getRepoFolder() + "/" + path;
-		line = issue.getLine();
-		// Check and see if the commented out code is old enough to be removed. Newer
-		// code may still be in use
-		// TODO: Don't perform a refactoring on newer code
-		int minAgeInDays = 7;
+    /**
+     * This method performs the refactoring and returns a commit message.
+     *
+     * @param issue
+     * @param gitConfig
+     * @return commitMessage
+     * @throws FileNotFoundException
+     */
+    @Override
+    public String performRefactoring(BotIssue issue, GitConfiguration gitConfig)
+            throws FileNotFoundException, IOException {
+        
+        // Prepare data
+        String path = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
+        
+        line = issue.getLine();
+        // Check and see if the commented out code is old enough to be removed. Newer
+        // code may still be in use
+        // TODO: Don't perform a refactoring on newer code
+        int minAgeInDays = 7;
 
-		LocalDate localDate = LocalDate.now();
-		LocalDate issueDate = LocalDate.parse(issue.getCreationDate().substring(0, 10));
+        LocalDate localDate = LocalDate.now();
+        LocalDate issueDate = LocalDate.parse(issue.getCreationDate().substring(0, 10));
 
-		if (Period.between(issueDate, localDate).getDays() > minAgeInDays) {
-			System.out.println("Issue is old enough (" + Period.between(issueDate, localDate).getDays() + " days)");
-		} else {
-			System.out.println("Issue is not old enough (" + Period.between(issueDate, localDate).getDays() + " days)");
-		}
+        if (Period.between(issueDate, localDate).getDays() > minAgeInDays) {
+            System.out.println("Issue is old enough (" + Period.between(issueDate, localDate).getDays() + " days)");
+        } else {
+            System.out.println("Issue is not old enough (" + Period.between(issueDate, localDate).getDays() + " days)");
+        }
 
-		// Read file
-		FileInputStream in = new FileInputStream(path);
-		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+        // Read file
+        FileInputStream in = new FileInputStream(path);
+        CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
 
-		// TODO: Is this list sorted?
-		List<Comment> comments = compilationUnit.getAllContainedComments();
+        // TODO: Is this list sorted?
+        List<Comment> comments = compilationUnit.getAllContainedComments();
 
-		// Start and end line of the comment(s) that we want to remove
-		int start = line;
-		int end = line;
+        // Start and end line of the comment(s) that we want to remove
+        int start = line;
+        int end = line;
 
-		// Remembering the current line to find a block of comments
-		int currentLine = line;
+        // Remembering the current line to find a block of comments
+        int currentLine = line;
 
-		boolean isLineComments = true;
+        boolean isLineComments = true;
 
-		for (Comment comment : comments) {
-			if ((currentLine >= comment.getBegin().get().line) && (currentLine <= comment.getEnd().get().line)) {
-				if (comment.isLineComment()) {
+        for (Comment comment : comments) {      
+            if ((currentLine >= comment.getBegin().get().line) && (currentLine <= comment.getEnd().get().line)) {
+                if (comment.isLineComment()) {
 
-					// Current comment does not contain code -> Stop
-					if ((currentLine != start) && !isCommentedOutCode(comment.getContent())) {
-						break;
-					}
+                    // Current comment does not contain code -> Stop
+                    if ((currentLine != start) && !isCommentedOutCode(comment.getContent())) {
+                        break;
+                    }
 
-					// Trying to find more line comments below since Sonarqube only reports the
-					// first
-					end = comment.getBegin().get().line;
-					currentLine++;
+                    // Trying to find more line comments below since Sonarqube only reports the
+                    // first
+                    comment.remove();
+                    end = comment.getBegin().get().line;
+                    currentLine++;
 
-				} else {
-					// The comment is a multi-line comment, so we remove the entire thing right away
-					isLineComments = false;
-					start = comment.getBegin().get().line;
-					end = comment.getEnd().get().line;
-					break;
-				}
-			}
-		}
+                } else {
+                    // The comment is a multi-line comment, so we remove the entire thing right away
+                    comment.remove();
+                    isLineComments = false;
+                    start = comment.getBegin().get().line;
+                    end = comment.getEnd().get().line;
+                    break;
+                }
+            }
+        }
 
-		removeLinesFromFile(start, end, path, isLineComments);
+        //removeLinesFromFile(start, end, path, isLineComments);
 
-		// Return commit message
-		return "Removed commented out code at line " + line;
-	}
+        // Save changes to file
+        PrintWriter out = new PrintWriter(path);
+        out.println(LexicalPreservingPrinter.print(compilationUnit));
+        out.close();
 
-	/**
-	 * We have to manually edit the file, since Javaparser doesn't let you remove
-	 * comments when using the LexicalPreservingPrinter
-	 *
-	 * @param start
-	 *            The starting line of the comment block to remove
-	 * @param end
-	 *            The end line of the comment block
-	 * @param path
-	 *            The path of the .java file to edit
-	 * @throws FileNotFoundException
-	 * @throws IOException
-	 */
-	private void removeLinesFromFile(int start, int end, String path, boolean isLineComments)
-			throws FileNotFoundException, IOException {
+        // Return commit message
+        return "Removed commented out code at line " + line;
+    }
 
-		File inputFile = new File(path);
-		StringBuilder sb = new StringBuilder();
+    /**
+     * We have to manually edit the file, since Javaparser doesn't let you
+     * remove comments when using the LexicalPreservingPrinter
+     *
+     * @param start The starting line of the comment block to remove
+     * @param end The end line of the comment block
+     * @param path The path of the .java file to edit
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+    private void removeLinesFromFile(int start, int end, String path, boolean isLineComments)
+            throws FileNotFoundException, IOException {
 
-		try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
+        File inputFile = new File(path);
+        StringBuilder sb = new StringBuilder();
 
-			String currentLine;
-			// Default: UNIX style line endings
-			System.setProperty("line.separator", "\r\n");
-			int lineNumber = 0;
+        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
 
-			while ((currentLine = reader.readLine()) != null) {
+            String currentLine;
+            // Default: UNIX style line endings
+            System.setProperty("line.separator", "\r\n");
+            int lineNumber = 0;
 
-				lineNumber++;
+            while ((currentLine = reader.readLine()) != null) {
 
-				if ((lineNumber >= start) && (lineNumber <= end)) {
-					// If the line also contains regular code before the comment, preserve it
-					if ((!currentLine.trim().startsWith("//")) && isLineComments) {
-						sb.append(currentLine.substring(0, currentLine.indexOf("//")))
-								.append(System.getProperty("line.separator"));
-						// writer.write(currentLine.substring(0, currentLine.indexOf("//")) +
-						// lineSeparator);
-					}
-					continue;
-				}
-				if (lineNumber != 1) {
-					sb.append(System.getProperty("line.separator"));
-				}
+                lineNumber++;
 
-				sb.append(currentLine);
+                if ((lineNumber >= start) && (lineNumber <= end)) {
+                    // If the line also contains regular code before the comment, preserve it
+                    if ((!currentLine.trim().startsWith("//")) && isLineComments) {
+                        sb.append(currentLine.substring(0, currentLine.indexOf("//")))
+                                .append(System.getProperty("line.separator"));
+                        // writer.write(currentLine.substring(0, currentLine.indexOf("//")) +
+                        // lineSeparator);
+                    }
+                    continue;
+                }
+                if (lineNumber != 1) {
+                    sb.append(System.getProperty("line.separator"));
+                }
 
-			}
-		}
+                sb.append(currentLine);
 
-		PrintWriter out = new PrintWriter(path);
-		out.println(sb.toString());
-		out.close();
+            }
+        }
 
-	}
+        PrintWriter out = new PrintWriter(path);
+        out.println(sb.toString());
+        out.close();
 
-	/**
-	 * Since sonarqube only provides one line per comment block, this method is used
-	 * to determine if the following comments also contain code
-	 *
-	 * @param line
-	 *            The content of the comment
-	 * @return Whether or not the comment contains code
-	 */
-	private boolean isCommentedOutCode(String line) {
+    }
 
-		// Method call
-		if (line.matches("[a-zA-Z]+\\.[a-zA-Z] +\\(.*\\)")) {
-			return true;
-			// if or while statement
-		} else if (line.matches("(if\\s*\\(.*)| (while\\s*\\(.*)")) {
-			return true;
-		} else if ((line.trim().endsWith(";")) || line.trim().equals("")) {
-			return true;
-			// Single brackets (from methods or if statements)
-		} else if ((line.trim().equals("{")) || line.trim().equals("}")) {
-			return true;
-		}
+    /**
+     * Since sonarqube only provides one line per comment block, this method is
+     * used to determine if the following comments also contain code
+     *
+     * @param line The content of the comment
+     * @return Whether or not the comment contains code
+     */
+    private boolean isCommentedOutCode(String line) {
 
-		return false;
-	}
+        // Method call
+        if (line.matches("[a-zA-Z]+\\.[a-zA-Z] +\\(.*\\)")) {
+            return true;
+            // if or while statement
+        } else if (line.matches("(if\\s*\\(.*)| (while\\s*\\(.*)")) {
+            return true;
+        } else if ((line.trim().endsWith(";")) || line.trim().equals("")) {
+            return true;
+            // Single brackets (from methods or if statements)
+        } else if ((line.trim().equals("{")) || line.trim().equals("}")) {
+            return true;
+        }
+
+        return false;
+    }
 
 }
