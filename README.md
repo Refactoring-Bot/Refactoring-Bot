@@ -24,7 +24,7 @@ Use the following instructions to handle a local Docker image and container of t
 ```bash
 # Make sure the jar file has been built and is available in the `target` directory
 # If not execute the following command
-maven clean install
+mvn clean install
 
 # Build image from Dockerfile
 docker build -t refactoring-bot .
