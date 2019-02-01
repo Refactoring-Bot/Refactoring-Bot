@@ -31,15 +31,10 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
-	@Override
-	public Class<?> getTestResourcesClass() {
-		return TestDataClassRenameMethod.class;
-	}
-
 	@Test
 	public void testRenameMethod() throws Exception {
 		// arrange
-		File tempFile = getTempCopyOfTestResourcesFile();
+		File tempFile = createTempCopyOfTestResourcesFile(TestDataClassRenameMethod.class);
 		BotIssue issue = new BotIssue();
 		GitConfiguration gitConfig = new GitConfiguration();
 		RenameMethod refactoring = new RenameMethod();

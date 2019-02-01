@@ -24,11 +24,6 @@ public class AddOverrideAnnotationTest extends AbstractRefactoringTests {
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
-	@Override
-	public Class<TestDataClassMissingOverrideAnnotation> getTestResourcesClass() {
-		return TestDataClassMissingOverrideAnnotation.class;
-	}
-	
 	@Test
 	public void testAddOverrideAnnotation() throws Exception {
 		testAddOverrideAnnotation(missingOverrideTestClass.getLineOfMethodWithMissingOverrideAnnotation());
@@ -57,7 +52,7 @@ public class AddOverrideAnnotationTest extends AbstractRefactoringTests {
 
 	private void testAddOverrideAnnotation(int lineNumberOfMethodWithMissingOverride) throws Exception {
 		// arrange
-		File tempFile = getTempCopyOfTestResourcesFile();
+		File tempFile = createTempCopyOfTestResourcesFile(TestDataClassMissingOverrideAnnotation.class);
 		BotIssue issue = new BotIssue();
 		GitConfiguration gitConfig = new GitConfiguration();
 		AddOverrideAnnotation refactoring = new AddOverrideAnnotation();

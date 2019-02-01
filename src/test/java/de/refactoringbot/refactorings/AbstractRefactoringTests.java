@@ -20,22 +20,16 @@ public abstract class AbstractRefactoringTests {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	/**
-	 * Returns the test data class for a specific refactoring test class
+	 * Creates a temporary copy of the test resources file containing the given
+	 * class. All copies are stored in the same temporary folder.
 	 * 
-	 * @return
-	 */
-	public abstract Class<?> getTestResourcesClass();
-
-	/**
-	 * Returns a temporary copy of the test resources file of the current
-	 * refactoring test class
-	 * 
+	 * @param clazz
 	 * @return
 	 * @throws IOException
 	 */
-	protected File getTempCopyOfTestResourcesFile() throws IOException {
+	protected File createTempCopyOfTestResourcesFile(Class<?> clazz) throws IOException {
 		File copy = folder.newFile();
-		com.google.common.io.Files.copy(getTestResourcesFile(), copy);
+		com.google.common.io.Files.copy(getTestResourcesFile(clazz), copy);
 		return copy;
 	}
 
@@ -61,9 +55,9 @@ public abstract class AbstractRefactoringTests {
 	 * 
 	 * @return
 	 */
-	private File getTestResourcesFile() {
-		String pathToTestResources = "src/test/java/"
-				+ ClassUtils.convertClassNameToResourcePath(getTestResourcesClass().getName()) + ".java";
+	private File getTestResourcesFile(Class<?> clazz) {
+		String pathToTestResources = "src/test/java/" + ClassUtils.convertClassNameToResourcePath(clazz.getName())
+				+ ".java";
 		return new File(pathToTestResources);
 	}
 

@@ -39,11 +39,6 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
-	@Override
-	public Class<TestDataClassRemoveParameter> getTestResourcesClass() {
-		return TestDataClassRemoveParameter.class;
-	}
-
 	@Test
 	public void testRemoveUnusedParameter() throws Exception {
 		testRemoveParameter(removeParameterTestClass.getLineOfMethodWithUnusedParameter(0, 0, 0), "b");
@@ -78,7 +73,7 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 	private void testRemoveParameter(int lineNumberOfMethodWithParameterToBeRemoved, String parameterName)
 			throws Exception {
 		// arrange
-		File tempFile = getTempCopyOfTestResourcesFile();
+		File tempFile = createTempCopyOfTestResourcesFile(TestDataClassRemoveParameter.class);
 		BotIssue issue = new BotIssue();
 		GitConfiguration gitConfig = new GitConfiguration();
 		RemoveMethodParameter refactoring = new RemoveMethodParameter();
