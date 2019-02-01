@@ -3,7 +3,6 @@ package de.refactoringbot.refactorings;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,11 +29,15 @@ import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter;
+import de.refactoringbot.resources.removeparameter.TestDataClassWithCallOfTargetMethod;
+import de.refactoringbot.resources.removeparameter.TestDataSubClassRemoveParameter;
+import de.refactoringbot.resources.removeparameter.TestDataSuperClassRemoveParameter;
 
 public class RemoveParameterTest extends AbstractRefactoringTests {
 
 	private static final Logger logger = LoggerFactory.getLogger(RemoveParameterTest.class);
 	private TestDataClassRemoveParameter removeParameterTestClass = new TestDataClassRemoveParameter();
+	private TestDataClassWithCallOfTargetMethod removeParameterCallerTestClass = new TestDataClassWithCallOfTargetMethod();
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
@@ -56,11 +59,6 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		testRemoveParameter(removeParameterTestClass.getLineOfMethodWithUnusedParameter(0, 0, 0), "d");
 	}
 
-	@Test
-	public void testRemoveUnusedParameter2() throws Exception {
-		testRemoveParameter(removeParameterTestClass.getLineOfMethodWithUnusedParameter2(0), "a");
-	}
-
 	/**
 	 * Tries to remove the parameter with the given name from the method in the
 	 * given line. Checks if removal was successful and if the additional dummy
@@ -73,32 +71,43 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 	private void testRemoveParameter(int lineNumberOfMethodWithParameterToBeRemoved, String parameterName)
 			throws Exception {
 		// arrange
-		File tempFile = createTempCopyOfTestResourcesFile(TestDataClassRemoveParameter.class);
-		BotIssue issue = new BotIssue();
-		GitConfiguration gitConfig = new GitConfiguration();
-		RemoveMethodParameter refactoring = new RemoveMethodParameter();
-		CompilationUnit cuOriginalFile = JavaParser.parse(tempFile);
-		MethodDeclaration originalMethod = RefactoringHelper
-				.getMethodByLineNumberOfMethodName(lineNumberOfMethodWithParameterToBeRemoved, cuOriginalFile);
+		File fileWithCodeSmell = createTempCopyOfTestResourcesFile(TestDataClassRemoveParameter.class);
+		File fileOfSuperClass = createTempCopyOfTestResourcesFile(TestDataSuperClassRemoveParameter.class);
+		File fileOfSubClass = createTempCopyOfTestResourcesFile(TestDataSubClassRemoveParameter.class);
+		File fileWithCallerMethod = createTempCopyOfTestResourcesFile(TestDataClassWithCallOfTargetMethod.class);
+
+		CompilationUnit cuOriginalFileWithCodeSmell = JavaParser.parse(fileWithCodeSmell);
+		CompilationUnit cuOriginalFileWithCallerMethod = JavaParser.parse(fileWithCallerMethod);
+
+		MethodDeclaration originalMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
+				lineNumberOfMethodWithParameterToBeRemoved, cuOriginalFileWithCodeSmell);
 		MethodDeclaration originalDummyMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
-				removeParameterTestClass.getLineNumberOfDummyMethod(0, 0, 0), cuOriginalFile);
-		MethodDeclaration originalCallerMethod = RefactoringHelper
-				.getMethodByLineNumberOfMethodName(removeParameterTestClass.getLineNumberOfCaller(), cuOriginalFile);
-		
+				removeParameterTestClass.getLineNumberOfDummyMethod(0, 0, 0), cuOriginalFileWithCodeSmell);
+		MethodDeclaration originalCallerMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
+				removeParameterTestClass.getLineNumberOfCaller(), cuOriginalFileWithCodeSmell);
+		MethodDeclaration originalCallerMethodInDifferentFile = RefactoringHelper.getMethodByLineNumberOfMethodName(
+				removeParameterCallerTestClass.getLineOfCallerMethodInDifferentFile(), cuOriginalFileWithCallerMethod);
+
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(originalMethod).isNotNull();
 		softAssertions.assertThat(originalDummyMethod).isNotNull();
 		softAssertions.assertThat(originalCallerMethod).isNotNull();
+		softAssertions.assertThat(originalCallerMethodInDifferentFile).isNotNull();
 		softAssertions.assertAll();
 
+		GitConfiguration gitConfig = new GitConfiguration();
 		gitConfig.setRepoFolder("");
-		issue.setFilePath(tempFile.getAbsolutePath());
+
+		BotIssue issue = new BotIssue();
+		issue.setFilePath(fileWithCodeSmell.getAbsolutePath());
 		issue.setLine(lineNumberOfMethodWithParameterToBeRemoved);
 		issue.setJavaRoots(new ArrayList<>());
 		issue.setRefactorString(parameterName);
-		issue.setAllJavaFiles(Arrays.asList(tempFile.getAbsolutePath()));
+		issue.setAllJavaFiles(Arrays.asList(fileWithCodeSmell.getAbsolutePath(), fileOfSuperClass.getAbsolutePath(),
+				fileOfSubClass.getAbsolutePath(), fileWithCallerMethod.getAbsolutePath()));
 
 		// act
+		RemoveMethodParameter refactoring = new RemoveMethodParameter();
 		String outputMessage = refactoring.performRefactoring(issue, gitConfig);
 		logger.info(outputMessage);
 
@@ -106,31 +115,70 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		String methodName = originalMethod.getNameAsString();
 		String dummyMethodName = originalDummyMethod.getNameAsString();
 		String callerMethodName = originalCallerMethod.getNameAsString();
-		FileInputStream in = new FileInputStream(tempFile);
-		CompilationUnit cu = JavaParser.parse(in);
-		MethodDeclaration refactoredMethod = getMethodByName(methodName, cu);
+		String callerMethodInDifferentFileName = originalCallerMethodInDifferentFile.getNameAsString();
+		CompilationUnit cuRefactoredFileWithCodeSmell = JavaParser.parse(fileWithCodeSmell);
+		CompilationUnit cuRefactoredFileWithCallerMethod = JavaParser.parse(fileWithCallerMethod);
 
 		// assert that parameter has been removed from the target method
+		MethodDeclaration refactoredMethod = getMethodByName(methodName, cuRefactoredFileWithCodeSmell);
 		assertThat(refactoredMethod).isNotNull();
 		assertThat(refactoredMethod.getParameterByName(parameterName).isPresent()).isFalse();
 
 		// assert that parameter has also been removed from the javadoc
-		List<JavadocBlockTag> javadocBlockTags = refactoredMethod.getJavadoc().get().getBlockTags();
+		assertParameterNotPresentInJavadoc(refactoredMethod, parameterName);
+
+		// assert that dummy method is unchanged
+		MethodDeclaration dummyMethod = getMethodByName(dummyMethodName, cuRefactoredFileWithCodeSmell);
+		assertThat(dummyMethod).isNotNull();
+		assertThat(dummyMethod.getParameterByName(parameterName)).isPresent();
+
+		// assert that caller method in same file has been refactored
+		MethodDeclaration methodWithTargetMethodCalls = getMethodByName(callerMethodName,
+				cuRefactoredFileWithCodeSmell);
+		assertThat(methodWithTargetMethodCalls).isNotNull();
+		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(methodWithTargetMethodCalls,
+				refactoredMethod);
+
+		// assert that caller method in different file has been refactored
+		MethodDeclaration methodInDifferentFileWithTargetMethodCalls = getMethodByName(callerMethodInDifferentFileName,
+				cuRefactoredFileWithCallerMethod);
+		assertThat(methodInDifferentFileWithTargetMethodCalls).isNotNull();
+		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(
+				methodInDifferentFileWithTargetMethodCalls, refactoredMethod);
+
+		// assert that super class has been refactored
+		// TODO
+
+		// assert that sub class has been refactored
+		// TODO
+	}
+
+	/**
+	 * Asserts that the given parameter is not present in the javadoc of the given
+	 * method
+	 * 
+	 * @param methodDeclaration
+	 * @param parameterName
+	 */
+	private void assertParameterNotPresentInJavadoc(MethodDeclaration methodDeclaration, String parameterName) {
+		List<JavadocBlockTag> javadocBlockTags = methodDeclaration.getJavadoc().get().getBlockTags();
 		for (JavadocBlockTag javadocBlockTag : javadocBlockTags) {
 			if (javadocBlockTag.getTagName().equals("param")) {
 				assertThat(javadocBlockTag.getName().get()).isNotEqualTo(parameterName);
 			}
 		}
+	}
 
-		// assert that dummy method is unchanged
-		MethodDeclaration dummyMethod = getMethodByName(dummyMethodName, cu);
-		assertThat(dummyMethod).isNotNull();
-		assertThat(dummyMethod.getParameterByName(parameterName)).isPresent();
-
-		// assert that caller method has been refactored as well
-		MethodDeclaration callerMethod = getMethodByName(callerMethodName, cu);
-		assertThat(callerMethod).isNotNull();
-		for (MethodCallExpr methodCall : callerMethod.getBody().get().findAll(MethodCallExpr.class)) {
+	/**
+	 * Asserts that all method calls in the body of methodWithTargetMethodCalls have
+	 * the same argument size as the refactoredMethod has arguments
+	 * 
+	 * @param methodWithTargetMethodCalls
+	 * @param refactoredMethod
+	 */
+	private void assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(
+			MethodDeclaration methodWithTargetMethodCalls, MethodDeclaration refactoredMethod) {
+		for (MethodCallExpr methodCall : methodWithTargetMethodCalls.getBody().get().findAll(MethodCallExpr.class)) {
 			if (methodCall.getNameAsString().equals(refactoredMethod.getNameAsString())) {
 				NodeList<Expression> callerMethodArguments = methodCall.getArguments();
 				NodeList<Parameter> refactoredMethodParameters = refactoredMethod.getParameters();
