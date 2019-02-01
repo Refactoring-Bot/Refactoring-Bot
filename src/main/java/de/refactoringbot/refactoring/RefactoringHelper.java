@@ -33,7 +33,7 @@ import de.refactoringbot.model.javaparser.ParserRefactoring;
  */
 public class RefactoringHelper {
 
-	private static final Logger logger = LoggerFactory.getLogger(RefactoringPicker.class);
+	private static final Logger logger = LoggerFactory.getLogger(RefactoringHelper.class);
 
 	private RefactoringHelper() {
 	}
@@ -47,9 +47,9 @@ public class RefactoringHelper {
 	 * @return
 	 * @throws FileNotFoundException
 	 */
+	@Deprecated
 	public static ParserRefactoring findAndAddMethods(ParserRefactoring refactoring, List<String> allJavaFiles,
 			String methodSignature) throws FileNotFoundException {
-
 		// Iterate all Java-Files
 		for (String javaFile : allJavaFiles) {
 			// parse a file
@@ -60,12 +60,9 @@ public class RefactoringHelper {
 			List<ClassOrInterfaceDeclaration> classes = compilationUnit.findAll(ClassOrInterfaceDeclaration.class);
 			// Iterate all Classes
 			for (ClassOrInterfaceDeclaration currentClass : classes) {
-
-				// If class is sub/or superclass
-				if (refactoring.getClasses().contains(currentClass.resolve().getQualifiedName())) {
-					// Get all methods
+				boolean isSubOrSuperClass = refactoring.getClasses().contains(currentClass.resolve().getQualifiedName());
+				if (isSubOrSuperClass) {
 					List<MethodDeclaration> methods = currentClass.getMethods();
-					// Search methods
 					for (MethodDeclaration method : methods) {
 						if (method.getSignature().asString().equals(methodSignature)) {
 							refactoring.addMethod(method);
@@ -82,6 +79,34 @@ public class RefactoringHelper {
 		return refactoring;
 	}
 
+	public static List<ClassOrInterfaceDeclaration> getAllClassesOrInterfacesFromJavaFiles(List<String> javaFiles)
+			throws FileNotFoundException {
+		List<ClassOrInterfaceDeclaration> classesAndInterfaces = new ArrayList<>();
+		for (String javaFile : javaFiles) {
+			FileInputStream filepath = new FileInputStream(javaFile);
+			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
+			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = compilationUnit
+					.findAll(ClassOrInterfaceDeclaration.class);
+			classesAndInterfaces.addAll(classesAndInterfacesInCurrentFile);
+		}
+		return classesAndInterfaces;
+	}
+	
+	public static List<MethodDeclaration> findAllMethodDeclarationsWithEqualMethodSignature(
+			List<ClassOrInterfaceDeclaration> classesAndInterfaces, String methodSignature) {
+		List<MethodDeclaration> methodDeclarations = new ArrayList<>();
+		for (ClassOrInterfaceDeclaration classOrInterface : classesAndInterfaces) {
+			List<MethodDeclaration> methodsInClassOrInterface = classOrInterface.getMethods();
+			for (MethodDeclaration method : methodsInClassOrInterface) {
+				if (getMethodSignatureAsString(method).equals(methodSignature)) {
+					methodDeclarations.add(method);
+				}
+			}
+		}
+
+		return methodDeclarations;
+	}
+
 	/**
 	 * This method scans all Java files for method calls that match the method
 	 * signatures in the ParserRefactoring and adds them as method calls to the
@@ -92,6 +117,7 @@ public class RefactoringHelper {
 	 * @return
 	 * @throws FileNotFoundException
 	 */
+	@Deprecated
 	public static ParserRefactoring findAndAddMethodCalls(ParserRefactoring refactoring, List<String> allJavaFiles)
 			throws FileNotFoundException {
 
@@ -136,6 +162,7 @@ public class RefactoringHelper {
 	 * @throws FileNotFoundException
 	 * @throws BotRefactoringException
 	 */
+	@Deprecated
 	public static ParserRefactoring addSubClasses(ParserRefactoring refactoring, List<String> allJavaFiles)
 			throws FileNotFoundException {
 
