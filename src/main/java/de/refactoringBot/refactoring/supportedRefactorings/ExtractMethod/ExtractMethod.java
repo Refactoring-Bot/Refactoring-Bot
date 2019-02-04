@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 
 import javax.tools.*;
 import java.io.*;
+import java.sql.Statement;
 import java.util.*;
 
 import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.StatementGraphNode.StatementGraphNodeType.*;
@@ -43,12 +44,13 @@ public class ExtractMethod implements RefactoringImpl {
 	// constants
 	private final int minLineLength = 3;
 
-	private final long lengthScoreWeight = 1L;
-	private final long maxLineLengthScore = 30L;
-	private final long nestingScoreWeight = 1L;
-	private final long paramScoreWeight = 1L;
-	private final long paramSemanticsWeight = 1L;
-	
+	private final double lengthScoreWeight = 0.1;
+	private final double maxLineLengthScore = 30;
+	private final double nestingScoreWeight = 1;
+	private final double paramScoreWeight = 1;
+	private final double maxParameterScore = 4;
+	private final double paramSemanticsWeight = 1;
+
 	private final String debugDir = "/Users/johanneshubert/Documents/projects/refactoring-bot/test";
 
 	/**
@@ -67,6 +69,14 @@ public class ExtractMethod implements RefactoringImpl {
 
 		return this.refactorMethod(sourcePath, issue.getLine());
 	}
+	/*
+		TODO:
+			- handle special switch case
+			- handle function parameter in data flow
+			- handle empty line / unrecognized lines with closing brackets in candidates
+			- handle data flow for assignment nodes
+			- goto
+	 */
 
 	public String refactorMethod(String sourcePath, Integer lineNumber) {
 		// parse Java
@@ -97,7 +107,7 @@ public class ExtractMethod implements RefactoringImpl {
 				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap, breakContinueMap);
 
 				// score each candidate
-				this.scoreCandidates(candidates);
+				this.scoreCandidates(graph, candidates, variableMap);
 
 				System.out.println(candidates);
 
@@ -132,32 +142,84 @@ public class ExtractMethod implements RefactoringImpl {
 	}
 
 	// MARK: begin candidate scoring
-	private void scoreCandidates(List<RefactorCandidate> candidates) {
+	private void scoreCandidates(StatementGraphNode fullGraph, List<RefactorCandidate> candidates, Map<Long, LineMapVariable> variableMap) {
 		for (RefactorCandidate candidate : candidates) {
-			Long lengthScore = this.scoreLength(candidate, this.cfgContainer.startLine, this.cfgContainer.endLine);
-			Long nestingScore = this.scoreNesting(candidate);
-			Long parameterScore = this.scoreParameters(candidate);
-			Long semanticScore = this.scoreSemantics(candidate);
+			double lengthScore = this.scoreLength(candidate, this.cfgContainer.startLine, this.cfgContainer.endLine);
+			double nestingScore = this.scoreNesting(fullGraph, candidate);
+			double parameterScore = this.scoreParameters(candidate, variableMap);
+			double semanticScore = this.scoreSemantics(candidate);
 			candidate.score = lengthScore + nestingScore + parameterScore + semanticScore;
 		}
 	}
 
-	private Long scoreLength(RefactorCandidate candidate, long methodStartLine, long methodEndLine) {
+	private double scoreLength(RefactorCandidate candidate, long methodStartLine, long methodEndLine) {
 		long lengthCandidate = candidate.endLine - candidate.startLine;
 		long lengthRemainder = (methodEndLine - methodStartLine) - lengthCandidate;
 		return this.lengthScoreWeight * (Math.min(Math.min(lengthCandidate, lengthRemainder), this.maxLineLengthScore));
 	}
 
-	private Long scoreNesting(RefactorCandidate candidate) {
-		return 0L;
+	private double scoreNesting(StatementGraphNode fullGraph, RefactorCandidate candidate) {
+		long complexityMethod = this.calculateCognitiveComplexity(fullGraph.children, 1);
+		long complexityCandidate = this.calculateCognitiveComplexity(candidate.statements, 1);
+		StatementGraphNode remainderGraph = fullGraph;
+		for (StatementGraphNode node : candidate.statements) {
+			remainderGraph = this.removeNodeFromGraph(remainderGraph, node);
+		}
+		long complexityRemainder = this.calculateCognitiveComplexity(remainderGraph.children, 1);
+		return this.nestingScoreWeight * (complexityMethod - Math.max(complexityCandidate, complexityRemainder));
 	}
 
-	private Long scoreParameters(RefactorCandidate candidate) {
-		return 0L;
+	private StatementGraphNode removeNodeFromGraph(StatementGraphNode originalGraph, StatementGraphNode node) {
+		StatementGraphNode clonedGraph = originalGraph.clone();
+		for (int i = 0; i < clonedGraph.children.size(); i++) {
+			if (clonedGraph.children.get(i).linenumber.equals(node.linenumber)) {
+				clonedGraph.children.remove(i);
+				return clonedGraph;
+			}
+		}
+		for (int i = 0; i < clonedGraph.children.size(); i++) {
+			StatementGraphNode newNode = this.removeNodeFromGraph(clonedGraph.children.get(i), node);
+			originalGraph.children.remove(i);
+			originalGraph.children.add(i, newNode);
+		}
+		return clonedGraph;
 	}
 
-	private Long scoreSemantics(RefactorCandidate candidate) {
-		return 0L;
+	private long calculateCognitiveComplexity(List<StatementGraphNode> graph, int depth) {
+		long score = 0;
+		for (StatementGraphNode node: graph) {
+			if (node.isNestingNode) {
+				score += depth;
+				if (node.children.size() > 0) {
+					score += this.calculateCognitiveComplexity(node.children, ++depth);
+				}
+			}
+		}
+		return score;
+	}
+
+	private double scoreParameters(RefactorCandidate candidate, Map<Long, LineMapVariable> variableMap) {
+		// check input parameters
+		Set<String> inVariables = new HashSet<>();
+		for (Long lineNumber = candidate.startLine; lineNumber <= candidate.endLine; lineNumber++) {
+			if (variableMap.get(lineNumber) != null) {
+				for (Map.Entry<String, Set<Long>> variable : variableMap.get(lineNumber).in.entrySet()) {
+					for (Long inNumber : variable.getValue()) {
+						if (inNumber != null && inNumber < candidate.startLine) {
+							inVariables.add(variable.getKey());
+						}
+					}
+				}
+			}
+		}
+		candidate.inVariables.addAll(inVariables);
+		int numberOfInVars = inVariables.size();
+		int numberOfOutVars = candidate.outVariables.size();
+		return this.paramScoreWeight * (maxParameterScore - numberOfInVars - numberOfOutVars);
+	}
+
+	private double scoreSemantics(RefactorCandidate candidate) {
+		return 0;
 	}
 	// MARK: end candidate scoring
 
@@ -252,6 +314,7 @@ public class ExtractMethod implements RefactoringImpl {
 				}
 			}
 		}
+		candidate.outVariables.addAll(outVariables);
 		if (outVariables.size() > 1) {
 			return false;
 		}
@@ -500,15 +563,18 @@ public class ExtractMethod implements RefactoringImpl {
 				// alter statement graph wit new try catch structure
 				StatementGraphNode tryStartNode = this.findNodeForLine(graph, tryRange.from);
 				tryStartNode.type = TRYNODE;
+				tryStartNode.isNestingNode = true;
 				List<StatementGraphNode> catchStartNodes = new ArrayList<>();
 				for (LineRange catchRange : catchRanges) {
 					StatementGraphNode catchStartNode = this.findNodeForLine(graph, catchRange.from);
 					catchStartNode.type = CATCHNODE;
+					catchStartNode.isNestingNode = true;
 					catchStartNodes.add(catchStartNode);
 				}
 				Long endLineNumber = (finalBLock != null) ? finalRange.to : catchRanges.get(catchRanges.size() - 1).to;
 				StatementGraphNode finallyStartNode = this.findNodeForLine(graph, finalRange.from);
 				finallyStartNode.type = FINALLYNODE;
+				finallyStartNode.isNestingNode = true;
 
 				for (Long lineNumber = tryRange.from; lineNumber <= endLineNumber; lineNumber++) {
 					if (lineNumber > tryRange.from && lineNumber < catchRanges.get(0).from) {
@@ -579,7 +645,7 @@ public class ExtractMethod implements RefactoringImpl {
 	}
 
 	private StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, SortedSet<Long>> blockMapping, Map<Long, LineMapBlock> lineMapping) {
-		StatementGraphNode lastNode = null;
+		StatementGraphNode lastNode = parentNode;
 		Map<Long, Block> orderedBlocksMap = this.mapBlocksToID(orderedBlocks);
 		while (orderedBlocks.get(index).getId() != exitID) {
 			Block nextBlock = orderedBlocks.get(index);
@@ -595,6 +661,7 @@ public class ExtractMethod implements RefactoringImpl {
 					long nextID = orderedBlocks.get(index + 1).getId();
 					long newExitID = (conditionalBlock.getThenSuccessor().getId() == nextID) ? conditionalBlock.getElseSuccessor().getId() : nextID;
 					lastNode.type = StatementGraphNode.StatementGraphNodeType.IFNODE;
+					lastNode.isNestingNode = true;
 					this.createStatementGraphNodeRecursive(orderedBlocks, ++index, newExitID, lastNode, blockMapping, lineMapping);
 					index = orderedBlocks.indexOf(orderedBlocksMap.get(newExitID));
 					// travel else successor
@@ -604,6 +671,7 @@ public class ExtractMethod implements RefactoringImpl {
 						elseNode.linenumber = lastNode.linenumber;
 						elseNode.cfgBlocks = lastNode.cfgBlocks;
 						elseNode.type = StatementGraphNode.StatementGraphNodeType.ELSENODE;
+						elseNode.isNestingNode = true;
 						parentNode.children.add(this.createStatementGraphNodeRecursive(orderedBlocks, index, realSuccessor, elseNode, blockMapping, lineMapping));
 						index = orderedBlocks.indexOf(orderedBlocksMap.get(realSuccessor));
 					}
