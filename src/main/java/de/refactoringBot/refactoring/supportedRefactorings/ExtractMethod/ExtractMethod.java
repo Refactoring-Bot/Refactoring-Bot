@@ -296,7 +296,7 @@ public class ExtractMethod implements RefactoringImpl {
 
 	// checks if the candidate is long enough
 	private boolean isLongEnough(RefactorCandidate candidate) {
-		return (candidate.endLine - candidate.startLine) >= this.minLineLength;
+		return (candidate.endLine - candidate.startLine) >= (this.minLineLength - 1);
 	}
 
 	// checks if the candidate has only one output parameter and continue, break or return are handled correct
@@ -336,10 +336,7 @@ public class ExtractMethod implements RefactoringImpl {
 	}
 
 	private boolean isExtractableReturnCheck(RefactorCandidate candidate) {
-		Set<Block> blocks = new HashSet<>();
-		for (StatementGraphNode statement : candidate.statements) {
-			blocks.addAll(statement.cfgBlocks);
-		}
+		Set<Block> blocks = this.getAllBlocks(candidate.statements);
 		Set<Long> ids = new HashSet<>();
 		for (Block block : blocks) {
 			ids.add(block.getId());
@@ -376,6 +373,16 @@ public class ExtractMethod implements RefactoringImpl {
 			}
 		}
 		return !(regularSuccessor > 0 && exitSuccessor > 0);
+	}
+	private Set<Block> getAllBlocks(List<StatementGraphNode> statements) {
+		Set<Block> blocks = new HashSet<>();
+		for (StatementGraphNode statement: statements) {
+			blocks.addAll(statement.cfgBlocks);
+			if (statement.children.size() > 0) {
+				blocks.addAll(this.getAllBlocks(statement.children));
+			}
+		}
+		return blocks;
 	}
 	// MARK: end candidate generation
 
