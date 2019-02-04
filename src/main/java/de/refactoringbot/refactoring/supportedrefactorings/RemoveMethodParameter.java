@@ -60,8 +60,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 		HashSet<String> javaFilesRelevantForRefactoring = findJavaFilesRelevantForRefactoring(issue, parameterName,
 				targetMethod);
-		removeParameterFromRelatedMethodDeclarationsAndMethodCalls(javaFilesRelevantForRefactoring, targetMethod,
-				parameterName);
+		removeParameterFromRelatedMethodDeclarationsAndMethodCalls(javaFilesRelevantForRefactoring, issueFilePath,
+				targetMethod, parameterName);
 
 		String targetMethodSignature = RefactoringHelper.getMethodSignatureAsString(targetMethod);
 		return "Removed method parameter '" + parameterName + "' of method '" + targetMethodSignature + "'";
@@ -137,11 +137,18 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		return javaFilesRelevantForRefactoring;
 	}
 
+	/**
+	 * @param methodDeclaration
+	 * @param parameterName
+	 * @return signature of the given method declaration after parameter would have
+	 *         been removed
+	 */
 	private String getPostRefactoringSignature(MethodDeclaration methodDeclaration, String parameterName) {
-		// TODO
-		return "";
+		MethodDeclaration copy = methodDeclaration.clone();
+		performRemoveMethodParameter(copy, parameterName);
+		return RefactoringHelper.getMethodSignatureAsString(copy);
 	}
-	
+
 	/**
 	 * Check if post refactoring signature already exists in given file
 	 * 
@@ -164,12 +171,13 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * in the given java files
 	 * 
 	 * @param javaFilesRelevantForRefactoring
+	 * @param issueFilePath 
 	 * @param targetMethod
 	 * @param parameterName
 	 * @throws FileNotFoundException
 	 */
 	private void removeParameterFromRelatedMethodDeclarationsAndMethodCalls(
-			HashSet<String> javaFilesRelevantForRefactoring, MethodDeclaration targetMethod, String parameterName)
+			HashSet<String> javaFilesRelevantForRefactoring, String issueFilePath, MethodDeclaration targetMethod, String parameterName)
 			throws FileNotFoundException {
 		Integer parameterPosition = getMethodParameterPosition(targetMethod, parameterName);
 		for (String currentFilePath : javaFilesRelevantForRefactoring) {
@@ -181,7 +189,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 			// remove parameter from all relevant method declarations
 			boolean isClassRelatedToTargetClass = (isDescendantOfTargetClass() && isAncestorOfTargetClass());
-			boolean isTargetClass = true; // TODO
+			boolean isTargetClass = issueFilePath.equals(currentFilePath);
 			if (isClassRelatedToTargetClass || isTargetClass) {
 				for (MethodDeclaration fileMethod : methodDeclarations) {
 					if (RefactoringHelper.getMethodSignatureAsString(fileMethod)

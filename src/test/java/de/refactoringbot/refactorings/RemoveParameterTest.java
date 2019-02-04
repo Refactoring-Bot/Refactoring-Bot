@@ -106,17 +106,17 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		softAssertions.assertAll();
 
 		GitConfiguration gitConfig = new GitConfiguration();
-		gitConfig.setRepoFolder("");
+		gitConfig.setRepoFolder(getAbsolutePathOfTempFolder());
 
 		ArrayList<String> javaRoots = new ArrayList<>();
 		javaRoots.add(getAbsolutePathOfTempFolder());
 		BotIssue issue = new BotIssue();
-		issue.setFilePath(fileWithCodeSmell.getAbsolutePath());
+		issue.setFilePath(fileWithCodeSmell.getName());
 		issue.setLine(lineNumberOfMethodWithParameterToBeRemoved);
 		issue.setJavaRoots(javaRoots);
 		issue.setRefactorString(parameterName);
-		issue.setAllJavaFiles(Arrays.asList(fileWithCodeSmell.getAbsolutePath(), fileOfSuperClass.getAbsolutePath(),
-				fileOfSubClass.getAbsolutePath(), fileWithCallerMethod.getAbsolutePath()));
+		issue.setAllJavaFiles(Arrays.asList(fileWithCodeSmell.getCanonicalPath(), fileOfSuperClass.getCanonicalPath(),
+				fileOfSubClass.getCanonicalPath(), fileWithCallerMethod.getCanonicalPath()));
 
 		// act
 		RemoveMethodParameter refactoring = new RemoveMethodParameter();

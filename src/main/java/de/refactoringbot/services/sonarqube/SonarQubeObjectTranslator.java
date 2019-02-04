@@ -58,7 +58,7 @@ public class SonarQubeObjectTranslator {
 			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3)
 					+ sonarIssuePath;
 
-			// Cut path outside the repository
+			// Cut path outside the repository // TODO why?
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 			// Remove leading '/'
 			translatedPath = translatedPath.substring(1);
