@@ -34,6 +34,13 @@ public abstract class AbstractRefactoringTests {
 	}
 
 	/**
+	 * @return absolute path of temporary test folder
+	 */
+	protected String getAbsolutePathOfTempFolder() {
+		return folder.getRoot().getAbsolutePath();
+	}
+
+	/**
 	 * Returns the line from the given file, stripped from whitespace
 	 * 
 	 * @param file
