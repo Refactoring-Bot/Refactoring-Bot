@@ -5,9 +5,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.nio.file.InvalidPathException;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -38,6 +42,223 @@ import de.refactoringbot.refactoring.RefactoringImpl;
 
 public class RemoveMethodParameter implements RefactoringImpl {
 
+	private static final Logger logger = LoggerFactory.getLogger(RemoveMethodParameter.class);
+
+	// -
+	// -
+	// Sketch of new implementation
+	// -
+	// -
+
+	public String performRefactoringN(BotIssue issue, GitConfiguration gitConfig) throws Exception {
+		configureJavaParserForProject(issue);
+
+		String parameterName = issue.getRefactorString();
+		String issueFilePath = gitConfig.getRepoFolder() + File.separator + issue.getFilePath();
+		ClassOrInterfaceDeclaration targetClassOrInterface = getFirstClassOrIntefaceDeclarationFromFile(issueFilePath);
+		MethodDeclaration targetMethod = findAndValidateTargetMethod(issue, parameterName, targetClassOrInterface);
+
+		HashSet<String> javaFilesRelevantForRefactoring = findJavaFilesRelevantForRefactoring(issue, parameterName,
+				targetMethod);
+		removeParameterFromRelatedMethodDeclarationsAndMethodCalls(javaFilesRelevantForRefactoring, targetMethod,
+				parameterName);
+
+		String targetMethodSignature = RefactoringHelper.getMethodSignatureAsString(targetMethod);
+		return "Removed method parameter '" + parameterName + "' of method '" + targetMethodSignature + "'";
+	}
+
+	/**
+	 * Tries to find the target method in the given class or interface. Checks if
+	 * the found method itself could be refactored, without yet checking other code
+	 * locations
+	 * 
+	 * @param issue
+	 * @param parameterToBeRemoved
+	 * @param targetClassOrInterface
+	 * @return
+	 * @throws BotRefactoringException
+	 */
+	private MethodDeclaration findAndValidateTargetMethod(BotIssue issue, String parameterToBeRemoved,
+			ClassOrInterfaceDeclaration targetClassOrInterface) throws BotRefactoringException {
+		MethodDeclaration targetMethod = null;
+		for (MethodDeclaration currentMethod : targetClassOrInterface.getMethods()) {
+			if (RefactoringHelper.isMethodDeclarationAtLine(currentMethod, issue.getLine())) {
+				targetMethod = currentMethod;
+				break;
+			}
+		}
+
+		if (targetMethod == null) {
+			throw new BotRefactoringException("Could not find specified method! Automated refactoring failed.");
+		}
+		validateMethodHasParameter(targetMethod, parameterToBeRemoved);
+		validateParameterUnused(targetMethod, parameterToBeRemoved);
+		return targetMethod;
+	}
+
+	/**
+	 * Finds all Java files that are relevant for refactoring, i.e. those that
+	 * contain method declarations or method calls that refer to the target method.
+	 * Validates if the related declarations and calls can be refactored.
+	 * 
+	 * @param issue
+	 * @param parameterToBeRemoved
+	 * @param targetMethod
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws BotRefactoringException
+	 */
+	private HashSet<String> findJavaFilesRelevantForRefactoring(BotIssue issue, String parameterToBeRemoved,
+			MethodDeclaration targetMethod) throws FileNotFoundException, BotRefactoringException {
+		HashSet<String> javaFilesRelevantForRefactoring = new HashSet<>();
+		String postRefactoringSignature = getPostRefactoringSignature(targetMethod, parameterToBeRemoved);
+
+		for (String currentFilePath : issue.getAllJavaFiles()) {
+			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = getAllClassOrInterfaceDeclarationsFromFile(
+					currentFilePath);
+			boolean isClassRelatedToTargetClass = (isDescendantOfTargetClass() && isAncestorOfTargetClass());
+			if (isClassRelatedToTargetClass) {
+				List<MethodDeclaration> relatedMethodDeclarations = RefactoringHelper
+						.findAllMethodDeclarationsWithEqualMethodSignature(classesAndInterfacesInCurrentFile,
+								RefactoringHelper.getMethodSignatureAsString(targetMethod));
+				boolean containsMethodDeclarationWithEqualSignatureAsTargetMethod = !relatedMethodDeclarations
+						.isEmpty();
+				if (containsMethodDeclarationWithEqualSignatureAsTargetMethod) {
+					validateParameterUnusedInRelatedMethods(relatedMethodDeclarations, parameterToBeRemoved);
+					validateFileNotContainsPostRefactoringSignatureAlready(currentFilePath, postRefactoringSignature);
+					javaFilesRelevantForRefactoring.add(currentFilePath);
+					continue;
+				}
+			}
+			if (containsTargetMethodCall(classesAndInterfacesInCurrentFile, targetMethod)) {
+				javaFilesRelevantForRefactoring.add(currentFilePath);
+			}
+		}
+		return javaFilesRelevantForRefactoring;
+	}
+
+	private String getPostRefactoringSignature(MethodDeclaration methodDeclaration, String parameterName) {
+		// TODO
+		return "";
+	}
+	
+	/**
+	 * Check if post refactoring signature already exists in given file
+	 * 
+	 * @param filePath
+	 * @param postRefactoringSignature
+	 * @throws FileNotFoundException
+	 * @throws BotRefactoringException
+	 */
+	private void validateFileNotContainsPostRefactoringSignatureAlready(String filePath,
+			String postRefactoringSignature) throws FileNotFoundException, BotRefactoringException {
+		if (RefactoringHelper.isMethodSignaturePresentInFile(filePath, postRefactoringSignature)) {
+			throw new BotRefactoringException(
+					"Removal of parameter would result in method signature already present in file '" + filePath
+							+ "'.");
+		}
+	}
+
+	/**
+	 * Removes the parameter from all relevant method declarations and method calls
+	 * in the given java files
+	 * 
+	 * @param javaFilesRelevantForRefactoring
+	 * @param targetMethod
+	 * @param parameterName
+	 * @throws FileNotFoundException
+	 */
+	private void removeParameterFromRelatedMethodDeclarationsAndMethodCalls(
+			HashSet<String> javaFilesRelevantForRefactoring, MethodDeclaration targetMethod, String parameterName)
+			throws FileNotFoundException {
+		Integer parameterPosition = getMethodParameterPosition(targetMethod, parameterName);
+		for (String currentFilePath : javaFilesRelevantForRefactoring) {
+			FileInputStream is = new FileInputStream(currentFilePath);
+			CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(is));
+
+			List<MethodDeclaration> methodDeclarations = cu.findAll(MethodDeclaration.class);
+			List<MethodCallExpr> methodCalls = cu.findAll(MethodCallExpr.class);
+
+			// remove parameter from all relevant method declarations
+			boolean isClassRelatedToTargetClass = (isDescendantOfTargetClass() && isAncestorOfTargetClass());
+			boolean isTargetClass = true; // TODO
+			if (isClassRelatedToTargetClass || isTargetClass) {
+				for (MethodDeclaration fileMethod : methodDeclarations) {
+					if (RefactoringHelper.getMethodSignatureAsString(fileMethod)
+							.equals(RefactoringHelper.getMethodSignatureAsString(targetMethod))) {
+						performRemoveMethodParameter(fileMethod, parameterName);
+						removeParamFromJavadoc(fileMethod, parameterName);
+					}
+				}
+			}
+
+			// remove argument from all target method calls
+			for (MethodCallExpr fileMethodCall : methodCalls) {
+				if (isTargetMethodCall(fileMethodCall, targetMethod)) {
+					performRemoveMethodCallParameter(fileMethodCall, parameterPosition);
+				}
+			}
+
+			PrintWriter out = new PrintWriter(currentFilePath);
+			out.println(LexicalPreservingPrinter.print(cu));
+			out.close();
+		}
+	}
+
+	private boolean isDescendantOfTargetClass() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private boolean isAncestorOfTargetClass() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	/**
+	 * @param classesAndInterfaces
+	 * @param targetMethod
+	 * @return true if given classes and interfaces contain at least one call
+	 *         expression to the given target method, false otherwise
+	 */
+	private boolean containsTargetMethodCall(List<ClassOrInterfaceDeclaration> classesAndInterfaces,
+			MethodDeclaration targetMethod) {
+		for (ClassOrInterfaceDeclaration classOrInterface : classesAndInterfaces) {
+			List<MethodCallExpr> methodCalls = classOrInterface.findAll(MethodCallExpr.class);
+			for (MethodCallExpr methodCall : methodCalls) {
+				if (isTargetMethodCall(methodCall, targetMethod)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param methodCall
+	 * @param targetMethod
+	 * @return true if given method call is related to target method, false
+	 *         otherwise
+	 */
+	private boolean isTargetMethodCall(MethodCallExpr methodCall, MethodDeclaration targetMethod) {
+		ResolvedMethodDeclaration calledMethod = null;
+		try {
+			calledMethod = methodCall.resolve();
+		} catch (Exception e) {
+			logger.debug(e.getMessage());
+			return false;
+		}
+
+		return RefactoringHelper.getQualifiedMethodSignatureAsString(targetMethod)
+				.equals(calledMethod.getQualifiedSignature());
+	}
+
+	// -
+	// -
+	// End sketch of new implementation
+	// -
+	// -
+
 	/**
 	 * This method performs the refactoring and returns the a commit message.
 	 * 
@@ -55,7 +276,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		String parameterToBeRemoved = issue.getRefactorString();
 
 		String issueFilePath = gitConfig.getRepoFolder() + File.separator + issue.getFilePath();
-		ClassOrInterfaceDeclaration classOrInterfaceWithCodeSmell = getClassOrIntefaceDeclarationFromFile(
+		ClassOrInterfaceDeclaration classOrInterfaceWithCodeSmell = getFirstClassOrIntefaceDeclarationFromFile(
 				issueFilePath);
 
 		// find method to refactor in the class with code smell
@@ -78,7 +299,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		findAndAddSuperClassesToParserRefactoring(refactoring, classOrInterfaceWithCodeSmell);
 
 		// add all sub classes and their super classes and repeat until no more classes
-		// added
+		// added. Sub classes might have sub classes again, which is why we need the
+		// loop
 		while (true) {
 			int before = refactoring.getClasses().size();
 			refactoring = RefactoringHelper.addSubClasses(refactoring, issue.getAllJavaFiles());
@@ -156,19 +378,26 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		JavaParser.getStaticConfiguration().setSymbolResolver(javaSymbolSolver);
 	}
 
-	private ClassOrInterfaceDeclaration getClassOrIntefaceDeclarationFromFile(String filePath)
+	private ClassOrInterfaceDeclaration getFirstClassOrIntefaceDeclarationFromFile(String filePath)
 			throws BotRefactoringException, FileNotFoundException {
-		FileInputStream methodPath = new FileInputStream(filePath);
-		CompilationUnit renameMethodUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
+		FileInputStream is = new FileInputStream(filePath);
+		CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(is));
 
-		Optional<ClassOrInterfaceDeclaration> classOrInterface = renameMethodUnit
-				.findFirst(ClassOrInterfaceDeclaration.class);
+		Optional<ClassOrInterfaceDeclaration> classOrInterface = cu.findFirst(ClassOrInterfaceDeclaration.class);
 		if (classOrInterface.isPresent()) {
 			return classOrInterface.get();
 		} else {
 			throw new BotRefactoringException(
 					"File path probably not pointing to a file with class or interface in it.");
 		}
+	}
+
+	private List<ClassOrInterfaceDeclaration> getAllClassOrInterfaceDeclarationsFromFile(String filePath)
+			throws FileNotFoundException {
+		FileInputStream is = new FileInputStream(filePath);
+		CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(is));
+
+		return cu.findAll(ClassOrInterfaceDeclaration.class);
 	}
 
 	/**
@@ -214,7 +443,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		for (MethodDeclaration methodDeclaration : methodDeclarations) {
 			if (isParameterUsed(methodDeclaration, parameterToBeRemoved)) {
 				throw new BotRefactoringException("Parameter '" + parameterToBeRemoved + "' is used inside the method '"
-						+ RefactoringHelper.getFullMethodSignature(methodDeclaration)
+						+ RefactoringHelper.getQualifiedMethodSignatureAsString(methodDeclaration)
 						+ "' which is a super/sub class of the given method!");
 			}
 		}

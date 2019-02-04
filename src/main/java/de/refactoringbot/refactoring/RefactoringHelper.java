@@ -60,13 +60,14 @@ public class RefactoringHelper {
 			List<ClassOrInterfaceDeclaration> classes = compilationUnit.findAll(ClassOrInterfaceDeclaration.class);
 			// Iterate all Classes
 			for (ClassOrInterfaceDeclaration currentClass : classes) {
-				boolean isSubOrSuperClass = refactoring.getClasses().contains(currentClass.resolve().getQualifiedName());
+				boolean isSubOrSuperClass = refactoring.getClasses()
+						.contains(currentClass.resolve().getQualifiedName());
 				if (isSubOrSuperClass) {
 					List<MethodDeclaration> methods = currentClass.getMethods();
 					for (MethodDeclaration method : methods) {
 						if (method.getSignature().asString().equals(methodSignature)) {
 							refactoring.addMethod(method);
-							refactoring.addMethodSignature(getFullMethodSignature(method));
+							refactoring.addMethodSignature(getQualifiedMethodSignatureAsString(method));
 							if (!refactoring.getJavaFiles().contains(javaFile)) {
 								refactoring.addJavaFile(javaFile);
 							}
@@ -91,7 +92,7 @@ public class RefactoringHelper {
 		}
 		return classesAndInterfaces;
 	}
-	
+
 	public static List<MethodDeclaration> findAllMethodDeclarationsWithEqualMethodSignature(
 			List<ClassOrInterfaceDeclaration> classesAndInterfaces, String methodSignature) {
 		List<MethodDeclaration> methodDeclarations = new ArrayList<>();
@@ -254,21 +255,25 @@ public class RefactoringHelper {
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (getMethodSignatureAsString(fileMethod).equals(methodSignature)) {
 					throw new BotRefactoringException(
-							"File '" + javaFile + "' has a method with the same signature as our refactored method!");
+							"Removal of parameter would result in method signature already present in file '" + javaFile
+									+ "'.");
 				}
 			}
 		}
 	}
+	
+	public static boolean isMethodSignaturePresentInFile(String filePath, String methodSignature) throws FileNotFoundException {
+		FileInputStream is = new FileInputStream(filePath);
+		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(is));
+		List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
 
-	/**
-	 * This method returns the global signature of a method as a string.
-	 * 
-	 * @param methodDeclaration
-	 * @return
-	 */
-	public static String getFullMethodSignature(MethodDeclaration methodDeclaration) {
-		ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
-		return resolvedMethod.getQualifiedSignature();
+		for (MethodDeclaration fileMethod : fileMethods) {
+			if (getMethodSignatureAsString(fileMethod).equals(methodSignature)) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 
 	/**
@@ -291,6 +296,15 @@ public class RefactoringHelper {
 	 */
 	public static String getMethodSignatureAsString(MethodDeclaration methodDeclaration) {
 		return methodDeclaration.getSignature().asString();
+	}
+
+	/**
+	 * @param methodDeclaration
+	 * @return qualified method signature of the given method declaration
+	 */
+	public static String getQualifiedMethodSignatureAsString(MethodDeclaration methodDeclaration) {
+		ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
+		return resolvedMethod.getQualifiedSignature();
 	}
 
 	/**
