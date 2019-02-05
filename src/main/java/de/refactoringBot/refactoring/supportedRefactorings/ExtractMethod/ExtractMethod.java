@@ -22,8 +22,12 @@ import org.springframework.stereotype.Component;
 
 import javax.tools.*;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Statement;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.StatementGraphNode.StatementGraphNodeType.*;
 
@@ -102,6 +106,16 @@ public class ExtractMethod implements RefactoringImpl {
 				Set<String> localVariables = this.findLocalVariables(this.cfgContainer.cfg);
 				Map<Long, LineMapVariable> variableMap = this.analyseLocalDataFlow(this.cfgContainer.cfg, localVariables, this.lineMap);
 
+				// find empty and comment lines
+				List<Long> emptyLines = new ArrayList<>();
+				List<Long> commentedLines = new ArrayList<>();
+				try {
+					emptyLines = this.findEmptyLines(sourcePath);
+					commentedLines = this.findCommentLine(sourcePath);
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
+
 				// find candidates
 				Map<Long, Long> breakContinueMap = compilationUnitTree.accept(new BreakContinueVisitor(this.lineMap), null);
 				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap, breakContinueMap);
@@ -139,6 +153,20 @@ public class ExtractMethod implements RefactoringImpl {
 		Map<String, Object> graph = visualizer.visualize(cfg, cfg.getEntryBlock(), analysis);
 		System.out.println(graph);
 		System.out.println("done");
+	}
+
+	private List<Long> findEmptyLines(String sourcePath) throws IOException {
+		List<Long> emptyLines = new ArrayList<>();
+		Scanner scanner = new Scanner(new File(sourcePath));
+		Long index = 0L;
+		while(scanner.hasNextLine()) {
+			index++;
+			if (scanner.nextLine().replaceAll("\\s","").isEmpty()) {
+				emptyLines.add(index);
+			}
+		}
+		scanner.close();
+		return emptyLines;
 	}
 
 	// MARK: begin candidate scoring
