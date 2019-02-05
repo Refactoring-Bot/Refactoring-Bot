@@ -19,6 +19,9 @@ public abstract class AbstractRefactoringTests {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
+	private static final String TEST_FOLDER_PATH = "src/test/java/";
+	private static final String JAVA_FILE_EXTENSION = ".java";
+
 	/**
 	 * Creates a temporary copy of the test resources file containing the given
 	 * class. All copies are stored in the same temporary folder.
@@ -41,6 +44,14 @@ public abstract class AbstractRefactoringTests {
 	}
 
 	/**
+	 * @return absolute path of <code>src/test/java/</code> directory in this
+	 *         repository
+	 */
+	protected String getAbsolutePathOfTestsFolder() {
+		return new File(TEST_FOLDER_PATH).getAbsolutePath();
+	}
+
+	/**
 	 * Returns the line from the given file, stripped from whitespace
 	 * 
 	 * @param file
@@ -60,11 +71,12 @@ public abstract class AbstractRefactoringTests {
 	 * Returns the test resource file that was determined based on the test
 	 * resources class
 	 * 
+	 * @param clazz
 	 * @return
 	 */
 	private File getTestResourcesFile(Class<?> clazz) {
-		String pathToTestResources = "src/test/java/" + ClassUtils.convertClassNameToResourcePath(clazz.getName())
-				+ ".java";
+		String pathToTestResources = TEST_FOLDER_PATH + ClassUtils.convertClassNameToResourcePath(clazz.getName())
+				+ JAVA_FILE_EXTENSION;
 		return new File(pathToTestResources);
 	}
 

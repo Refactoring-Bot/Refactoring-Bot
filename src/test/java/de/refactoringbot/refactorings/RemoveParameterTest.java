@@ -109,7 +109,7 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		gitConfig.setRepoFolder(getAbsolutePathOfTempFolder());
 
 		ArrayList<String> javaRoots = new ArrayList<>();
-		javaRoots.add(getAbsolutePathOfTempFolder());
+		javaRoots.add(getAbsolutePathOfTestsFolder());
 		BotIssue issue = new BotIssue();
 		issue.setFilePath(fileWithCodeSmell.getName());
 		issue.setLine(lineNumberOfMethodWithParameterToBeRemoved);
