@@ -169,6 +169,38 @@ public class ExtractMethod implements RefactoringImpl {
 		return emptyLines;
 	}
 
+	private List<Long> findCommentLine(String sourcePath) throws IOException {
+		List<Long> commentLines = new ArrayList<>();
+		Scanner scanner = new Scanner(new File(sourcePath));
+		Long index = 0L;
+		boolean inCommentBlock = false;
+		while(scanner.hasNextLine()) {
+			index++;
+			String line = scanner.nextLine().trim();
+			if (inCommentBlock) {
+				if (line.endsWith("*/")) {
+					commentLines.add(index);
+					inCommentBlock = false;
+				} else if (line.contains("*/")) {
+					inCommentBlock = false;
+				} else {
+					commentLines.add(index);
+				}
+			} else if (line.startsWith("//")) {
+				commentLines.add(index);
+			} else if (line.startsWith("/*")) {
+				if (line.endsWith("*/")) {
+					commentLines.add(index);
+				} else if (!line.contains("*/")) {
+					commentLines.add(index);
+					inCommentBlock = true;
+				}
+			}
+		}
+		scanner.close();
+		return commentLines;
+	}
+
 	// MARK: begin candidate scoring
 	private void scoreCandidates(StatementGraphNode fullGraph, List<RefactorCandidate> candidates, Map<Long, LineMapVariable> variableMap) {
 		for (RefactorCandidate candidate : candidates) {
