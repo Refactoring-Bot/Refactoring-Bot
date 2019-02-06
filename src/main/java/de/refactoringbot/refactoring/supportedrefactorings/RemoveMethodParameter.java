@@ -6,7 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.nio.file.InvalidPathException;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,7 +26,6 @@ import com.github.javaparser.javadoc.Javadoc;
 import com.github.javaparser.javadoc.JavadocBlockTag;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
-import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
@@ -40,6 +39,9 @@ import de.refactoringbot.model.javaparser.ParserRefactoring;
 import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.RefactoringImpl;
 
+/**
+ * Refactoring to remove an unused method parameter
+ */
 public class RemoveMethodParameter implements RefactoringImpl {
 
 	private static final Logger logger = LoggerFactory.getLogger(RemoveMethodParameter.class);
@@ -55,8 +57,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 		String parameterName = issue.getRefactorString();
 		String issueFilePath = gitConfig.getRepoFolder() + File.separator + issue.getFilePath();
-		ClassOrInterfaceDeclaration targetClassOrInterface = getFirstClassOrIntefaceDeclarationFromFile(issueFilePath);
-		MethodDeclaration targetMethod = findAndValidateTargetMethod(issue, parameterName, targetClassOrInterface);
+		MethodDeclaration targetMethod = findAndValidateTargetMethod(issue, issueFilePath, parameterName);
 
 		HashSet<String> javaFilesRelevantForRefactoring = findJavaFilesRelevantForRefactoring(issue, parameterName,
 				targetMethod);
@@ -73,17 +74,25 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * locations
 	 * 
 	 * @param issue
+	 * @param filePath
 	 * @param parameterToBeRemoved
-	 * @param targetClassOrInterface
 	 * @return
 	 * @throws BotRefactoringException
+	 * @throws FileNotFoundException
 	 */
-	private MethodDeclaration findAndValidateTargetMethod(BotIssue issue, String parameterToBeRemoved,
-			ClassOrInterfaceDeclaration targetClassOrInterface) throws BotRefactoringException {
+	private MethodDeclaration findAndValidateTargetMethod(BotIssue issue, String filePath, String parameterToBeRemoved)
+			throws BotRefactoringException, FileNotFoundException {
+		List<ClassOrInterfaceDeclaration> classesAndInterfaces = getAllClassesAndInterfacesFromFile(filePath);
+
 		MethodDeclaration targetMethod = null;
-		for (MethodDeclaration currentMethod : targetClassOrInterface.getMethods()) {
-			if (RefactoringHelper.isMethodDeclarationAtLine(currentMethod, issue.getLine())) {
-				targetMethod = currentMethod;
+		for (ClassOrInterfaceDeclaration classOrInterface : classesAndInterfaces) {
+			for (MethodDeclaration currentMethod : classOrInterface.getMethods()) {
+				if (RefactoringHelper.isMethodDeclarationAtLine(currentMethod, issue.getLine())) {
+					targetMethod = currentMethod;
+					break;
+				}
+			}
+			if (targetMethod != null) {
 				break;
 			}
 		}
@@ -94,6 +103,37 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		validateMethodHasParameter(targetMethod, parameterToBeRemoved);
 		validateParameterUnused(targetMethod, parameterToBeRemoved);
 		return targetMethod;
+	}
+
+	/**
+	 * Validates that the given parameter is present in the method signature
+	 * 
+	 * @param methodDeclaration
+	 * @param parameterName
+	 * @throws BotRefactoringException
+	 */
+	private void validateMethodHasParameter(MethodDeclaration methodDeclaration, String parameterName)
+			throws BotRefactoringException {
+		if (!methodDeclaration.getParameterByName(parameterName).isPresent()) {
+			throw new BotRefactoringException("Method '" + methodDeclaration.getSignature()
+					+ "' does not have parameter '" + parameterName + "'!");
+		}
+	}
+
+	/**
+	 * Validates that the given parameter is not used inside the given method
+	 * 
+	 * @param methodDeclaration
+	 * @param parameterName
+	 * @throws BotRefactoringException
+	 */
+	private void validateParameterUnused(MethodDeclaration methodDeclaration, String parameterName)
+			throws BotRefactoringException {
+		if (isParameterUsed(methodDeclaration, parameterName)) {
+			String qualifiedMethodName = RefactoringHelper.getQualifiedMethodSignatureAsString(methodDeclaration);
+			throw new BotRefactoringException(
+					"Parameter '" + parameterName + "' is used inside the method '" + qualifiedMethodName + "'!");
+		}
 	}
 
 	/**
@@ -145,8 +185,49 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 */
 	private String getPostRefactoringSignature(MethodDeclaration methodDeclaration, String parameterName) {
 		MethodDeclaration copy = methodDeclaration.clone();
-		performRemoveMethodParameter(copy, parameterName);
+		removeMethodParameter(copy, parameterName);
 		return RefactoringHelper.getMethodSignatureAsString(copy);
+	}
+
+	/**
+	 * Validates that the given parameter is not used inside one of the given
+	 * methods of related classes (e.g. sub classes)
+	 * 
+	 * @param methodDeclarations
+	 * @param parameterToBeRemoved
+	 * @throws BotRefactoringException
+	 */
+	private void validateParameterUnusedInRelatedMethods(List<MethodDeclaration> methodDeclarations,
+			String parameterToBeRemoved) throws BotRefactoringException {
+		for (MethodDeclaration methodDeclaration : methodDeclarations) {
+			if (isParameterUsed(methodDeclaration, parameterToBeRemoved)) {
+				String qualifiedMethodSignature = RefactoringHelper
+						.getQualifiedMethodSignatureAsString(methodDeclaration);
+				throw new BotRefactoringException("Parameter '" + parameterToBeRemoved + "' is used inside the method '"
+						+ qualifiedMethodSignature
+						+ "' which is related to the given method (i.e. inside sub or super class)!");
+			}
+		}
+	}
+
+	/**
+	 * @param method
+	 * @param paramName
+	 * @return true if given parameter name is present in given method, false
+	 *         otherwise
+	 */
+	private boolean isParameterUsed(MethodDeclaration method, String paramName) {
+		Optional<BlockStmt> methodBody = method.getBody();
+		if (methodBody.isPresent()) {
+			List<NameExpr> expressions = methodBody.get().findAll(NameExpr.class);
+			for (NameExpr expression : expressions) {
+				if (expression.getNameAsString().equals(paramName)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -171,14 +252,14 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * in the given java files
 	 * 
 	 * @param javaFilesRelevantForRefactoring
-	 * @param issueFilePath 
+	 * @param issueFilePath
 	 * @param targetMethod
 	 * @param parameterName
 	 * @throws FileNotFoundException
 	 */
 	private void removeParameterFromRelatedMethodDeclarationsAndMethodCalls(
-			HashSet<String> javaFilesRelevantForRefactoring, String issueFilePath, MethodDeclaration targetMethod, String parameterName)
-			throws FileNotFoundException {
+			HashSet<String> javaFilesRelevantForRefactoring, String issueFilePath, MethodDeclaration targetMethod,
+			String parameterName) throws FileNotFoundException {
 		Integer parameterPosition = getMethodParameterPosition(targetMethod, parameterName);
 		for (String currentFilePath : javaFilesRelevantForRefactoring) {
 			FileInputStream is = new FileInputStream(currentFilePath);
@@ -194,8 +275,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 				for (MethodDeclaration fileMethod : methodDeclarations) {
 					if (RefactoringHelper.getMethodSignatureAsString(fileMethod)
 							.equals(RefactoringHelper.getMethodSignatureAsString(targetMethod))) {
-						performRemoveMethodParameter(fileMethod, parameterName);
-						removeParamFromJavadoc(fileMethod, parameterName);
+						removeMethodParameter(fileMethod, parameterName);
+						removeParameterFromJavadoc(fileMethod, parameterName);
 					}
 				}
 			}
@@ -203,7 +284,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			// remove argument from all target method calls
 			for (MethodCallExpr fileMethodCall : methodCalls) {
 				if (isTargetMethodCall(fileMethodCall, targetMethod)) {
-					performRemoveMethodCallParameter(fileMethodCall, parameterPosition);
+					removeMethodCallArgument(fileMethodCall, parameterPosition);
 				}
 			}
 
@@ -213,14 +294,19 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		}
 	}
 
-	private boolean isDescendantOfTargetClass() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	private boolean isAncestorOfTargetClass() {
-		// TODO Auto-generated method stub
-		return false;
+	/**
+	 * @param methodDeclaration
+	 * @param parameterName
+	 * @return position of the parameter with the given name, or null if not found
+	 */
+	private Integer getMethodParameterPosition(MethodDeclaration methodDeclaration, String parameterName) {
+		NodeList<Parameter> parameters = methodDeclaration.getParameters();
+		for (int i = 0; i < parameters.size(); i++) {
+			if (parameters.get(i).getName().asString().equals(parameterName)) {
+				return i;
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -247,18 +333,114 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @param targetMethod
 	 * @return true if given method call is related to target method, false
 	 *         otherwise
+	 * @throws BotRefactoringException
 	 */
 	private boolean isTargetMethodCall(MethodCallExpr methodCall, MethodDeclaration targetMethod) {
-		ResolvedMethodDeclaration calledMethod = null;
+		String qualifiedMethodSignatureOfResolvedMethodCall = null;
+		String qualifiedMethodSignatureOfTargetMethod = null;
 		try {
-			calledMethod = methodCall.resolve();
+			qualifiedMethodSignatureOfResolvedMethodCall = methodCall.resolve().getQualifiedSignature();
+			qualifiedMethodSignatureOfTargetMethod = RefactoringHelper
+					.getQualifiedMethodSignatureAsString(targetMethod);
 		} catch (Exception e) {
-			logger.debug(e.getMessage());
+			logger.error(e.getMessage());
+			// TODO propagate exception. This must not happen. It could be a method call
+			// that needs to be refactored
+			// see also RefactoringHelper.getQualifiedMethodSignatureAsString
 			return false;
 		}
 
-		return RefactoringHelper.getQualifiedMethodSignatureAsString(targetMethod)
-				.equals(calledMethod.getQualifiedSignature());
+		return qualifiedMethodSignatureOfTargetMethod.equals(qualifiedMethodSignatureOfResolvedMethodCall);
+	}
+
+	/**
+	 * Removes the argument at the given position from the given method call
+	 * 
+	 * @param methodCall
+	 * @param paramPosition
+	 */
+	private void removeMethodCallArgument(MethodCallExpr methodCall, Integer position) {
+		methodCall.getArgument(position).remove();
+	}
+
+	/**
+	 * Removes the parameter with the given name from the given method declaration
+	 * 
+	 * @param methodDeclaration
+	 * @param parameterName
+	 */
+	private void removeMethodParameter(MethodDeclaration methodDeclaration, String parameterName) {
+		Optional<Parameter> parameterToBeRemoved = methodDeclaration.getParameterByName(parameterName);
+		if (parameterToBeRemoved.isPresent()) {
+			parameterToBeRemoved.get().remove();
+		}
+	}
+
+	/**
+	 * Removes the parameter with the given name from the Javadoc of the given
+	 * method declaration
+	 * 
+	 * @param methodDeclaration
+	 * @param paramName
+	 */
+	private void removeParameterFromJavadoc(MethodDeclaration methodDeclaration, String paramName) {
+		Optional<Javadoc> javadoc = methodDeclaration.getJavadoc();
+		if (javadoc.isPresent()) {
+			Javadoc methodJavadoc = javadoc.get();
+			List<JavadocBlockTag> javadocTags = methodJavadoc.getBlockTags();
+
+			for (Iterator<JavadocBlockTag> it = javadocTags.iterator(); it.hasNext();) {
+				JavadocBlockTag javadocTag = it.next();
+				Optional<String> javadocTagName = javadocTag.getName();
+				boolean isEqualParamName = javadocTagName.isPresent() && javadocTagName.get().equals(paramName);
+				boolean isParamType = javadocTag.getType().equals(JavadocBlockTag.Type.PARAM);
+				if (isParamType && isEqualParamName) {
+					it.remove();
+				}
+			}
+
+			// create new Javadoc with remaining Javadoc tags because there is no way to
+			// remove individual tags directly
+			Javadoc newJavadoc = new Javadoc(methodJavadoc.getDescription());
+			for (JavadocBlockTag blockTag : javadocTags) {
+				newJavadoc.addBlockTag(blockTag);
+			}
+
+			methodDeclaration.setJavadocComment(newJavadoc);
+		}
+	}
+
+	private void configureJavaParserForProject(BotIssue issue) {
+		CombinedTypeSolver typeSolver = new CombinedTypeSolver();
+		for (String javaRoot : issue.getJavaRoots()) {
+			typeSolver.add(new JavaParserTypeSolver(javaRoot));
+		}
+		typeSolver.add(new ReflectionTypeSolver());
+		JavaSymbolSolver javaSymbolSolver = new JavaSymbolSolver(typeSolver);
+		JavaParser.getStaticConfiguration().setSymbolResolver(javaSymbolSolver);
+	}
+
+	/**
+	 * @param filePath
+	 * @return all <code>ClassOrInterfaceDeclaration</code> in the given file
+	 * @throws FileNotFoundException
+	 */
+	private List<ClassOrInterfaceDeclaration> getAllClassesAndInterfacesFromFile(String filePath)
+			throws FileNotFoundException {
+		FileInputStream is = new FileInputStream(filePath);
+		CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(is));
+
+		return cu.findAll(ClassOrInterfaceDeclaration.class);
+	}
+
+	private boolean isDescendantOfTargetClass() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private boolean isAncestorOfTargetClass() {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 	// -
@@ -276,6 +458,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @throws Exception
 	 */
 	@Override
+	@Deprecated
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
 		configureJavaParserForProject(issue);
 
@@ -345,12 +528,14 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @throws FileNotFoundException
 	 * @throws BotRefactoringException
 	 */
+	@Deprecated
 	private void validateNoDuplicatedMethodSignatureExistAfterRefactoring(ParserRefactoring refactoring,
 			String parameterToBeRemoved) throws FileNotFoundException, BotRefactoringException {
 		String postRefactoringSignature = getPostRefactoringSignature(refactoring, parameterToBeRemoved);
 		RefactoringHelper.checkForDuplicatedMethodSignatures(refactoring.getJavaFiles(), postRefactoringSignature);
 	}
 
+	@Deprecated
 	private void findAndAddSuperClassesToParserRefactoring(ParserRefactoring refactoring,
 			ClassOrInterfaceDeclaration classOrInterfaceWithCodeSmell) throws BotRefactoringException {
 		List<ResolvedReferenceType> ancestors = null;
@@ -374,18 +559,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		}
 	}
 
-	private void configureJavaParserForProject(BotIssue issue) {
-		// Configure solver for the project
-		CombinedTypeSolver typeSolver = new CombinedTypeSolver();
-		// Add java-roots
-		for (String javaRoot : issue.getJavaRoots()) {
-			typeSolver.add(new JavaParserTypeSolver(javaRoot));
-		}
-		typeSolver.add(new ReflectionTypeSolver());
-		JavaSymbolSolver javaSymbolSolver = new JavaSymbolSolver(typeSolver);
-		JavaParser.getStaticConfiguration().setSymbolResolver(javaSymbolSolver);
-	}
-
+	@Deprecated
 	private ClassOrInterfaceDeclaration getFirstClassOrIntefaceDeclarationFromFile(String filePath)
 			throws BotRefactoringException, FileNotFoundException {
 		FileInputStream is = new FileInputStream(filePath);
@@ -409,87 +583,6 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	}
 
 	/**
-	 * 
-	 * @param methodDeclaration
-	 * @param parameterName
-	 * @throws BotRefactoringException
-	 */
-	private void validateMethodHasParameter(MethodDeclaration methodDeclaration, String parameterName)
-			throws BotRefactoringException {
-		if (!methodDeclaration.getParameterByName(parameterName).isPresent()) {
-			throw new BotRefactoringException("Method '" + methodDeclaration.getSignature()
-					+ "' does not have parameter '" + parameterName + "'!");
-		}
-	}
-
-	/**
-	 * Validates that the given parameter is not used inside the given method
-	 * 
-	 * @param methodDeclaration
-	 * @param parameterName
-	 * @throws BotRefactoringException
-	 */
-	private void validateParameterUnused(MethodDeclaration methodDeclaration, String parameterName)
-			throws BotRefactoringException {
-		if (isParameterUsed(methodDeclaration, parameterName)) {
-			String qualifiedMethodName = getQualifiedMethodSignatureAsString(methodDeclaration);
-			throw new BotRefactoringException(
-					"Parameter '" + parameterName + "' is used inside the method '" + qualifiedMethodName + "'!");
-		}
-	}
-
-	/**
-	 * Validates that the given parameter is not used inside one of the given
-	 * methods of related classes (e.g. sub classes)
-	 * 
-	 * @param methodDeclarations
-	 * @param parameterToBeRemoved
-	 * @throws BotRefactoringException
-	 */
-	private void validateParameterUnusedInRelatedMethods(List<MethodDeclaration> methodDeclarations,
-			String parameterToBeRemoved) throws BotRefactoringException {
-		for (MethodDeclaration methodDeclaration : methodDeclarations) {
-			if (isParameterUsed(methodDeclaration, parameterToBeRemoved)) {
-				throw new BotRefactoringException("Parameter '" + parameterToBeRemoved + "' is used inside the method '"
-						+ RefactoringHelper.getQualifiedMethodSignatureAsString(methodDeclaration)
-						+ "' which is a super/sub class of the given method!");
-			}
-		}
-	}
-
-	/**
-	 * @param method
-	 * @param paramName
-	 * @return true if given parameter name is present in given method, false
-	 *         otherwise
-	 */
-	private boolean isParameterUsed(MethodDeclaration method, String paramName) {
-		Optional<BlockStmt> methodBody = method.getBody();
-		if (methodBody.isPresent()) {
-			List<NameExpr> expressions = methodBody.get().findAll(NameExpr.class);
-			for (NameExpr expression : expressions) {
-				if (expression.getNameAsString().equals(paramName)) {
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	private String getQualifiedMethodSignatureAsString(MethodDeclaration methodDeclaration)
-			throws BotRefactoringException {
-		try {
-			ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
-			return resolvedMethod.getQualifiedSignature();
-		} catch (Exception e) {
-			throw new BotRefactoringException("Method '" + methodDeclaration.getSignature().asString()
-					+ "' can't be resolved. It might have parameters from external projects/libraries or method might be inside a class that extends a generic class! Error: "
-					+ e);
-		}
-	}
-
-	/**
 	 * This method gets the Method signature that our methods will have without the
 	 * parameter.
 	 * 
@@ -499,6 +592,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @throws FileNotFoundException
 	 * @throws BotRefactoringException
 	 */
+	@Deprecated
 	private String getPostRefactoringSignature(ParserRefactoring refactoring, String paramName)
 			throws FileNotFoundException, BotRefactoringException {
 		for (String javaFile : refactoring.getJavaFiles()) {
@@ -512,33 +606,13 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			// Rename all Methods
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
-					performRemoveMethodParameter(fileMethod, paramName);
+					removeMethodParameter(fileMethod, paramName);
 					return RefactoringHelper.getMethodSignatureAsString(fileMethod);
 				}
 			}
 
 		}
 		throw new BotRefactoringException("Error reading methods that need their parameter removed!");
-	}
-
-	/**
-	 * This method returns the position of the method parameter.
-	 * 
-	 * @param methodDeclaration
-	 * @param parameterName
-	 * @return position
-	 */
-	private Integer getMethodParameterPosition(MethodDeclaration methodDeclaration, String parameterName) {
-		// Get parameters of method
-		NodeList<Parameter> parameters = methodDeclaration.getParameters();
-		// Search them
-		for (int i = 0; i < parameters.size(); i++) {
-			// If parameter found (needs to be since it was checked first)
-			if (parameters.get(i).getName().asString().equals(parameterName)) {
-				return i;
-			}
-		}
-		return null;
 	}
 
 	/**
@@ -549,6 +623,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @param paramName
 	 * @throws FileNotFoundException
 	 */
+	@Deprecated
 	private void removeParameterFromAllRelatedMethodsAndMethodCalls(ParserRefactoring refactoring, String paramName,
 			Integer paramPosition) throws FileNotFoundException {
 
@@ -565,15 +640,15 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			// Rename all Methods
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
-					performRemoveMethodParameter(fileMethod, paramName);
-					removeParamFromJavadoc(fileMethod, paramName);
+					removeMethodParameter(fileMethod, paramName);
+					removeParameterFromJavadoc(fileMethod, paramName);
 				}
 			}
 
 			// Rename all Method-Calls
 			for (MethodCallExpr fileMethodCall : fileMethodCalls) {
 				if (refactoring.getMethodCalls().contains(fileMethodCall)) {
-					performRemoveMethodCallParameter(fileMethodCall, paramPosition);
+					removeMethodCallArgument(fileMethodCall, paramPosition);
 				}
 			}
 
@@ -582,66 +657,6 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			out.println(LexicalPreservingPrinter.print(compilationUnit));
 			out.close();
 		}
-	}
-
-	/**
-	 * Removes the parameter with the given name from the given method declaration
-	 * 
-	 * @param methodDeclaration
-	 * @param parameterName
-	 */
-	private void performRemoveMethodParameter(MethodDeclaration methodDeclaration, String parameterName) {
-		Optional<Parameter> parameterToBeRemoved = methodDeclaration.getParameterByName(parameterName);
-		if (parameterToBeRemoved.isPresent()) {
-			parameterToBeRemoved.get().remove();
-		}
-	}
-
-	/**
-	 * Removes the parameter with the given name from the javadoc of the given
-	 * method declaration
-	 * 
-	 * @param methodDeclaration
-	 * @param paramName
-	 */
-	private void removeParamFromJavadoc(MethodDeclaration methodDeclaration, String paramName) {
-		Optional<Javadoc> javadoc = methodDeclaration.getJavadoc();
-		if (javadoc.isPresent()) {
-			Javadoc methodJavadoc = javadoc.get();
-			List<JavadocBlockTag> javadocTags = methodJavadoc.getBlockTags();
-			List<JavadocBlockTag> tagsToDelete = new LinkedList<>();
-
-			// find and remove all tags equal to paramName
-			for (JavadocBlockTag javadocTag : javadocTags) {
-				if (javadocTag.getTagName().equals("param") && javadocTag.getName().isPresent()
-						&& javadocTag.getName().get().equals(paramName)) {
-					tagsToDelete.add(javadocTag);
-				}
-			}
-
-			for (JavadocBlockTag javadocTag : tagsToDelete) {
-				javadocTags.remove(javadocTag);
-			}
-
-			// create new javadoc with remaining javadoc tags because there is no way to
-			// remove individual tags directly
-			Javadoc newJavadoc = new Javadoc(methodJavadoc.getDescription());
-			for (JavadocBlockTag blockTag : javadocTags) {
-				newJavadoc.addBlockTag(blockTag);
-			}
-
-			methodDeclaration.setJavadocComment(newJavadoc);
-		}
-	}
-
-	/**
-	 * This method performs the renaming of a method call.
-	 * 
-	 * @param methodCall
-	 * @param paramPosition
-	 */
-	private void performRemoveMethodCallParameter(MethodCallExpr methodCall, Integer paramPosition) {
-		methodCall.getArgument(paramPosition).remove();
 	}
 
 }

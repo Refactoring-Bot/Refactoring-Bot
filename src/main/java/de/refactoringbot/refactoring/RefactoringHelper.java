@@ -46,10 +46,11 @@ public class RefactoringHelper {
 	 * @param allJavaFiles
 	 * @return
 	 * @throws FileNotFoundException
+	 * @throws BotRefactoringException 
 	 */
 	@Deprecated
 	public static ParserRefactoring findAndAddMethods(ParserRefactoring refactoring, List<String> allJavaFiles,
-			String methodSignature) throws FileNotFoundException {
+			String methodSignature) throws FileNotFoundException, BotRefactoringException {
 		// Iterate all Java-Files
 		for (String javaFile : allJavaFiles) {
 			// parse a file
@@ -261,8 +262,9 @@ public class RefactoringHelper {
 			}
 		}
 	}
-	
-	public static boolean isMethodSignaturePresentInFile(String filePath, String methodSignature) throws FileNotFoundException {
+
+	public static boolean isMethodSignaturePresentInFile(String filePath, String methodSignature)
+			throws FileNotFoundException {
 		FileInputStream is = new FileInputStream(filePath);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(is));
 		List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
@@ -272,7 +274,7 @@ public class RefactoringHelper {
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -301,10 +303,17 @@ public class RefactoringHelper {
 	/**
 	 * @param methodDeclaration
 	 * @return qualified method signature of the given method declaration
+	 * @throws BotRefactoringException 
 	 */
-	public static String getQualifiedMethodSignatureAsString(MethodDeclaration methodDeclaration) {
-		ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
-		return resolvedMethod.getQualifiedSignature();
+	public static String getQualifiedMethodSignatureAsString(MethodDeclaration methodDeclaration) throws BotRefactoringException {
+		try {
+			ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
+			return resolvedMethod.getQualifiedSignature();
+		} catch (Exception e) {
+			throw new BotRefactoringException("Method '" + methodDeclaration.getSignature().asString()
+					+ "' can't be resolved. It might have parameters from external projects/libraries or method might be"
+					+ " inside a class that extends a generic class! Error: " + e);
+		}
 	}
 
 	/**
