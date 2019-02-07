@@ -95,6 +95,7 @@ public class ExtractMethod implements RefactoringImpl {
 				this.lineMap = compilationUnitTree.getLineMap();
 
 				Map<Long, LineMapBlock> lineMapping = this.getLineToBlockMapping(this.cfgContainer.cfg, this.lineMap);
+				List<Long> allLines = new ArrayList<>(lineMapping.keySet());
 
 				// generate statement graph
 				StatementGraphNode graph = this.createStatementGraph(this.cfgContainer.cfg, lineMapping);
@@ -108,17 +109,17 @@ public class ExtractMethod implements RefactoringImpl {
 
 				// find empty and comment lines
 				List<Long> emptyLines = new ArrayList<>();
-				List<Long> commentedLines = new ArrayList<>();
+				List<Long> commentLines = new ArrayList<>();
 				try {
 					emptyLines = this.findEmptyLines(sourcePath);
-					commentedLines = this.findCommentLine(sourcePath);
+					commentLines = this.findCommentLine(sourcePath);
 				} catch (IOException ex) {
 					ex.printStackTrace();
 				}
 
 				// find candidates
 				Map<Long, Long> breakContinueMap = compilationUnitTree.accept(new BreakContinueVisitor(this.lineMap), null);
-				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap, breakContinueMap);
+				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap, breakContinueMap, allLines, commentLines, emptyLines);
 
 				// score each candidate
 				this.scoreCandidates(graph, candidates, variableMap);
@@ -284,14 +285,14 @@ public class ExtractMethod implements RefactoringImpl {
 	// MARK: end candidate scoring
 
 	// MARK: begin candidate generation
-	private List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap) {
+	private List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap, List<Long> allLines, List<Long> commentLines, List<Long> emptyLines) {
 		List<RefactorCandidate> candidates = new ArrayList<>();
 		for (int outerIndex = 0; outerIndex < graph.children.size(); outerIndex++) {
 			for (int innerIndex = graph.children.size() - 1; innerIndex >= outerIndex; innerIndex--) {
 
 				RefactorCandidate potentialCandidate = new RefactorCandidate();
 				potentialCandidate.startLine = graph.children.get(outerIndex).linenumber;
-				potentialCandidate.endLine = this.getLastLine(graph.children.get(innerIndex));
+				potentialCandidate.endLine = this.getRealLastLine(allLines, this.getLastLine(graph.children.get(innerIndex)), commentLines, emptyLines);
 				potentialCandidate.statements.addAll(this.getStatements(graph, outerIndex, innerIndex));
 
 				if (this.isLongEnough(potentialCandidate) &&
@@ -300,7 +301,7 @@ public class ExtractMethod implements RefactoringImpl {
 					candidates.add(potentialCandidate);
 				}
 			}
-			candidates.addAll(this.findCandidates(graph.children.get(outerIndex), variableMap, breakContinueMap));
+			candidates.addAll(this.findCandidates(graph.children.get(outerIndex), variableMap, breakContinueMap, allLines, commentLines, emptyLines));
 		}
 		return candidates;
 	}
@@ -320,6 +321,22 @@ public class ExtractMethod implements RefactoringImpl {
 			return this.getLastLine(node.children.get(node.children.size() - 1));
 		}
 	}
+
+	private Long getRealLastLine(List<Long> allLines, Long lastLine, List<Long> commentLines, List<Long> emptyLines) {
+		ArrayList<Long> allLinesClone = (ArrayList) ((ArrayList) allLines).clone();
+		allLinesClone.removeIf(line -> line <= lastLine);
+		if (!allLinesClone.isEmpty()) {
+			Collections.sort(allLines);
+			Long nextLine = allLinesClone.get(0);
+			while (--nextLine > lastLine) {
+				if (!(commentLines.contains(nextLine) || emptyLines.contains(nextLine))) {
+					return nextLine;
+				}
+			}
+		}
+		return lastLine;
+	}
+
 
 	// checks if the candidate contains only complete if/else and try/catch/finally statements
 	private boolean isValid(RefactorCandidate candidate, StatementGraphNode parentNode) {
