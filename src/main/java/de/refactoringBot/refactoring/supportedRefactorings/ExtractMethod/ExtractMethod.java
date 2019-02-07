@@ -292,7 +292,12 @@ public class ExtractMethod implements RefactoringImpl {
 
 				RefactorCandidate potentialCandidate = new RefactorCandidate();
 				potentialCandidate.startLine = graph.children.get(outerIndex).linenumber;
-				potentialCandidate.endLine = this.getRealLastLine(allLines, this.getLastLine(graph.children.get(innerIndex)), commentLines, emptyLines);
+				Long lastLine = this.getLastLine(graph.children.get(innerIndex));
+				if (innerIndex < graph.children.size() - 1) {
+                    potentialCandidate.endLine = this.getRealLastLine(allLines, lastLine, commentLines, emptyLines);
+                } else {
+				    potentialCandidate.endLine = lastLine;
+                }
 				potentialCandidate.statements.addAll(this.getStatements(graph, outerIndex, innerIndex));
 
 				if (this.isLongEnough(potentialCandidate) &&
