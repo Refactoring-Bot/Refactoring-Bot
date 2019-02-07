@@ -53,7 +53,8 @@ public class ExtractMethod implements RefactoringImpl {
 	private final double nestingScoreWeight = 1;
 	private final double paramScoreWeight = 1;
 	private final double maxParameterScore = 4;
-	private final double paramSemanticsWeight = 1;
+	private final double semanticsScoreWeight = 1;
+	private final double semanticsBeginningWeight = 2;
 
 	private final String debugDir = "/Users/johanneshubert/Documents/projects/refactoring-bot/test";
 
@@ -122,7 +123,7 @@ public class ExtractMethod implements RefactoringImpl {
 				List<RefactorCandidate> candidates = this.findCandidates(graph, variableMap, breakContinueMap, allLines, commentLines, emptyLines);
 
 				// score each candidate
-				this.scoreCandidates(graph, candidates, variableMap);
+				this.scoreCandidates(graph, candidates, variableMap, commentLines, emptyLines);
 
 				System.out.println(candidates);
 
@@ -203,12 +204,12 @@ public class ExtractMethod implements RefactoringImpl {
 	}
 
 	// MARK: begin candidate scoring
-	private void scoreCandidates(StatementGraphNode fullGraph, List<RefactorCandidate> candidates, Map<Long, LineMapVariable> variableMap) {
+	private void scoreCandidates(StatementGraphNode fullGraph, List<RefactorCandidate> candidates, Map<Long, LineMapVariable> variableMap, List<Long> commentLines, List<Long> emptyLines) {
 		for (RefactorCandidate candidate : candidates) {
 			double lengthScore = this.scoreLength(candidate, this.cfgContainer.startLine, this.cfgContainer.endLine);
 			double nestingScore = this.scoreNesting(fullGraph, candidate);
 			double parameterScore = this.scoreParameters(candidate, variableMap);
-			double semanticScore = this.scoreSemantics(candidate);
+			double semanticScore = this.scoreSemantics(candidate, commentLines, emptyLines);
 			candidate.score = lengthScore + nestingScore + parameterScore + semanticScore;
 		}
 	}
@@ -279,8 +280,25 @@ public class ExtractMethod implements RefactoringImpl {
 		return this.paramScoreWeight * (maxParameterScore - numberOfInVars - numberOfOutVars);
 	}
 
-	private double scoreSemantics(RefactorCandidate candidate) {
-		return 0;
+	private double scoreSemantics(RefactorCandidate candidate, List<Long> commentLines, List<Long> emptyLines) {
+        // lines at beginning
+        int numberAtBeginning = 0;
+        Long firstLine = candidate.startLine - 1;
+        while (commentLines.contains(firstLine) || emptyLines.contains(firstLine)) {
+            firstLine--;
+            numberAtBeginning++;
+        }
+        // lines at end
+        int numberAtEnd = 0;
+        Long lastLine = candidate.endLine + 1;
+        while (commentLines.contains(lastLine) || emptyLines.contains(lastLine)) {
+            lastLine++;
+            numberAtEnd++;
+        }
+
+        int linesAtBeginning = (numberAtBeginning > 0) ? 1 : 0;
+        int linesAtEnd = (numberAtEnd > 0) ? 1 : 0;
+		return this.semanticsScoreWeight * (this.semanticsBeginningWeight * (linesAtBeginning + numberAtBeginning) + linesAtEnd + numberAtEnd);
 	}
 	// MARK: end candidate scoring
 
