@@ -78,9 +78,9 @@ public class ExtractMethod implements RefactoringImpl {
 		TODO:
 			- handle special switch case
 			- handle function parameter in data flow
-			- handle empty line / unrecognized lines with closing brackets in candidates
+			- PARTIALLY DONE - handle empty line / unrecognized lines with closing brackets in candidates
 			- handle data flow for assignment nodes
-			- goto
+			- WONT DO - goto
 	 */
 
 	public String refactorMethod(String sourcePath, Integer lineNumber) {
@@ -125,7 +125,15 @@ public class ExtractMethod implements RefactoringImpl {
 				// score each candidate
 				this.scoreCandidates(graph, candidates, variableMap, commentLines, emptyLines);
 
-				System.out.println(candidates);
+				candidates.sort(new Comparator<RefactorCandidate>() {
+                    @Override
+                    public int compare(RefactorCandidate o1, RefactorCandidate o2) {
+                        return -Double.compare(o1.score, o2.score);
+                    }
+                });
+
+				RefactorCandidate bestCandidate = candidates.get(0);
+				System.out.println(bestCandidate);
 
 				// this.printGraphToFile(this.debugDir, this.cfgContainer.cfg);
 
@@ -422,11 +430,21 @@ public class ExtractMethod implements RefactoringImpl {
 		if (!this.isExtractableReturnCheck(candidate)) { return false; }
 		// check continue and break
 		if (!this.isExtractableContinueBreakCheck(candidate, breakContinueMap)) { return false; }
+        // check switch case
+        if (!this.isExtractableSwitchCaseCheck(candidate)) { return false; }
 
 		return true;
 	}
 
+	private boolean isExtractableSwitchCaseCheck(RefactorCandidate candidate) {
+
+	    return true;
+    }
+
 	private boolean isExtractableContinueBreakCheck(RefactorCandidate candidate, Map<Long, Long> breakContinueMap) {
+	    if (breakContinueMap == null) {
+	        return true;
+        }
 		for (Map.Entry<Long, Long> breakContinueLine : breakContinueMap.entrySet()) {
 			if (candidate.containsLine(breakContinueLine.getKey()) && !candidate.containsLine(breakContinueLine.getValue())) {
 				return false;
