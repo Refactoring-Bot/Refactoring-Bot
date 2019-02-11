@@ -76,7 +76,7 @@ public class ExtractMethod implements RefactoringImpl {
 	}
 	/*
 		TODO:
-			- handle special switch case
+			- DONE - handle special switch case
 			- handle function parameter in data flow
 			- PARTIALLY DONE - handle empty line / unrecognized lines with closing brackets in candidates
 			- handle data flow for assignment nodes
@@ -437,7 +437,27 @@ public class ExtractMethod implements RefactoringImpl {
 	}
 
 	private boolean isExtractableSwitchCaseCheck(RefactorCandidate candidate) {
+		Set<Block> allBlocks = this.getAllBlocks(candidate.statements);
+		List<Node> allContent = this.getAllContent(allBlocks);
+		for (Node node : allContent) {
+			if (node.getClass().equals(CaseNode.class)) {
+				CaseNode caseNode = (CaseNode) node;
+				if (!allBlocks.contains(caseNode.getSwitchOperand().getBlock())) {
+					return false;
+				}
+			}
+			if (node.getClass().equals(MarkerNode.class)) {
+				if (((MarkerNode) node).getMessage().contains("switch")) {
+					JCTree.JCSwitch switchTree = (JCTree.JCSwitch) node.getTree();
+					for (JCTree.JCCase caseNode : switchTree.cases) {
+						if (!candidate.containsLine(lineMap.getLineNumber(caseNode.pos))) {
+							return false;
+						}
 
+					}
+				}
+			}
+		}
 	    return true;
     }
 
@@ -501,6 +521,24 @@ public class ExtractMethod implements RefactoringImpl {
 			}
 		}
 		return blocks;
+	}
+	private List<Node> getAllContent(Set<Block> blocks) {
+		List<Node> allContent = new ArrayList<>();
+		for (Block block : blocks) {
+			switch (block.getType()) {
+				case REGULAR_BLOCK:
+					RegularBlock regularBlock = (RegularBlock) block;
+					allContent.addAll(regularBlock.getContents());
+					break;
+				case EXCEPTION_BLOCK:
+					ExceptionBlock exceptionBlock = (ExceptionBlock) block;
+					allContent.add(exceptionBlock.getNode());
+					break;
+				default:
+					break;
+			}
+		}
+		return allContent;
 	}
 	// MARK: end candidate generation
 
