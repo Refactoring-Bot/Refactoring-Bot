@@ -65,15 +65,6 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                     }
                     type.addMember(extractedMethod);
 
-                    // remove code from original method and add candidate code to new method
-                    List<Statement> nodes = compilationUnit.accept(new MethodVisitor(this.candidate, this.compilationUnit), null);
-                    BlockStmt block = new BlockStmt();
-                    extractedMethod.setBody(block);
-                    for (Statement node : nodes) {
-                        node.remove();
-                        block.addStatement(node);
-                    }
-
                     // call new method in original method
                     Expression methodCall;
                     MethodCallExpr call = new MethodCallExpr("extractedMethod");
@@ -84,12 +75,22 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                         LocalVariable outVar = this.candidate.outVariables.iterator().next();
                         Expression target = new FieldAccessExpr(null, outVar.name);
                         if (!this.candidate.inVariablesContain(outVar)) {
-                            target =  new VariableDeclarationExpr(new ClassOrInterfaceType(outVar.type), outVar.name);
+                            target =  new VariableDeclarationExpr(new ClassOrInterfaceType(null, outVar.type), outVar.name);
                         }
                         AssignExpr assign = new AssignExpr(target, call, AssignExpr.Operator.ASSIGN);
                         methodCall = assign;
                     } else {
                         methodCall = call;
+                    }
+
+                    // remove code from original method and add candidate code to new method
+                    List<Statement> nodes = compilationUnit.accept(new MethodVisitor(this.candidate, methodCall), null);
+                    BlockStmt block = new BlockStmt();
+                    extractedMethod.setBody(block);
+                    int firstLine = nodes.iterator().next().getBegin().get().line;
+                    for (Statement node : nodes) {
+                        node.remove();
+                        block.addStatement(node);
                     }
 
                     // Save changes to file
@@ -106,11 +107,11 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
 
     private static class MethodVisitor extends GenericVisitorAdapter<List<Statement>, Void> {
         private RefactorCandidate candidate;
-        private CompilationUnit compilationUnit;
+        private Expression methodCall;
 
-        public MethodVisitor(RefactorCandidate candidate, CompilationUnit compilationUnit) {
+        public MethodVisitor(RefactorCandidate candidate, Expression methodCall) {
             this.candidate = candidate;
-            this.compilationUnit = compilationUnit;
+            this.methodCall = methodCall;
         }
 
         @Override
@@ -128,6 +129,8 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                         }
                     }
                 }
+                int index = n.getBody().get().getStatements().indexOf(removedNodes.get(0));
+                n.getBody().get().addStatement(index, this.methodCall);
             }
             return removedNodes;
         }
