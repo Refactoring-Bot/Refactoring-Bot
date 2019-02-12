@@ -7,6 +7,6 @@ import java.util.Map;
 import java.util.Set;
 
 public class LineMapVariable {
-    Map<String, Set<Long>> in = new HashMap<>();
-    Map<String, Set<Long>> out = new HashMap<>();
+    Map<LocalVariable, Set<Long>> in = new HashMap<>();
+    Map<LocalVariable, Set<Long>> out = new HashMap<>();
 }

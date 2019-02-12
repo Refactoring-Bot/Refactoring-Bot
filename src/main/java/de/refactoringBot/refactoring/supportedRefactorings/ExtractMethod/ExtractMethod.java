@@ -9,6 +9,7 @@ import com.sun.tools.javac.tree.JCTree;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.refactoring.RefactoringImpl;
+import org.apache.tomcat.jni.Local;
 import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.cfg.CFGBuilder;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
@@ -105,7 +106,7 @@ public class ExtractMethod implements RefactoringImpl {
 				this.analyseTryCatch(this.cfgContainer.cfg, graph, this.lineMap);
 
 				// add data flow to statement graph
-				Set<String> localVariables = this.findLocalVariables(this.cfgContainer.cfg);
+				Set<LocalVariable> localVariables = this.findLocalVariables(this.cfgContainer.cfg);
 				Map<Long, LineMapVariable> variableMap = this.analyseLocalDataFlow(this.cfgContainer.cfg, localVariables, this.lineMap);
 
 				// find empty and comment lines
@@ -133,6 +134,14 @@ public class ExtractMethod implements RefactoringImpl {
                 });
 
 				RefactorCandidate bestCandidate = candidates.get(0);
+
+				try {
+					MethodExtractor methodExtractor = new MethodExtractor(bestCandidate, sourcePath);
+					methodExtractor.apply();
+				} catch (FileNotFoundException ex) {
+					ex.printStackTrace();
+				}
+
 				System.out.println(bestCandidate);
 
 				// this.printGraphToFile(this.debugDir, this.cfgContainer.cfg);
@@ -211,6 +220,13 @@ public class ExtractMethod implements RefactoringImpl {
 		return commentLines;
 	}
 
+	// MARK: begin refactoring
+	private void refactorCandidate(RefactorCandidate candidate) {
+
+	}
+
+	// MARK: end refactoring
+
 	// MARK: begin candidate scoring
 	private void scoreCandidates(StatementGraphNode fullGraph, List<RefactorCandidate> candidates, Map<Long, LineMapVariable> variableMap, List<Long> commentLines, List<Long> emptyLines) {
 		for (RefactorCandidate candidate : candidates) {
@@ -270,10 +286,10 @@ public class ExtractMethod implements RefactoringImpl {
 
 	private double scoreParameters(RefactorCandidate candidate, Map<Long, LineMapVariable> variableMap) {
 		// check input parameters
-		Set<String> inVariables = new HashSet<>();
+		Set<LocalVariable> inVariables = new HashSet<>();
 		for (Long lineNumber = candidate.startLine; lineNumber <= candidate.endLine; lineNumber++) {
 			if (variableMap.get(lineNumber) != null) {
-				for (Map.Entry<String, Set<Long>> variable : variableMap.get(lineNumber).in.entrySet()) {
+				for (Map.Entry<LocalVariable, Set<Long>> variable : variableMap.get(lineNumber).in.entrySet()) {
 					for (Long inNumber : variable.getValue()) {
 						if (inNumber != null && inNumber < candidate.startLine) {
 							inVariables.add(variable.getKey());
@@ -410,10 +426,10 @@ public class ExtractMethod implements RefactoringImpl {
 	// checks if the candidate has only one output parameter and continue, break or return are handled correct
 	private boolean isExtractable(RefactorCandidate candidate, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap) {
 		// check output parameters
-		Set<String> outVariables = new HashSet<>();
+		Set<LocalVariable> outVariables = new HashSet<>();
 		for (Long lineNumber = candidate.startLine; lineNumber <= candidate.endLine; lineNumber++) {
 			if (variableMap.get(lineNumber) != null) {
-				for (Map.Entry<String, Set<Long>> variable : variableMap.get(lineNumber).out.entrySet()) {
+				for (Map.Entry<LocalVariable, Set<Long>> variable : variableMap.get(lineNumber).out.entrySet()) {
 					for (Long outNumber : variable.getValue()) {
 						if (outNumber > candidate.endLine) {
 							outVariables.add(variable.getKey());
@@ -543,20 +559,20 @@ public class ExtractMethod implements RefactoringImpl {
 	// MARK: end candidate generation
 
 	// MARK: begin analyse data flow
-	private Set<String> findLocalVariables(ControlFlowGraph cfg) {
-		Set<String> localVariables = new HashSet<>();
+	private Set<LocalVariable> findLocalVariables(ControlFlowGraph cfg) {
+		Set<LocalVariable> localVariables = new HashSet<>();
 		List<Block> blocks = cfg.getDepthFirstOrderedBlocks();
 		for (Block block : blocks) {
 			switch (block.getType()) {
 				case EXCEPTION_BLOCK: {
 					Node node = ((ExceptionBlock) block).getNode();
-					String variable = this.getLocalVariables(node);
+					LocalVariable variable = this.getLocalVariables(node);
 					if (variable != null) localVariables.add(variable);
 					break;
 				}
 				case REGULAR_BLOCK: {
 					for (Node node : ((RegularBlock) block).getContents()) {
-						String variable = this.getLocalVariables(node);
+						LocalVariable variable = this.getLocalVariables(node);
 						if (variable != null) localVariables.add(variable);
 					}
 					break;
@@ -570,23 +586,25 @@ public class ExtractMethod implements RefactoringImpl {
 		return localVariables;
 	}
 
-	private String getLocalVariables(Node node) {
+	private LocalVariable getLocalVariables(Node node) {
 		if (node.getClass().equals(VariableDeclarationNode.class)) {
-			return ((VariableDeclarationNode)node).getName();
+			String name = ((VariableDeclarationNode)node).getName();
+			String type = ((VariableDeclarationNode)node).getType().toString();
+			return new LocalVariable(name, type);
 		}
 		return null;
 	}
 
-	private Map<Long, LineMapVariable> analyseLocalDataFlow(ControlFlowGraph cfg, Set<String> localVariables, LineMap lineMap) {
+	private Map<Long, LineMapVariable> analyseLocalDataFlow(ControlFlowGraph cfg, Set<LocalVariable> localVariables, LineMap lineMap) {
 		Map<Long, LineMapVariable> map = new HashMap<>();
 		SpecialBlock entryBlock = cfg.getEntryBlock();
-		for (String variable : localVariables) {
+		for (LocalVariable variable : localVariables) {
 			this.mapVariable(map, entryBlock, variable, null, lineMap, new HashSet<>());
 		}
 		return map;
 	}
 
-	private void mapVariable(Map<Long, LineMapVariable> variableMap, Block block, String variable, Long lastLine, LineMap lineMap, Set<Long> visitedBlocks) {
+	private void mapVariable(Map<Long, LineMapVariable> variableMap, Block block, LocalVariable variable, Long lastLine, LineMap lineMap, Set<Long> visitedBlocks) {
 		if (visitedBlocks.contains(block.getId())) {
 			return;
 		}
@@ -621,7 +639,7 @@ public class ExtractMethod implements RefactoringImpl {
 		}
 	}
 
-	private Long addNodeToMap(Map<Long, LineMapVariable> variableMap, Node node, String variable, Long lastLine, Long previousLine, LineMap lineMap) {
+	private Long addNodeToMap(Map<Long, LineMapVariable> variableMap, Node node, LocalVariable variable, Long lastLine, Long previousLine, LineMap lineMap) {
 		Long newLine = lastLine;
 		if (this.nodeContainsVariable(node, variable)) {
 			Long lineNumber = this.getLineNumber(lineMap, node);
@@ -646,14 +664,14 @@ public class ExtractMethod implements RefactoringImpl {
 		return node.getClass().equals(AssignmentNode.class);
 	}
 
-	private boolean nodeContainsVariable(Node node, String variable) {
+	private boolean nodeContainsVariable(Node node, LocalVariable variable) {
 		if (node.getClass().equals(LocalVariableNode.class)) {
 			LocalVariableNode varNode = (LocalVariableNode) node;
-			return varNode.getName().equals(variable);
+			return varNode.getName().equals(variable.name);
 		}
 		if (node.getClass().equals(VariableDeclarationNode.class)) {
 			VariableDeclarationNode decNode = (VariableDeclarationNode) node;
-			return decNode.getName().equals(variable);
+			return decNode.getName().equals(variable.name);
 		}
 		if (node.getClass().equals(AssignmentNode.class)) {
 			AssignmentNode assNode = (AssignmentNode) node;
