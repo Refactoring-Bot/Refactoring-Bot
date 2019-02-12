@@ -16,6 +16,7 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
@@ -91,6 +92,12 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                     for (Statement node : nodes) {
                         node.remove();
                         block.addStatement(node);
+                    }
+                    // add return statement if necessary
+                    if (this.candidate.outVariables.size() > 0) {
+                        LocalVariable outVar = this.candidate.outVariables.iterator().next();
+                        ReturnStmt returnStmt = new ReturnStmt(new NameExpr(outVar.name));
+                        block.addStatement(returnStmt);
                     }
 
                     // Save changes to file
