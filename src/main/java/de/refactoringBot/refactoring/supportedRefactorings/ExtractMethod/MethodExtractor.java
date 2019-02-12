@@ -9,7 +9,11 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -25,6 +29,8 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import javassist.expr.MethodCall;
+import org.apache.tomcat.jni.Local;
 
 public class MethodExtractor extends VoidVisitorAdapter<Void> {
     private final CompilationUnit compilationUnit;
@@ -51,7 +57,7 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                     EnumSet<Modifier> modifiers = EnumSet.of(Modifier.PRIVATE);
                     Type methodType = new VoidType();
                     if (this.candidate.outVariables.size() > 0) {
-                        methodType = new ClassOrInterfaceType(this.candidate.outVariables.iterator().next().type);
+                        methodType = new ClassOrInterfaceType(null, this.candidate.outVariables.iterator().next().type);
                     }
                     MethodDeclaration extractedMethod = new MethodDeclaration(modifiers, methodType, "extractedMethod");
                     for (LocalVariable inVar : this.candidate.inVariables) {
@@ -68,9 +74,23 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                         block.addStatement(node);
                     }
 
-
                     // call new method in original method
-
+                    Expression methodCall;
+                    MethodCallExpr call = new MethodCallExpr("extractedMethod");
+                    for (LocalVariable var : this.candidate.inVariables) {
+                        call.addArgument(var.name);
+                    }
+                    if (this.candidate.outVariables.size() > 0) {
+                        LocalVariable outVar = this.candidate.outVariables.iterator().next();
+                        Expression target = new FieldAccessExpr(null, outVar.name);
+                        if (!this.candidate.inVariablesContain(outVar)) {
+                            target =  new VariableDeclarationExpr(new ClassOrInterfaceType(outVar.type), outVar.name);
+                        }
+                        AssignExpr assign = new AssignExpr(target, call, AssignExpr.Operator.ASSIGN);
+                        methodCall = assign;
+                    } else {
+                        methodCall = call;
+                    }
 
                     // Save changes to file
                     PrintWriter out = new PrintWriter(this.fileName);
