@@ -634,7 +634,7 @@ public class ExtractMethod implements RefactoringImpl {
 					newLine = this.addNodeToMap(variableMap, node, variable, newLine, lastLine, lineMap);
 					lastLine = copyLine;
 				}
-				this.mapVariable(variableMap, regularBlock.getRegularSuccessor(), variable, lastLine, lineMap, visitedBlocks);
+				this.mapVariable(variableMap, regularBlock.getRegularSuccessor(), variable, newLine, lineMap, visitedBlocks);
 				break;
 		}
 	}
@@ -655,6 +655,7 @@ public class ExtractMethod implements RefactoringImpl {
 				variableMap.computeIfAbsent(lastLine, k -> new LineMapVariable());
 				variableMap.get(in).out.computeIfAbsent(variable, k -> new HashSet<>());
 				variableMap.get(in).out.get(variable).add(lineNumber);
+				System.out.println(variableMap);
 			}
 		}
 		return newLine;

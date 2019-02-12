@@ -13,6 +13,7 @@ import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.Statement;
@@ -57,7 +58,7 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                     EnumSet<Modifier> modifiers = EnumSet.of(Modifier.PRIVATE);
                     Type methodType = new VoidType();
                     if (this.candidate.outVariables.size() > 0) {
-                        methodType = new ClassOrInterfaceType(null, this.candidate.outVariables.iterator().next().type);
+                        methodType = new ClassOrInterfaceType(this.candidate.outVariables.iterator().next().type);
                     }
                     MethodDeclaration extractedMethod = new MethodDeclaration(modifiers, methodType, "extractedMethod");
                     for (LocalVariable inVar : this.candidate.inVariables) {
@@ -73,9 +74,9 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                     }
                     if (this.candidate.outVariables.size() > 0) {
                         LocalVariable outVar = this.candidate.outVariables.iterator().next();
-                        Expression target = new FieldAccessExpr(null, outVar.name);
+                        Expression target = new NameExpr(outVar.name);
                         if (!this.candidate.inVariablesContain(outVar)) {
-                            target =  new VariableDeclarationExpr(new ClassOrInterfaceType(null, outVar.type), outVar.name);
+                            target =  new VariableDeclarationExpr(new ClassOrInterfaceType(outVar.type), outVar.name);
                         }
                         AssignExpr assign = new AssignExpr(target, call, AssignExpr.Operator.ASSIGN);
                         methodCall = assign;
@@ -87,7 +88,6 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                     List<Statement> nodes = compilationUnit.accept(new MethodVisitor(this.candidate, methodCall), null);
                     BlockStmt block = new BlockStmt();
                     extractedMethod.setBody(block);
-                    int firstLine = nodes.iterator().next().getBegin().get().line;
                     for (Statement node : nodes) {
                         node.remove();
                         block.addStatement(node);
