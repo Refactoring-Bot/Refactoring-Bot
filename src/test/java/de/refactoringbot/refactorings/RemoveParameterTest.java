@@ -29,6 +29,7 @@ import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter;
+import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter.TestDataInnerClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataClassWithCallOfTargetMethod;
 import de.refactoringbot.resources.removeparameter.TestDataSubClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataSuperClassRemoveParameter;
@@ -37,6 +38,7 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 
 	private static final Logger logger = LoggerFactory.getLogger(RemoveParameterTest.class);
 	private TestDataClassRemoveParameter removeParameterTestClass = new TestDataClassRemoveParameter();
+	private TestDataInnerClassRemoveParameter removeParameterInnerTestClass = removeParameterTestClass.new TestDataInnerClassRemoveParameter();
 	private TestDataClassWithCallOfTargetMethod removeParameterCallerTestClass = new TestDataClassWithCallOfTargetMethod();
 	private TestDataSuperClassRemoveParameter removeParameterSuperClass = new TestDataSuperClassRemoveParameter();
 	private TestDataSubClassRemoveParameter removeParameterSubClass = new TestDataSubClassRemoveParameter();
@@ -82,13 +84,15 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		CompilationUnit cuOriginalFileWithCallerMethod = JavaParser.parse(fileWithCallerMethod);
 		CompilationUnit cuOriginalFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
 		CompilationUnit cuOriginalFileOfSubClass = JavaParser.parse(fileOfSubClass);
-		
+
 		MethodDeclaration originalMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
 				lineNumberOfMethodWithParameterToBeRemoved, cuOriginalFileWithCodeSmell);
 		MethodDeclaration originalDummyMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
 				removeParameterTestClass.getLineNumberOfDummyMethod(0, 0, 0), cuOriginalFileWithCodeSmell);
 		MethodDeclaration originalCallerMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
 				removeParameterTestClass.getLineNumberOfCaller(), cuOriginalFileWithCodeSmell);
+		MethodDeclaration originalCallerMethodInnerClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
+				removeParameterInnerTestClass.getLineNumberOfCallerInInnerClass(), cuOriginalFileWithCodeSmell);
 		MethodDeclaration originalCallerMethodInDifferentFile = RefactoringHelper.getMethodByLineNumberOfMethodName(
 				removeParameterCallerTestClass.getLineOfCallerMethodInDifferentFile(), cuOriginalFileWithCallerMethod);
 		MethodDeclaration originalMethodInSuperClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
@@ -100,6 +104,7 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		softAssertions.assertThat(originalMethod).isNotNull();
 		softAssertions.assertThat(originalDummyMethod).isNotNull();
 		softAssertions.assertThat(originalCallerMethod).isNotNull();
+		softAssertions.assertThat(originalCallerMethodInnerClass).isNotNull();
 		softAssertions.assertThat(originalCallerMethodInDifferentFile).isNotNull();
 		softAssertions.assertThat(originalMethodInSuperClass).isNotNull();
 		softAssertions.assertThat(originalMethodInSubClass).isNotNull();
@@ -127,6 +132,7 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		String methodName = originalMethod.getNameAsString();
 		String dummyMethodName = originalDummyMethod.getNameAsString();
 		String callerMethodName = originalCallerMethod.getNameAsString();
+		String callerMethodInInnerClassName = originalCallerMethodInnerClass.getNameAsString();
 		String callerMethodInDifferentFileName = originalCallerMethodInDifferentFile.getNameAsString();
 		String methodInSuperClassName = originalMethodInSuperClass.getNameAsString();
 		String methodInSubClassName = originalMethodInSubClass.getNameAsString();
@@ -154,6 +160,13 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 				cuRefactoredFileWithCodeSmell);
 		assertThat(methodWithTargetMethodCalls).isNotNull();
 		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(methodWithTargetMethodCalls,
+				refactoredMethod);
+
+		// assert that caller method in same file in inner class has been refactored
+		MethodDeclaration methodWithTargetMethodCallInInnerClass = getMethodByName(callerMethodInInnerClassName,
+				cuRefactoredFileWithCodeSmell);
+		assertThat(methodWithTargetMethodCallInInnerClass).isNotNull();
+		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(methodWithTargetMethodCallInInnerClass,
 				refactoredMethod);
 
 		// assert that caller method in different file has been refactored

@@ -34,4 +34,11 @@ public class TestDataClassRemoveParameter extends TestDataSuperClassRemoveParame
 		return (b * 0) + 33;
 	}
 
+	public class TestDataInnerClassRemoveParameter {
+		public int getLineNumberOfCallerInInnerClass() {
+			getLineOfMethodWithUnusedParameter(1, 2, 3);
+			return 38;
+		}
+	}
+
 }
