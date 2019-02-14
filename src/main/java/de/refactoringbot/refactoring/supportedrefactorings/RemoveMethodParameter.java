@@ -154,7 +154,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		String postRefactoringSignature = getPostRefactoringSignature(targetMethod, parameterToBeRemoved);
 
 		for (String currentFilePath : issue.getAllJavaFiles()) {
-			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = getAllClassOrInterfaceDeclarationsFromFile(
+			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = getAllClassesAndInterfacesFromFile(
 					currentFilePath);
 			boolean isClassRelatedToTargetClass = (isDescendantOfTargetClass() && isAncestorOfTargetClass());
 			if (isClassRelatedToTargetClass) {
@@ -260,7 +260,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	private void removeParameterFromRelatedMethodDeclarationsAndMethodCalls(
 			HashSet<String> javaFilesRelevantForRefactoring, String issueFilePath, MethodDeclaration targetMethod,
 			String parameterName) throws FileNotFoundException {
-		Integer parameterPosition = getMethodParameterPosition(targetMethod, parameterName);
+		Integer parameterIndex = getMethodParameterIndex(targetMethod, parameterName);
 		for (String currentFilePath : javaFilesRelevantForRefactoring) {
 			FileInputStream is = new FileInputStream(currentFilePath);
 			CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(is));
@@ -268,6 +268,13 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			List<MethodDeclaration> methodDeclarations = cu.findAll(MethodDeclaration.class);
 			List<MethodCallExpr> methodCalls = cu.findAll(MethodCallExpr.class);
 
+			// remove argument from all target method calls
+			for (MethodCallExpr fileMethodCall : methodCalls) {
+				if (isTargetMethodCall(fileMethodCall, targetMethod)) {
+					removeMethodCallArgument(fileMethodCall, parameterIndex);
+				}
+			}
+			
 			// remove parameter from all relevant method declarations
 			boolean isClassRelatedToTargetClass = (isDescendantOfTargetClass() && isAncestorOfTargetClass());
 			boolean isTargetClass = issueFilePath.equals(currentFilePath);
@@ -281,13 +288,6 @@ public class RemoveMethodParameter implements RefactoringImpl {
 				}
 			}
 
-			// remove argument from all target method calls
-			for (MethodCallExpr fileMethodCall : methodCalls) {
-				if (isTargetMethodCall(fileMethodCall, targetMethod)) {
-					removeMethodCallArgument(fileMethodCall, parameterPosition);
-				}
-			}
-
 			PrintWriter out = new PrintWriter(currentFilePath);
 			out.println(LexicalPreservingPrinter.print(cu));
 			out.close();
@@ -297,9 +297,9 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	/**
 	 * @param methodDeclaration
 	 * @param parameterName
-	 * @return position of the parameter with the given name, or null if not found
+	 * @return index of the parameter with the given name, or null if not found
 	 */
-	private Integer getMethodParameterPosition(MethodDeclaration methodDeclaration, String parameterName) {
+	private Integer getMethodParameterIndex(MethodDeclaration methodDeclaration, String parameterName) {
 		NodeList<Parameter> parameters = methodDeclaration.getParameters();
 		for (int i = 0; i < parameters.size(); i++) {
 			if (parameters.get(i).getName().asString().equals(parameterName)) {
@@ -511,7 +511,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		validateParameterUnusedInRelatedMethods(refactoring.getMethods(), parameterToBeRemoved);
 		validateNoDuplicatedMethodSignatureExistAfterRefactoring(refactoring, parameterToBeRemoved);
 
-		Integer paramPosition = getMethodParameterPosition(methodToRefactor, parameterToBeRemoved);
+		Integer paramPosition = getMethodParameterIndex(methodToRefactor, parameterToBeRemoved);
 		removeParameterFromAllRelatedMethodsAndMethodCalls(refactoring, parameterToBeRemoved, paramPosition);
 
 		return "Removed method parameter '" + parameterToBeRemoved + "' of method '" + methodToRefactor.getSignature()
@@ -574,6 +574,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		}
 	}
 
+	@Deprecated
 	private List<ClassOrInterfaceDeclaration> getAllClassOrInterfaceDeclarationsFromFile(String filePath)
 			throws FileNotFoundException {
 		FileInputStream is = new FileInputStream(filePath);
