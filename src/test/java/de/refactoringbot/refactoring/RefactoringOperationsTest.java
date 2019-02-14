@@ -1,6 +1,7 @@
 package de.refactoringbot.refactoring;
 
 import de.refactoringbot.refactoring.supportedrefactorings.AddOverrideAnnotation;
+import de.refactoringbot.refactoring.supportedrefactorings.RemoveCodeClone;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveCommentedOutCode;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
 import de.refactoringbot.refactoring.supportedrefactorings.RenameMethod;
@@ -27,6 +28,7 @@ public class RefactoringOperationsTest {
 						entry("Add Override Annotation", AddOverrideAnnotation.class),
 						entry("Rename Method", RenameMethod.class),
 						entry("Reorder Modifier", ReorderModifier.class),
+						entry("Remove code clone", RemoveCodeClone.class),
 						entry("Remove Commented Out Code", RemoveCommentedOutCode.class),
 						entry("Remove Parameter", RemoveMethodParameter.class));
 	}

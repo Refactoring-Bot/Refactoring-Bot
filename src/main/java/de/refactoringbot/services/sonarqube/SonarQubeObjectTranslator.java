@@ -74,6 +74,10 @@ public class SonarQubeObjectTranslator {
 
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
+			case "common-java:DuplicatedBlocks":
+				botIssue.setRefactoringOperation(RefactoringOperations.REMOVE_CODE_CLONE);
+				botIssues.add(botIssue);
+				break;
 			case "squid:S1161":
 				botIssue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
 				// Add bot issue to list
