@@ -20,4 +20,4 @@ spring:
   profiles: dev
 bot:
   botRefactoringDirectory: C:/Users/Marvin/Documents/BotForks/
-  witClientToken: EJLHRYM3Z2ZTX6WKJR3UG7TAUFUVPBDZ
+  witClientToken: V2FLDGUZHWA3X7WYL5XLWORJTCB34I6R

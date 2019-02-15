@@ -95,18 +95,16 @@ public class WitService {
 		// Get Wit-Object from Wit-API
 		WitObject witObject = witDataGrabber.getWitObjectFromComment(commentBody);
 
-		// If wit returns multiple operations or multiple objects (or 0)
-		if (witObject.getEntities().getRefactoringObject().size() != 1
-				|| witObject.getEntities().getRefactoringOperation().size() != 1) {
-			throw new CommentUnderstandingMessage("Not sure what operation to execute on what object!");
+		// If wit returns multiple operations or none refactorings
+		if (witObject.getEntities().getRefactoring().size() != 1) {
+			throw new CommentUnderstandingMessage("Not sure what refactoring to execute!");
 		}
 
 		// Read unique operation + object
-		WitEntity refOp = witObject.getEntities().getRefactoringOperation().get(0);
-		WitEntity refObj = witObject.getEntities().getRefactoringObject().get(0);
+		WitEntity refactoring = witObject.getEntities().getRefactoring().get(0);
 
 		// If Add-Annotation refactoring is sure
-		if (refOp.getValue().equals("add") && refObj.getValue().equals("annotation")) {
+		if (refactoring.getValue().equals("ADD-ANNOTATION")) {
 			// If 0/2+ possilbe annotations returned
 			if (witObject.getEntities().getJavaAnnotations().size() != 1) {
 				throw new CommentUnderstandingMessage("Not sure which annotation you want to add!");
@@ -123,7 +121,7 @@ public class WitService {
 		}
 
 		// If Reorder-Modifier
-		else if (refOp.getValue().equals("reorder") && refObj.getValue().equals("modifier")) {
+		else if (refactoring.getValue().equals("REORDER-MODIFIER")) {
 			// Annotations or refactoring strings are not involved
 			if (witObject.getEntities().getRefactoringString().size() != 0
 					|| witObject.getEntities().getJavaAnnotations().size() != 0) {
@@ -135,7 +133,7 @@ public class WitService {
 		}
 
 		// If rename method
-		else if (refOp.getValue().equals("rename") && refObj.getValue().equals("method")) {
+		else if (refactoring.getValue().equals("RENAME-METHOD")) {
 			// If new method name is uncertain
 			if (witObject.getEntities().getRefactoringString().size() != 1) {
 				throw new CommentUnderstandingMessage("Not sure what the new method name is!");
@@ -151,10 +149,10 @@ public class WitService {
 		}
 
 		// If remove parameter
-		else if (refOp.getValue().equals("remove") && refObj.getValue().equals("parameter")) {
+		else if (refactoring.getValue().equals("REMOVE-PARAMETER")) {
 			// If parameter name is uncertain
 			if (witObject.getEntities().getRefactoringString().size() != 1) {
-				throw new CommentUnderstandingMessage("Not sure what the parameter name is!");
+				throw new CommentUnderstandingMessage("Not sure which parameter to remove!");
 			}
 			// Annotations are not involved
 			if (witObject.getEntities().getJavaAnnotations().size() != 0) {
@@ -166,7 +164,7 @@ public class WitService {
 			issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 			issue.setRefactorString(refStr.getValue());
 		} else {
-			throw new CommentUnderstandingMessage("Can not '" + refOp.getValue() + "' an '" + refObj.getValue() + "'!");
+			throw new CommentUnderstandingMessage("I don't know what you want me to do.");
 		}
 	}
 }
