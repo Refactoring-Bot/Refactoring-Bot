@@ -36,9 +36,20 @@ public class TestDataClassRemoveParameter extends TestDataSuperClassRemoveParame
 
 	public class TestDataInnerClassRemoveParameter {
 		public int getLineNumberOfCallerInInnerClass() {
-			getLineOfMethodWithUnusedParameter(1, 2, 3);
+			new TestDataClassRemoveParameter().getLineOfMethodWithUnusedParameter(1, 2, 3);
 			return 38;
 		}
+		
+		public int getLineNumberOfCallerThatShouldRemainUnchanged() {
+			getLineOfMethodWithUnusedParameter(1, 2, 3);
+			return 43;
+		}
+
+//		public int getLineOfMethodWithUnusedParameter(int a, int b, int c) {
+//			int result = a + b + c;
+//			result = 48;
+//			return result;
+//		}
 	}
 
 }

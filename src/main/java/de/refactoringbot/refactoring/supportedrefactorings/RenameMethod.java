@@ -85,7 +85,7 @@ public class RenameMethod implements RefactoringImpl {
 				// check if method = desired method
 				globalMethodSignature = getFullMethodSignature(method, issue.getLine());
 				localMethodSignature = RefactoringHelper.isMethodDeclarationAtLine(method, issue.getLine())
-						? RefactoringHelper.getMethodSignatureAsString(method)
+						? RefactoringHelper.getLocalMethodSignatureAsString(method)
 						: null;
 				oldMethodName = method.getNameAsString();
 				// If it is
@@ -230,7 +230,7 @@ public class RenameMethod implements RefactoringImpl {
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (refactoring.getMethods().contains(fileMethod)) {
 					performRenameMethod(fileMethod, methodName);
-					return RefactoringHelper.getMethodSignatureAsString(fileMethod);
+					return RefactoringHelper.getLocalMethodSignatureAsString(fileMethod);
 				}
 			}
 

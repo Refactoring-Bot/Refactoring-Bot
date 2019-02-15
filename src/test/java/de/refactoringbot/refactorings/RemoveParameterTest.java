@@ -125,7 +125,7 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 
 		// act
 		RemoveMethodParameter refactoring = new RemoveMethodParameter();
-		String outputMessage = refactoring.performRefactoring(issue, gitConfig);
+		String outputMessage = refactoring.performRefactoringN(issue, gitConfig);
 		logger.info(outputMessage);
 
 		// assert
@@ -154,6 +154,9 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		MethodDeclaration dummyMethod = getMethodByName(dummyMethodName, cuRefactoredFileWithCodeSmell);
 		assertThat(dummyMethod).isNotNull();
 		assertThat(dummyMethod.getParameterByName(parameterName)).isPresent();
+		
+		// assert that inner class method with same name as target method is unchanged
+		// TODO (requires to adjust the helper method "getMethodByName")
 
 		// assert that caller method in same file has been refactored
 		MethodDeclaration methodWithTargetMethodCalls = getMethodByName(callerMethodName,
@@ -176,15 +179,18 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(
 				methodInDifferentFileWithTargetMethodCalls, refactoredMethod);
 
-		// assert that super class has been refactored
+		// assert that target's super class has been refactored
 		MethodDeclaration methodInSuperClass = getMethodByName(methodInSuperClassName, cuRefactoredFileOfSuperClass);
 		assertThat(methodInSuperClass).isNotNull();
 		assertThat(methodInSuperClass.getParameterByName(parameterName).isPresent()).isFalse();
 
-		// assert that sub class has been refactored
+		// assert that target's sub class has been refactored
 		MethodDeclaration methodInSubClass = getMethodByName(methodInSubClassName, cuRefactoredFileOfSubClass);
 		assertThat(methodInSubClass).isNotNull();
 		assertThat(methodInSubClass.getParameterByName(parameterName).isPresent()).isFalse();
+		
+		// assert that target's sibling has been refacted
+		// TODO
 	}
 
 	/**

@@ -46,7 +46,7 @@ public class RefactoringHelper {
 	 * @param allJavaFiles
 	 * @return
 	 * @throws FileNotFoundException
-	 * @throws BotRefactoringException 
+	 * @throws BotRefactoringException
 	 */
 	@Deprecated
 	public static ParserRefactoring findAndAddMethods(ParserRefactoring refactoring, List<String> allJavaFiles,
@@ -94,13 +94,13 @@ public class RefactoringHelper {
 		return classesAndInterfaces;
 	}
 
-	public static List<MethodDeclaration> findAllMethodDeclarationsWithEqualMethodSignature(
+	public static List<MethodDeclaration> findAllMethodDeclarationsWithEqualLocalMethodSignature(
 			List<ClassOrInterfaceDeclaration> classesAndInterfaces, String methodSignature) {
 		List<MethodDeclaration> methodDeclarations = new ArrayList<>();
 		for (ClassOrInterfaceDeclaration classOrInterface : classesAndInterfaces) {
 			List<MethodDeclaration> methodsInClassOrInterface = classOrInterface.getMethods();
 			for (MethodDeclaration method : methodsInClassOrInterface) {
-				if (getMethodSignatureAsString(method).equals(methodSignature)) {
+				if (getLocalMethodSignatureAsString(method).equals(methodSignature)) {
 					methodDeclarations.add(method);
 				}
 			}
@@ -254,7 +254,7 @@ public class RefactoringHelper {
 
 			// Check if class contains a method equal to the given method signature
 			for (MethodDeclaration fileMethod : fileMethods) {
-				if (getMethodSignatureAsString(fileMethod).equals(methodSignature)) {
+				if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
 					throw new BotRefactoringException(
 							"Removal of parameter would result in method signature already present in file '" + javaFile
 									+ "'.");
@@ -263,6 +263,7 @@ public class RefactoringHelper {
 		}
 	}
 
+	@Deprecated
 	public static boolean isMethodSignaturePresentInFile(String filePath, String methodSignature)
 			throws FileNotFoundException {
 		FileInputStream is = new FileInputStream(filePath);
@@ -270,7 +271,20 @@ public class RefactoringHelper {
 		List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
 
 		for (MethodDeclaration fileMethod : fileMethods) {
-			if (getMethodSignatureAsString(fileMethod).equals(methodSignature)) {
+			if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static boolean isLocalMethodSignaturePresentInClassOrInterface(ClassOrInterfaceDeclaration classOrInterface,
+			String methodSignature) {
+		List<MethodDeclaration> fileMethods = classOrInterface.findAll(MethodDeclaration.class);
+
+		for (MethodDeclaration fileMethod : fileMethods) {
+			if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
 				return true;
 			}
 		}
@@ -296,16 +310,17 @@ public class RefactoringHelper {
 	 * @param methodDeclaration
 	 * @return the local signature of a method as a string
 	 */
-	public static String getMethodSignatureAsString(MethodDeclaration methodDeclaration) {
+	public static String getLocalMethodSignatureAsString(MethodDeclaration methodDeclaration) {
 		return methodDeclaration.getSignature().asString();
 	}
 
 	/**
 	 * @param methodDeclaration
 	 * @return qualified method signature of the given method declaration
-	 * @throws BotRefactoringException 
+	 * @throws BotRefactoringException
 	 */
-	public static String getQualifiedMethodSignatureAsString(MethodDeclaration methodDeclaration) throws BotRefactoringException {
+	public static String getQualifiedMethodSignatureAsString(MethodDeclaration methodDeclaration)
+			throws BotRefactoringException {
 		try {
 			ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
 			return resolvedMethod.getQualifiedSignature();
