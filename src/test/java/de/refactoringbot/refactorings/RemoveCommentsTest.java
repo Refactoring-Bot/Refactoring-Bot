@@ -27,10 +27,20 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 	public Class<TestDataClassRemoveComments> getTestResourcesClass() {
 		return TestDataClassRemoveComments.class;
 	}
+        
+        @Test
+	public void testRemoveLineComment() throws Exception {
+		testRemoveComment(6,"int c = a + b;");
+	}
 	
 	@Test
 	public void testRemoveBlockComment() throws Exception {
 		testRemoveComment(10,"/**");
+	}
+        
+        @Test
+	public void testRemoveJavadocComment() throws Exception {
+		testRemoveComment(14,"}");
 	}
 
 	private void testRemoveComment(int line, String expectedResult) throws Exception {
