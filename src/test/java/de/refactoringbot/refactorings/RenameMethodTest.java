@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -45,7 +46,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		RenameMethod refactoring = new RenameMethod();
 		int lineNumberOfMethodToBeRenamed = renameMethodTestClass.getLineOfMethodToBeRenamed(true);
 		int lineNumberOfSecondMethodNotToBeRenamed = renameMethodTestClass.getLineOfMethodToBeRenamed();
-		CompilationUnit cuOriginalFile = JavaParser.parse(tempFile);
+		CompilationUnit cuOriginalFile = StaticJavaParser.parse(tempFile);
 		String originalMethodName = RefactoringHelper
 				.getMethodByLineNumberOfMethodName(lineNumberOfMethodToBeRenamed, cuOriginalFile).getNameAsString();
 		String newMethodName = "changedMethodName";
@@ -66,7 +67,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		logger.info(outputMessage);
 
 		// assert
-		CompilationUnit cu = JavaParser.parse(tempFile);
+		CompilationUnit cu = StaticJavaParser.parse(tempFile);
 
 		// assert that method has been renamed
 		MethodDeclaration renamedMethodDeclaration = RefactoringHelper

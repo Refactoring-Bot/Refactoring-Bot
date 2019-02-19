@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -82,7 +83,7 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		BotIssue issue = new BotIssue();
 		GitConfiguration gitConfig = new GitConfiguration();
 		RemoveMethodParameter refactoring = new RemoveMethodParameter();
-		CompilationUnit cuOriginalFile = JavaParser.parse(tempFile);
+		CompilationUnit cuOriginalFile = StaticJavaParser.parse(tempFile);
 		MethodDeclaration originalMethod = RefactoringHelper
 				.getMethodByLineNumberOfMethodName(lineNumberOfMethodWithParameterToBeRemoved, cuOriginalFile);
 		MethodDeclaration originalDummyMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
@@ -112,7 +113,7 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		String dummyMethodName = originalDummyMethod.getNameAsString();
 		String callerMethodName = originalCallerMethod.getNameAsString();
 		FileInputStream in = new FileInputStream(tempFile);
-		CompilationUnit cu = JavaParser.parse(in);
+		CompilationUnit cu = StaticJavaParser.parse(in);
 		MethodDeclaration refactoredMethod = getMethodByName(methodName, cu);
 
 		// assert that parameter has been removed from the target method

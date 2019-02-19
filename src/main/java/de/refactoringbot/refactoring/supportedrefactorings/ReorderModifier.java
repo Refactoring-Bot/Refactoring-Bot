@@ -8,6 +8,7 @@ import java.util.EnumSet;
 import org.springframework.stereotype.Component;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Modifier.Keyword;
@@ -36,7 +37,7 @@ public class ReorderModifier implements RefactoringImpl {
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
 		String filepath = gitConfig.getRepoFolder() + File.separator + issue.getFilePath();
 		FileInputStream in = new FileInputStream(filepath);
-		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
 		FieldDeclaration field = RefactoringHelper.getFieldDeclarationByLineNumber(issue.getLine(), compilationUnit);
 		MethodDeclaration method = RefactoringHelper.getMethodByLineNumberOfMethodName(issue.getLine(),

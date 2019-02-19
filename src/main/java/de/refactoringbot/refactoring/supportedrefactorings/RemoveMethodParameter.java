@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -65,11 +66,11 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		}
 		typeSolver.add(new ReflectionTypeSolver());
 		JavaSymbolSolver javaSymbolSolver = new JavaSymbolSolver(typeSolver);
-		JavaParser.getStaticConfiguration().setSymbolResolver(javaSymbolSolver);
+		StaticJavaParser.getConfiguration().setSymbolResolver(javaSymbolSolver);
 
 		// Read file
 		FileInputStream methodPath = new FileInputStream(issueFilePath);
-		CompilationUnit renameMethodUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
+		CompilationUnit renameMethodUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(methodPath));
 
 		// Get all Classes
 		List<ClassOrInterfaceDeclaration> classes = renameMethodUnit.findAll(ClassOrInterfaceDeclaration.class);
@@ -189,7 +190,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 			// Create compilation unit
 			FileInputStream methodPath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
+			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(methodPath));
 
 			// Get all Methods and MethodCalls of File
 			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
@@ -292,7 +293,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		for (String javaFile : refactoring.getJavaFiles()) {
 			// Create compilation unit
 			FileInputStream methodPath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
+			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(methodPath));
 
 			// Get all Methods and MethodCalls of File
 			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);

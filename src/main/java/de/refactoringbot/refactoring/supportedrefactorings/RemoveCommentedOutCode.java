@@ -6,6 +6,7 @@ import de.refactoringbot.refactoring.RefactoringImpl;
 import org.springframework.stereotype.Component;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
@@ -72,7 +73,7 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
 
         // Read file
         FileInputStream in = new FileInputStream(path);
-        CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+        CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
         // TODO: Is this list sorted?
         List<Comment> comments = compilationUnit.getAllContainedComments();

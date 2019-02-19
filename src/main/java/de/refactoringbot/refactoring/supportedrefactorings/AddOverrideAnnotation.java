@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
@@ -32,7 +33,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		String methodName = null;
 
 		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
-		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
 		MethodDeclaration methodDeclarationToModify = RefactoringHelper.getMethodByLineNumberOfMethodName(issue.getLine(),
 				compilationUnit);

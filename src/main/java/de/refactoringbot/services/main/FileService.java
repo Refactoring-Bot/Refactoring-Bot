@@ -12,6 +12,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.springframework.stereotype.Service;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
@@ -65,7 +66,7 @@ public class FileService {
 		for (String javaFile : allJavaFiles) {
 			// parse a file
 			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
+			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(filepath));
 
 			// Get all Classes
 			List<PackageDeclaration> packageDeclarations = compilationUnit.findAll(PackageDeclaration.class);
