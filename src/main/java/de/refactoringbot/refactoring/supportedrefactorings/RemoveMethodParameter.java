@@ -51,7 +51,18 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 	private static final Logger logger = LoggerFactory.getLogger(RemoveMethodParameter.class);
 
+	/**
+	 * List of qualified names of classes and interfaces which are related to the
+	 * target class, i.e. child/parent/sibling classes
+	 */
 	private Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = new HashSet<>();
+
+	/**
+	 * List of method declarations which are related to the target method, i.e.
+	 * related methods in child/parent/sibling classes. These methods needs to be
+	 * refactored.
+	 */
+	private List<MethodDeclaration> allRefactoringRelevantMethodDeclarations = new ArrayList<>();
 
 	// -
 	// -
@@ -71,9 +82,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 		HashSet<String> javaFilesRelevantForRefactoring = findJavaFilesRelevantForRefactoring(issue, parameterName,
 				targetMethod);
-		javaFilesRelevantForRefactoring.add(issueFilePath);
 		removeParameterFromRelatedMethodDeclarationsAndMethodCalls(javaFilesRelevantForRefactoring, targetMethod,
-				targetClass, parameterName);
+				parameterName);
 
 		String targetMethodSignature = RefactoringHelper.getLocalMethodSignatureAsString(targetMethod);
 		return "Removed method parameter '" + parameterName + "' of method '" + targetMethodSignature + "'";
@@ -271,17 +281,29 @@ public class RemoveMethodParameter implements RefactoringImpl {
 							validateClassOrInterfaceNotContainsPostRefactoringSignatureAlready(currentClassOrInterface,
 									postRefactoringSignature);
 							javaFilesRelevantForRefactoring.add(currentFilePath);
+							allRefactoringRelevantMethodDeclarations.add(methodDeclaration);
 							break;
 						}
 					}
 				}
 			}
+		}
 
-			// search for files containing relevant method calls
-			if (containsTargetMethodCall(classesAndInterfacesInCurrentFile, targetMethod)) {
+		// search for files containing relevant method calls
+		// we had to first find all relevant target methods in order to find all method
+		// calls that need to be refactored. This is why we need to iterate a second
+		// time through all files
+		for (String currentFilePath : issue.getAllJavaFiles()) {
+			if (javaFilesRelevantForRefactoring.contains(currentFilePath)) {
+				continue;
+			}
+			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = getAllClassesAndInterfacesFromFile(
+					currentFilePath);
+			if (containsTargetMethodCall(classesAndInterfacesInCurrentFile)) {
 				javaFilesRelevantForRefactoring.add(currentFilePath);
 			}
 		}
+
 		return javaFilesRelevantForRefactoring;
 	}
 
@@ -365,10 +387,9 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @throws FileNotFoundException
 	 */
 	private void removeParameterFromRelatedMethodDeclarationsAndMethodCalls(
-			HashSet<String> javaFilesRelevantForRefactoring, MethodDeclaration targetMethod,
-			ClassOrInterfaceDeclaration targetClass, String parameterName) throws FileNotFoundException {
+			HashSet<String> javaFilesRelevantForRefactoring, MethodDeclaration targetMethod, String parameterName)
+			throws FileNotFoundException {
 		Integer parameterIndex = getMethodParameterIndex(targetMethod, parameterName);
-		String targetClassQualifiedName = targetClass.resolve().getQualifiedName();
 
 		for (String currentFilePath : javaFilesRelevantForRefactoring) {
 			FileInputStream is = new FileInputStream(currentFilePath);
@@ -379,21 +400,14 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 			// remove argument from all target method calls
 			for (MethodCallExpr fileMethodCall : methodCallsInCurrentFile) {
-				if (isTargetMethodCall(fileMethodCall, targetMethod)) {
+				if (isTargetMethodCall(fileMethodCall)) {
 					removeMethodCallArgument(fileMethodCall, parameterIndex);
 				}
 			}
 
 			// remove parameter from all relevant method declarations
 			for (MethodDeclaration fileMethod : methodDeclarationsInCurrentFile) {
-				ClassOrInterfaceDeclaration classOfCurrentMethod = getParentNodeAsClassOrInterface(fileMethod);
-				boolean localMethodSignatureIsEqual = RefactoringHelper.getLocalMethodSignatureAsString(fileMethod)
-						.equals(RefactoringHelper.getLocalMethodSignatureAsString(targetMethod));
-				boolean methodIsInSubOrSuperClassOfTargetClass = isRelatedToTargetClass(classOfCurrentMethod);
-				boolean methodIsInTargetClass = targetClassQualifiedName
-						.equals(getQualifiedNameOfParentNode(fileMethod));
-
-				if (localMethodSignatureIsEqual && (methodIsInSubOrSuperClassOfTargetClass || methodIsInTargetClass)) {
+				if (allRefactoringRelevantMethodDeclarations.contains(fileMethod)) {
 					removeMethodParameter(fileMethod, parameterName);
 					removeParameterFromJavadoc(fileMethod, parameterName);
 				}
@@ -403,10 +417,6 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			out.println(LexicalPreservingPrinter.print(cu));
 			out.close();
 		}
-	}
-
-	private String getQualifiedNameOfParentNode(MethodDeclaration methodDeclaration) {
-		return getParentNodeAsClassOrInterface(methodDeclaration).resolve().getQualifiedName();
 	}
 
 	private ClassOrInterfaceDeclaration getParentNodeAsClassOrInterface(MethodDeclaration methodDeclaration) {
@@ -434,16 +444,14 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 	/**
 	 * @param classesAndInterfaces
-	 * @param targetMethod
 	 * @return true if given classes and interfaces contain at least one call
 	 *         expression to the given target method, false otherwise
 	 */
-	private boolean containsTargetMethodCall(List<ClassOrInterfaceDeclaration> classesAndInterfaces,
-			MethodDeclaration targetMethod) {
+	private boolean containsTargetMethodCall(List<ClassOrInterfaceDeclaration> classesAndInterfaces) {
 		for (ClassOrInterfaceDeclaration classOrInterface : classesAndInterfaces) {
 			List<MethodCallExpr> methodCalls = classOrInterface.findAll(MethodCallExpr.class);
 			for (MethodCallExpr methodCall : methodCalls) {
-				if (isTargetMethodCall(methodCall, targetMethod)) {
+				if (isTargetMethodCall(methodCall)) {
 					return true;
 				}
 			}
@@ -453,27 +461,32 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 	/**
 	 * @param methodCall
-	 * @param targetMethod
 	 * @return true if given method call is related to target method, false
 	 *         otherwise
 	 */
-	private boolean isTargetMethodCall(MethodCallExpr methodCall, MethodDeclaration targetMethod) {
-		String qualifiedMethodSignatureOfResolvedMethodCall = null;
-		String qualifiedMethodSignatureOfTargetMethod = null;
-		try {
-			qualifiedMethodSignatureOfResolvedMethodCall = methodCall.resolve().getQualifiedSignature();
-			qualifiedMethodSignatureOfTargetMethod = RefactoringHelper
-					.getQualifiedMethodSignatureAsString(targetMethod);
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-			// TODO could be the case that an external dependency could not be resolved. In
-			// such case it is fine to return false. However, it is an issue if a method
-			// call that needs to be refacted can not be resolved.
-			// see also RefactoringHelper.getQualifiedMethodSignatureAsString
-			return false;
+	private boolean isTargetMethodCall(MethodCallExpr methodCall) {
+		for (MethodDeclaration targetMethod : allRefactoringRelevantMethodDeclarations) {
+			String qualifiedMethodSignatureOfResolvedMethodCall = null;
+			String qualifiedMethodSignatureOfTargetMethod = null;
+			try {
+				qualifiedMethodSignatureOfResolvedMethodCall = methodCall.resolve().getQualifiedSignature();
+				qualifiedMethodSignatureOfTargetMethod = RefactoringHelper
+						.getQualifiedMethodSignatureAsString(targetMethod);
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+				// TODO could be the case that an external dependency could not be resolved. In
+				// such case it is fine to return false. However, it is an issue if a method
+				// call that needs to be refacted can not be resolved.
+				// see also RefactoringHelper.getQualifiedMethodSignatureAsString
+				return false;
+			}
+
+			if (qualifiedMethodSignatureOfTargetMethod.equals(qualifiedMethodSignatureOfResolvedMethodCall)) {
+				return true;
+			}
 		}
 
-		return qualifiedMethodSignatureOfTargetMethod.equals(qualifiedMethodSignatureOfResolvedMethodCall);
+		return false;
 	}
 
 	/**

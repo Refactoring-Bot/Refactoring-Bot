@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.Expression;
@@ -31,17 +32,27 @@ import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter.TestDataInnerClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataClassWithCallOfTargetMethod;
+import de.refactoringbot.resources.removeparameter.TestDataSiblingClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataSubClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataSuperClassRemoveParameter;
 
 public class RemoveParameterTest extends AbstractRefactoringTests {
 
 	private static final Logger logger = LoggerFactory.getLogger(RemoveParameterTest.class);
+
+	private static final String SIBLING_CLASS_NAME = "TestDataSiblingClassRemoveParameter";
+	private static final String SUB_CLASS_NAME = "TestDataSubClassRemoveParameter";
+	private static final String SUPER_CLASS_NAME = "TestDataSuperClassRemoveParameter";
+	private static final String CALL_OF_TARGET_METHOD_CLASS_NAME = "TestDataClassWithCallOfTargetMethod";
+	private static final String TARGET_INNER_CLASS_NAME = "TestDataInnerClassRemoveParameter";
+	private static final String TARGET_CLASS_NAME = "TestDataClassRemoveParameter";
+
 	private TestDataClassRemoveParameter removeParameterTestClass = new TestDataClassRemoveParameter();
 	private TestDataInnerClassRemoveParameter removeParameterInnerTestClass = removeParameterTestClass.new TestDataInnerClassRemoveParameter();
 	private TestDataClassWithCallOfTargetMethod removeParameterCallerTestClass = new TestDataClassWithCallOfTargetMethod();
 	private TestDataSuperClassRemoveParameter removeParameterSuperClass = new TestDataSuperClassRemoveParameter();
 	private TestDataSubClassRemoveParameter removeParameterSubClass = new TestDataSubClassRemoveParameter();
+	private TestDataSiblingClassRemoveParameter removeParameterSiblingClass = new TestDataSiblingClassRemoveParameter();
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
@@ -79,11 +90,13 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		File fileOfSuperClass = createTempCopyOfTestResourcesFile(TestDataSuperClassRemoveParameter.class);
 		File fileOfSubClass = createTempCopyOfTestResourcesFile(TestDataSubClassRemoveParameter.class);
 		File fileWithCallerMethod = createTempCopyOfTestResourcesFile(TestDataClassWithCallOfTargetMethod.class);
+		File fileOfSiblingClass = createTempCopyOfTestResourcesFile(TestDataSiblingClassRemoveParameter.class);
 
 		CompilationUnit cuOriginalFileWithCodeSmell = JavaParser.parse(fileWithCodeSmell);
 		CompilationUnit cuOriginalFileWithCallerMethod = JavaParser.parse(fileWithCallerMethod);
 		CompilationUnit cuOriginalFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
 		CompilationUnit cuOriginalFileOfSubClass = JavaParser.parse(fileOfSubClass);
+		CompilationUnit cuOriginalFileOfSiblingClass = JavaParser.parse(fileOfSiblingClass);
 
 		MethodDeclaration originalMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
 				lineNumberOfMethodWithParameterToBeRemoved, cuOriginalFileWithCodeSmell);
@@ -99,6 +112,14 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 				removeParameterSuperClass.getLineOfMethodWithUnusedParameter(0, 0, 0), cuOriginalFileOfSuperClass);
 		MethodDeclaration originalMethodInSubClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
 				removeParameterSubClass.getLineOfMethodWithUnusedParameter(0, 0, 0), cuOriginalFileOfSubClass);
+		MethodDeclaration originalMethodInSiblingClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
+				removeParameterSiblingClass.getLineOfMethodWithUnusedParameter(0, 0, 0), cuOriginalFileOfSiblingClass);
+		MethodDeclaration originalCallerMethodInSiblingClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
+				removeParameterSiblingClass.getLineNumberOfCaller(), cuOriginalFileOfSiblingClass);
+		MethodDeclaration originalMethodWithTargetMethodSignatureInInnerClass = RefactoringHelper
+				.getMethodByLineNumberOfMethodName(
+						removeParameterInnerTestClass.getLineOfMethodWithUnusedParameter(0, 0, 0),
+						cuOriginalFileWithCodeSmell);
 
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(originalMethod).isNotNull();
@@ -108,6 +129,9 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		softAssertions.assertThat(originalCallerMethodInDifferentFile).isNotNull();
 		softAssertions.assertThat(originalMethodInSuperClass).isNotNull();
 		softAssertions.assertThat(originalMethodInSubClass).isNotNull();
+		softAssertions.assertThat(originalMethodInSiblingClass).isNotNull();
+		softAssertions.assertThat(originalCallerMethodInSiblingClass).isNotNull();
+		softAssertions.assertThat(originalMethodWithTargetMethodSignatureInInnerClass).isNotNull();
 		softAssertions.assertAll();
 
 		GitConfiguration gitConfig = new GitConfiguration();
@@ -121,7 +145,8 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		issue.setJavaRoots(javaRoots);
 		issue.setRefactorString(parameterName);
 		issue.setAllJavaFiles(Arrays.asList(fileWithCodeSmell.getCanonicalPath(), fileOfSuperClass.getCanonicalPath(),
-				fileOfSubClass.getCanonicalPath(), fileWithCallerMethod.getCanonicalPath()));
+				fileOfSubClass.getCanonicalPath(), fileWithCallerMethod.getCanonicalPath(),
+				fileOfSiblingClass.getCanonicalPath()));
 
 		// act
 		RemoveMethodParameter refactoring = new RemoveMethodParameter();
@@ -134,16 +159,22 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		String callerMethodName = originalCallerMethod.getNameAsString();
 		String callerMethodInInnerClassName = originalCallerMethodInnerClass.getNameAsString();
 		String callerMethodInDifferentFileName = originalCallerMethodInDifferentFile.getNameAsString();
+		String callerMethodInSiblingClassName = originalCallerMethodInSiblingClass.getNameAsString();
 		String methodInSuperClassName = originalMethodInSuperClass.getNameAsString();
 		String methodInSubClassName = originalMethodInSubClass.getNameAsString();
+		String methodInSiblingClassName = originalMethodInSiblingClass.getNameAsString();
+		String methodWithTargetMethodSignatureInInnerClassName = originalMethodWithTargetMethodSignatureInInnerClass
+				.getNameAsString();
 
 		CompilationUnit cuRefactoredFileWithCodeSmell = JavaParser.parse(fileWithCodeSmell);
 		CompilationUnit cuRefactoredFileWithCallerMethod = JavaParser.parse(fileWithCallerMethod);
 		CompilationUnit cuRefactoredFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
 		CompilationUnit cuRefactoredFileOfSubClass = JavaParser.parse(fileOfSubClass);
+		CompilationUnit cuRefactoredFileOfSiblingClass = JavaParser.parse(fileOfSiblingClass);
 
 		// assert that parameter has been removed from the target method
-		MethodDeclaration refactoredMethod = getMethodByName(methodName, cuRefactoredFileWithCodeSmell);
+		MethodDeclaration refactoredMethod = getMethodByName(TARGET_CLASS_NAME, methodName,
+				cuRefactoredFileWithCodeSmell);
 		assertThat(refactoredMethod).isNotNull();
 		assertThat(refactoredMethod.getParameterByName(parameterName).isPresent()).isFalse();
 
@@ -151,46 +182,62 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 		assertParameterNotPresentInJavadoc(refactoredMethod, parameterName);
 
 		// assert that dummy method is unchanged
-		MethodDeclaration dummyMethod = getMethodByName(dummyMethodName, cuRefactoredFileWithCodeSmell);
+		MethodDeclaration dummyMethod = getMethodByName(TARGET_CLASS_NAME, dummyMethodName,
+				cuRefactoredFileWithCodeSmell);
 		assertThat(dummyMethod).isNotNull();
 		assertThat(dummyMethod.getParameterByName(parameterName)).isPresent();
-		
+
 		// assert that inner class method with same name as target method is unchanged
-		// TODO (requires to adjust the helper method "getMethodByName")
+		MethodDeclaration methodWithTargetMethodSignatureInInnerClass = getMethodByName(TARGET_INNER_CLASS_NAME,
+				methodWithTargetMethodSignatureInInnerClassName, cuRefactoredFileWithCodeSmell);
+		assertThat(methodWithTargetMethodSignatureInInnerClass).isNotNull();
+		assertThat(methodWithTargetMethodSignatureInInnerClass.getParameterByName(parameterName)).isPresent();
 
 		// assert that caller method in same file has been refactored
-		MethodDeclaration methodWithTargetMethodCalls = getMethodByName(callerMethodName,
+		MethodDeclaration methodWithTargetMethodCalls = getMethodByName(TARGET_CLASS_NAME, callerMethodName,
 				cuRefactoredFileWithCodeSmell);
 		assertThat(methodWithTargetMethodCalls).isNotNull();
 		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(methodWithTargetMethodCalls,
 				refactoredMethod);
 
 		// assert that caller method in same file in inner class has been refactored
-		MethodDeclaration methodWithTargetMethodCallInInnerClass = getMethodByName(callerMethodInInnerClassName,
-				cuRefactoredFileWithCodeSmell);
+		MethodDeclaration methodWithTargetMethodCallInInnerClass = getMethodByName(TARGET_INNER_CLASS_NAME,
+				callerMethodInInnerClassName, cuRefactoredFileWithCodeSmell);
 		assertThat(methodWithTargetMethodCallInInnerClass).isNotNull();
 		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(methodWithTargetMethodCallInInnerClass,
 				refactoredMethod);
 
 		// assert that caller method in different file has been refactored
-		MethodDeclaration methodInDifferentFileWithTargetMethodCalls = getMethodByName(callerMethodInDifferentFileName,
-				cuRefactoredFileWithCallerMethod);
+		MethodDeclaration methodInDifferentFileWithTargetMethodCalls = getMethodByName(CALL_OF_TARGET_METHOD_CLASS_NAME,
+				callerMethodInDifferentFileName, cuRefactoredFileWithCallerMethod);
 		assertThat(methodInDifferentFileWithTargetMethodCalls).isNotNull();
 		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(
 				methodInDifferentFileWithTargetMethodCalls, refactoredMethod);
 
 		// assert that target's super class has been refactored
-		MethodDeclaration methodInSuperClass = getMethodByName(methodInSuperClassName, cuRefactoredFileOfSuperClass);
+		MethodDeclaration methodInSuperClass = getMethodByName(SUPER_CLASS_NAME, methodInSuperClassName,
+				cuRefactoredFileOfSuperClass);
 		assertThat(methodInSuperClass).isNotNull();
 		assertThat(methodInSuperClass.getParameterByName(parameterName).isPresent()).isFalse();
 
 		// assert that target's sub class has been refactored
-		MethodDeclaration methodInSubClass = getMethodByName(methodInSubClassName, cuRefactoredFileOfSubClass);
+		MethodDeclaration methodInSubClass = getMethodByName(SUB_CLASS_NAME, methodInSubClassName,
+				cuRefactoredFileOfSubClass);
 		assertThat(methodInSubClass).isNotNull();
 		assertThat(methodInSubClass.getParameterByName(parameterName).isPresent()).isFalse();
-		
-		// assert that target's sibling has been refacted
-		// TODO
+
+		// assert that target's sibling has been refactored
+		MethodDeclaration methodInSiblingClass = getMethodByName(SIBLING_CLASS_NAME, methodInSiblingClassName,
+				cuRefactoredFileOfSiblingClass);
+		assertThat(methodInSiblingClass).isNotNull();
+		assertThat(methodInSiblingClass.getParameterByName(parameterName).isPresent()).isFalse();
+
+		// assert that caller method in target's sibling class has been refactored
+		MethodDeclaration methodInSiblingClassWithSiblingMethodCall = getMethodByName(SIBLING_CLASS_NAME,
+				callerMethodInSiblingClassName, cuRefactoredFileOfSiblingClass);
+		assertThat(methodInSiblingClassWithSiblingMethodCall).isNotNull();
+		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(methodInSiblingClassWithSiblingMethodCall,
+				refactoredMethod);
 	}
 
 	/**
@@ -232,21 +279,27 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 	 * TEST HELPER METHOD ONLY. Does not work for classes with with more than one
 	 * method declaration with the same name.
 	 * 
-	 * Finds a method in a compilation unit with a specific name.
+	 * Finds a method in a compilation unit inside the given class or interface and
+	 * with the given name.
 	 * 
+	 * @param classOrInterfaceName
 	 * @param methodName
 	 * @param cu
 	 * @return MethodDeclaration or null if none found
 	 */
-	private MethodDeclaration getMethodByName(String methodName, CompilationUnit cu) {
-		MethodDeclaration result = null;
-		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
-		for (MethodDeclaration method : methods) {
-			if (method.getNameAsString().equals(methodName)) {
-				result = method;
+	private MethodDeclaration getMethodByName(String classOrInterfaceName, String methodName, CompilationUnit cu) {
+		for (ClassOrInterfaceDeclaration clazz : cu.findAll(ClassOrInterfaceDeclaration.class)) {
+			if (clazz.getNameAsString().equals(classOrInterfaceName)) {
+				List<MethodDeclaration> methods = clazz.findAll(MethodDeclaration.class);
+				for (MethodDeclaration method : methods) {
+					if (method.getNameAsString().equals(methodName)) {
+						return method;
+					}
+				}
 			}
 		}
-		return result;
+
+		return null;
 	}
 
 }
