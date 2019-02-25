@@ -7,6 +7,7 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This refactoring class is used for removing code clones inside a java
@@ -71,7 +73,8 @@ public class RemoveCodeClone extends ModifierVisitor<Void> implements Refactorin
 	 * Search the code for clones without the information where they start.
 	 */
 	private ArrayList<Integer> searchChildNodes(List<Node> childNodes) {
-		int range = 0;
+		int range1 = 0;
+		int range2 = 0;
 		int cloneBegin1 = -1;
 		int cloneBegin2 = -1;
 
@@ -102,18 +105,29 @@ public class RemoveCodeClone extends ModifierVisitor<Void> implements Refactorin
 									for (Node c2 : child2.getChildNodes()) {
 
 										// If lines are identical
-										if (c1.equals(c2)) {
+										if (c1.getChildNodes().equals(c2.getChildNodes())) {
 											if (cloneBegin2 == -1) {
 												// Save begin of the clones
 												cloneBegin1 = c1.getBegin().get().line;
 												cloneBegin2 = c2.getBegin().get().line;
 											}
 
-											if (c1.getBegin().get().line == cloneBegin1 + range
-													&& c2.getBegin().get().line == cloneBegin2 + range) {
+											// Add comment line to range TODO erweitern auf mehr als eine Zeile
+											if (c1.hasComment()
+													&& c1.getBegin().get().line == cloneBegin1 + range1 + 1) {
+												range1++;
+											}
+											if (c2.hasComment()
+													&& c2.getBegin().get().line == cloneBegin2 + range2 + 1) {
+												range2++;
+											}
+											
+											if (c1.getBegin().get().line == cloneBegin1 + range1
+													&& c2.getBegin().get().line == cloneBegin2 + range2) {
 												// Keep clone nodes to write them into the new extracted method
 												cloneNodes.add(c1);
-												range++;
+												range1++;
+												range2++;
 											}
 											break;
 										}
@@ -126,13 +140,15 @@ public class RemoveCodeClone extends ModifierVisitor<Void> implements Refactorin
 				}
 			}
 		}
-		System.out.println("Clone Begin: " + cloneBegin2);
-		System.out.println("Clone Begin2: " + cloneBegin1);
-		System.out.println("Range: " + range);
+		System.out.println("Clone Begin: " + cloneBegin1);
+		System.out.println("Clone Begin2: " + cloneBegin2);
+		System.out.println("Range1: " + range1);
+		System.out.println("Range2: " + range2);
 		ArrayList<Integer> searchResult = new ArrayList<Integer>();
-		searchResult.add(cloneBegin2);
 		searchResult.add(cloneBegin1);
-		searchResult.add(range);
+		searchResult.add(cloneBegin2);
+		searchResult.add(range1);
+		searchResult.add(range2);
 		return searchResult;
 	}
 
@@ -161,7 +177,7 @@ public class RemoveCodeClone extends ModifierVisitor<Void> implements Refactorin
 						}
 						// Code Clone 2 nodes
 						if (node3.getBegin().get().line >= searchResult.get(1)
-								&& node3.getBegin().get().line < searchResult.get(1) + searchResult.get(2)) {
+								&& node3.getBegin().get().line < searchResult.get(1) + searchResult.get(3)) {
 							nodesToDelete2.add(node3);
 						}
 					}
