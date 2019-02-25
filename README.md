@@ -16,3 +16,29 @@ Before you can use the bot locally, the following steps need to be executed.
 3. Copy the configuration file `src/main/resources/application_example.yml` and rename it to `src/main/resources/application.yml`. In this new file, potentially change the `datasource` attributes depending on your MySQL instance.
 4. Execute the command `mvn install` to create the executable JAR file for the bot.
 5. Run the created JAR file via `java -jar ./target/RefactoringBot-0.0.1-SNAPSHOT.jar`. The API should now be available at `http://localhost:8808` and the SwaggerUI will open in the browser.
+
+## Docker Container
+
+Use the following instructions to handle a local Docker image and container of the Refactoring-Bot.
+
+```bash
+# Make sure the jar file has been built and is available in the `target` directory
+# If not execute the following command
+mvn clean install
+
+# Build image from Dockerfile
+docker build -t refactoring-bot .
+
+# Create container from image, exposing port 8808, and setting the host for the DB via an ENV variable
+# (if the DB is also in a Docker container, use `docker inspect <container-name>` to find out its IP)
+docker create --name refactoring-bot \
+    -p 8808:8808 \
+    -e DATABASE_HOST=172.17.0.2 \
+    refactoring-bot:latest
+
+# Start container
+docker start refactoring-bot
+
+# Optional: open interactive shell to connect to a running container (yes, `ash` is the shell in alpine, this is no typo)
+docker exec -it refactoring-bot ash
+```
