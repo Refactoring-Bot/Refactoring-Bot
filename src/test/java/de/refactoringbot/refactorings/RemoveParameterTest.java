@@ -150,7 +150,7 @@ public class RemoveParameterTest extends AbstractRefactoringTests {
 
 		// act
 		RemoveMethodParameter refactoring = new RemoveMethodParameter();
-		String outputMessage = refactoring.performRefactoringN(issue, gitConfig);
+		String outputMessage = refactoring.performRefactoring(issue, gitConfig);
 		logger.info(outputMessage);
 
 		// assert
