@@ -15,6 +15,8 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class has methods that work with Files and Folders of Java-Projects.
@@ -24,6 +26,8 @@ import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinte
  */
 @Service
 public class FileService {
+    
+        private static final Logger logger = LoggerFactory.getLogger(FileService.class);
 
 	/**
 	 * This method returns all Javafile-Paths of a project from a configuration.
@@ -65,7 +69,15 @@ public class FileService {
 		for (String javaFile : allJavaFiles) {
 			// parse a file
 			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
+                        
+                        CompilationUnit compilationUnit;
+                        
+                        try {
+                            compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
+                        } catch (Exception e) {
+                            logger.error(e.getMessage(), e);
+                            continue;
+                        }
 
 			// Get all Classes
 			List<PackageDeclaration> packageDeclarations = compilationUnit.findAll(PackageDeclaration.class);
@@ -81,7 +93,7 @@ public class FileService {
 			} else {
 				// Only 1 package declaration for each file
 				PackageDeclaration packageDeclaration = packageDeclarations.get(0);
-				String rootPackage = null;
+				String rootPackage;
 
 				if (packageDeclaration.getNameAsString().split("\\.").length == 1) {
 					rootPackage = packageDeclaration.getNameAsString();
@@ -91,15 +103,21 @@ public class FileService {
 
 				// Get javafile
 				File currentFile = new File(javaFile);
-
+                               
 				// Until finding the root package
-				while (!currentFile.isDirectory() || !currentFile.getName().equals(rootPackage)) {
-					currentFile = currentFile.getParentFile();
+				while (currentFile.getParentFile() != null && !currentFile.isDirectory() || !currentFile.getName().equals(rootPackage)) {
+                                        if (currentFile.getParentFile() != null) {
+                                            currentFile = currentFile.getParentFile();
+                                        } else {
+                                            break;
+                                        }
 				}
 
 				// Add parent of rootPackage as java root
-				if (!javaRoots.contains(currentFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
+                                if (currentFile.getParentFile() != null) {
+                                    if (!javaRoots.contains(currentFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
 					javaRoots.add(currentFile.getParentFile().getAbsolutePath());
+                                    }
 				}
 			}
 
