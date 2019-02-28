@@ -123,30 +123,5 @@ public class BotService {
 
 		return refactoredIssue;
 	}
-
-	/**
-	 * This method finds the Root-Folder of a repository. That is the folder that
-	 * contains the src folder.
-	 * 
-	 * @param repoFolder
-	 * @return rootFolder
-	 * @throws IOException
-	 */
-	public String findSrcFolder(String repoFolder) throws IOException {
-		// Get root folder of project
-		File dir = new File(repoFolder);
-
-		// Get paths to all java files of the project
-		List<File> files = (List<File>) FileUtils.listFilesAndDirs(dir, TrueFileFilter.INSTANCE,
-				TrueFileFilter.INSTANCE);
-		for (File file : files) {
-			if (file.isDirectory() && file.getName().equals("src")) {
-				return file.getAbsolutePath();
-			}
-		}
-		
-		String noSrcFolderFoundErrorMsg = "No src-folder found inside this java-project!";
-		logger.error(noSrcFolderFoundErrorMsg);
-		throw new FileNotFoundException(noSrcFolderFoundErrorMsg);
-	}
+        
 }

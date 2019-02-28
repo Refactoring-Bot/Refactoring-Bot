@@ -56,14 +56,15 @@ public class SonarQubeObjectTranslator {
 			botIssue.setJavaRoots(fileController.findJavaRoots(allJavaFiles));
 
 			// Create full path for sonar issue
-                        File issuePath = new File (gitConfig.getRepoFolder() + sonarIssuePath);
-
+                        File issuePath = new File (gitConfig.getRepoFolder() + File.separator + sonarIssuePath);
+ 
                         // If the analysis was made from the root folder we're done
                         if (issuePath.exists()){
                             sonarIssuePath = issuePath.toString();
                         } else {
                             // If not we go through subdirectories to check if they match the issue paths
                             File[] directories = new File(gitConfig.getRepoFolder()).listFiles(File::isDirectory);
+                            
                             for (File file:directories){
                                 issuePath = new File (file.getAbsolutePath() + File.separator + sonarIssuePath);
                                 if (issuePath.exists()){
@@ -73,6 +74,10 @@ public class SonarQubeObjectTranslator {
                             }
                         }
 
+                        if (!issuePath.exists()) {
+                            throw new IOException("Unable to locate issue path.");
+                        }
+                        
 			// Cut path outside the repository
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 
