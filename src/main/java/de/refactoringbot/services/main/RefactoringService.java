@@ -140,8 +140,7 @@ public class RefactoringService {
 				} catch (Exception e) {
 					// Create failed Refactored-Object
 					botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
-					allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, null, null, botIssue,
-							false);
+					allRefactoredIssues.add(processFailedRefactoring(config, null, null, botIssue, false));
 					logger.error(e.getMessage(), e);
 				}
 			}
@@ -164,7 +163,7 @@ public class RefactoringService {
 	public ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests,
 			int amountBotRequests) {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
-		
+
 		for (BotPullRequest request : allRequests.getAllPullRequests()) {
 			for (BotPullRequestComment comment : request.getAllComments()) {
 				if (isAlreadyRefactored(config, comment)) {
@@ -183,15 +182,13 @@ public class RefactoringService {
 						} catch (IOException e) {
 							logger.error(e.getMessage(), e);
 							botIssue = createBotIssueFromInvalidComment(config, comment, request, e.getMessage());
-							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment,
-									request, botIssue, true);
+							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
 							return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 						} catch (ReviewCommentUnclearException | WitAPIException e) {
 							logger.warn(
 									"Comment translation with 'wit.ai' failed! Comment: " + comment.getCommentBody());
 							botIssue = createBotIssueFromInvalidComment(config, comment, request, e.getMessage());
-							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment,
-									request, botIssue, true);
+							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
 							continue;
 						}
 					} else {
@@ -204,8 +201,7 @@ public class RefactoringService {
 							logger.error(g.getMessage(), g);
 							// If refactoring failed
 							botIssue = createBotIssueFromInvalidComment(config, comment, request, g.getMessage());
-							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment,
-									request, botIssue, true);
+							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
 							continue;
 						}
 					}
@@ -228,15 +224,13 @@ public class RefactoringService {
 					} catch (BotRefactoringException e) {
 						// If refactoring failed
 						botIssue.setErrorMessage(e.getMessage());
-						allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
-								botIssue, true);
+						allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
 						logger.error(e.getMessage(), e);
 						// Catch other errors
 					} catch (Exception e) {
 						// If botservice faild before or after the refactoring
 						botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
-						allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
-								botIssue, true);
+						allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
 						logger.error(e.getMessage(), e);
 					}
 				}
@@ -420,16 +414,14 @@ public class RefactoringService {
 	 * comment that can not be refactored. Also, a reply is sent to the comment
 	 * creator to inform him of the failure with a proper error message.
 	 * 
-	 * @param allRefactoredIssues
 	 * @param config
 	 * @param comment
 	 * @param request
 	 * @param botIssue
-	 * @return allRefactoredIssues
+	 * @return failedIssue
 	 */
-	public List<RefactoredIssue> processFailedRefactoring(List<RefactoredIssue> allRefactoredIssues,
-			GitConfiguration config, BotPullRequestComment comment, BotPullRequest request, BotIssue botIssue,
-			boolean isCommentRefactoring) {
+	public RefactoredIssue processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,
+			BotPullRequest request, BotIssue botIssue, boolean isCommentRefactoring) {
 		// Create failedIssue
 		RefactoredIssue failedIssue = botController.buildRefactoredIssue(botIssue, config);
 
@@ -442,11 +434,8 @@ public class RefactoringService {
 			}
 		}
 
-		// Save failed refactoring to database + add to list
-		RefactoredIssue savedFailIssue = issueRepo.save(failedIssue);
-		allRefactoredIssues.add(savedFailIssue);
-
-		return allRefactoredIssues;
+		// Save failed refactoring and return it
+		return issueRepo.save(failedIssue);
 	}
 
 	/**
