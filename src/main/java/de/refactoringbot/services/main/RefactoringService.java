@@ -115,7 +115,7 @@ public class RefactoringService {
 	 * @param allIssues
 	 * @return response
 	 */
-	public ResponseEntity<?> processAnalysisIssues(GitConfiguration config, int amountBotRequests) {
+	private ResponseEntity<?> processAnalysisIssues(GitConfiguration config, int amountBotRequests) {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 		try {
 			// Get issues from analysis service API
@@ -160,7 +160,7 @@ public class RefactoringService {
 	 * @param amountOfBotRequests
 	 * @return response
 	 */
-	public ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests,
+	private ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests,
 			int amountBotRequests) {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 
@@ -420,7 +420,7 @@ public class RefactoringService {
 	 * @param botIssue
 	 * @return failedIssue
 	 */
-	public RefactoredIssue processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,
+	private RefactoredIssue processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,
 			BotPullRequest request, BotIssue botIssue, boolean isCommentRefactoring) {
 		// Create failedIssue
 		RefactoredIssue failedIssue = botController.buildRefactoredIssue(botIssue, config);
