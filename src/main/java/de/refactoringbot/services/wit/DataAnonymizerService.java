@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
  *
  */
 @Service
-public class DataAnonymizer {
+public class DataAnonymizerService {
 
 	public static final String URLEXP = "(https://|http://|ftp://|file://)?(www.)?([-a-zA-Z0-9+&@#/%=~_|!:,.;\\\\(\\\\)]+[.|/])[-a-zA-Z0-9+&@#/%?=~_|\\\\(\\\\)]+";
 	public static final String TOKENEXP = "[a-z0-9]{40}";
@@ -53,11 +53,8 @@ public class DataAnonymizer {
 	 * @return anonymizedComment
 	 */
 	private String anonymize(String comment, String regex, String replacement) {
-		// Create pattern from regex
 		Pattern pattern = Pattern.compile(regex);
-		// Create matcher with comment and pattern
 		Matcher matcher = pattern.matcher(comment);
-		// Replace all matches
 		comment = matcher.replaceAll(replacement);
 		return comment;
 	}

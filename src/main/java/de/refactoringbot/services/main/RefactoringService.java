@@ -22,7 +22,7 @@ import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
-import de.refactoringbot.model.exceptions.CommentUnderstandingMessage;
+import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
@@ -164,21 +164,16 @@ public class RefactoringService {
 	public ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests,
 			int amountBotRequests) {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
-		// Iterate through all requests
+		
 		for (BotPullRequest request : allRequests.getAllPullRequests()) {
-			// Iterate through all comments
 			for (BotPullRequestComment comment : request.getAllComments()) {
-				// If comment was already refactored in past
 				if (isAlreadyRefactored(config, comment)) {
-					// Continue with next comment.
 					continue;
 				}
 
-				// Create issue
 				BotIssue botIssue;
 
-				// Check if comment is meant for the bot
-				if (grammarService.isBotComment(comment, config)) {
+				if (grammarService.isBotMentionedInComment(comment, config)) {
 					// If can NOT parse comment with ANTLR
 					if (!grammarService.checkComment(comment.getCommentBody(), config)) {
 						// Try to parse with wit.ai
@@ -187,14 +182,14 @@ public class RefactoringService {
 							logger.info("Comment translated with 'wit.ai': " + comment.getCommentBody());
 						} catch (IOException e) {
 							logger.error(e.getMessage(), e);
-							botIssue = returnInvalidCommentIssue(config, comment, request, e.getMessage());
+							botIssue = createBotIssueFromInvalidComment(config, comment, request, e.getMessage());
 							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment,
 									request, botIssue, true);
 							return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-						} catch (CommentUnderstandingMessage | WitAPIException e) {
+						} catch (ReviewCommentUnclearException | WitAPIException e) {
 							logger.warn(
 									"Comment translation with 'wit.ai' failed! Comment: " + comment.getCommentBody());
-							botIssue = returnInvalidCommentIssue(config, comment, request, e.getMessage());
+							botIssue = createBotIssueFromInvalidComment(config, comment, request, e.getMessage());
 							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment,
 									request, botIssue, true);
 							continue;
@@ -203,12 +198,12 @@ public class RefactoringService {
 						// Try to refactor with ANTRL4
 						try {
 							// If ANTLR can parse -> create Issue
-							botIssue = createIssueFromComment(config, comment);
+							botIssue = grammarService.createIssueFromComment(comment, config);
 							logger.info("Comment translated with 'ANTLR': " + comment.getCommentBody());
 						} catch (Exception g) {
 							logger.error(g.getMessage(), g);
 							// If refactoring failed
-							botIssue = returnInvalidCommentIssue(config, comment, request, g.getMessage());
+							botIssue = createBotIssueFromInvalidComment(config, comment, request, g.getMessage());
 							allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment,
 									request, botIssue, true);
 							continue;
@@ -218,9 +213,7 @@ public class RefactoringService {
 					try {
 						// For Requests created by someone else
 						if (!request.getCreatorName().equals(config.getBotName())) {
-							// When Bot-Pull-Request-Limit reached -> return
 							if (amountBotRequests >= config.getMaxAmountRequests()) {
-								// Return all refactored issues
 								return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
 							}
 							// Perform refactoring
@@ -422,18 +415,6 @@ public class RefactoringService {
 	}
 
 	/**
-	 * This method creates an BotIssue for refactoring from a PullRequest-Comment.
-	 * 
-	 * @param config
-	 * @param comment
-	 * @return botIssue
-	 * @throws Exception
-	 */
-	public BotIssue createIssueFromComment(GitConfiguration config, BotPullRequestComment comment) throws Exception {
-		return grammarService.createIssueFromComment(comment, config);
-	}
-
-	/**
 	 * This method processes a faild refactoring. It creates a RefactoredIssue
 	 * object and saves it to the database so that the bot won't try to refactor a
 	 * comment that can not be refactored. Also, a reply is sent to the comment
@@ -478,7 +459,7 @@ public class RefactoringService {
 	 * @param errorMessage
 	 * @return issue
 	 */
-	public BotIssue returnInvalidCommentIssue(GitConfiguration config, BotPullRequestComment comment,
+	public BotIssue createBotIssueFromInvalidComment(GitConfiguration config, BotPullRequestComment comment,
 			BotPullRequest request, String errorMessage) {
 		// Create object
 		BotIssue issue = new BotIssue();

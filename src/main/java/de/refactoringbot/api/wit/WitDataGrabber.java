@@ -16,7 +16,7 @@ import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.wit.WitObject;
 
 /**
- * This class communicates with the wit.ai REST-Api to exchange data.
+ * This class communicates with the wit.ai REST-API to exchange data.
  * 
  * @author Stefan Basaric
  *
@@ -35,21 +35,21 @@ public class WitDataGrabber {
 	 * 
 	 * @param comment
 	 * @return witObject
-	 * @throws RestClientException
+	 * @throws WitAPIException
 	 */
 	public WitObject getWitObjectFromComment(String comment) throws WitAPIException {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("api.wit.ai")
 				.path("/message");
 
+		// Set API-Version
 		apiUriBuilder.queryParam("v", "20190122");
 		apiUriBuilder.queryParam("q", comment);
 
 		URI witUri = apiUriBuilder.build().encode().toUri();
 
-		// Create REST-Template
 		RestTemplate rest = new RestTemplate();
-		// Baue Header
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		headers.set("Authorization", "Bearer " + botConfig.getWitClientToken());

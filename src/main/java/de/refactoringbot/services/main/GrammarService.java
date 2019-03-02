@@ -48,7 +48,7 @@ public class GrammarService {
 	 * @param gitConfig
 	 * @return isBotComment
 	 */
-	public boolean isBotComment(BotPullRequestComment comment, GitConfiguration gitConfig) {
+	public boolean isBotMentionedInComment(BotPullRequestComment comment, GitConfiguration gitConfig) {
 		return (comment.getCommentBody().contains("@" + gitConfig.getBotName())
 				&& !comment.getUsername().equals(gitConfig.getBotName()));
 	}
