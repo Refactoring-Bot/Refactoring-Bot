@@ -46,11 +46,21 @@ public class GrammarService {
 	 * 
 	 * @param comment
 	 * @param gitConfig
-	 * @return isBotComment
+	 * @return isBotMentionedInComment
 	 */
-	public boolean isBotMentionedInComment(BotPullRequestComment comment, GitConfiguration gitConfig) {
-		return (comment.getCommentBody().contains("@" + gitConfig.getBotName())
-				&& !comment.getUsername().equals(gitConfig.getBotName()));
+	public boolean isBotMentionedInComment(String comment, GitConfiguration gitConfig) {
+		return comment.contains("@" + gitConfig.getBotName());
+	}
+	
+	/**
+	 * This method checks if the comment is made by the bot himself.
+	 * 
+	 * @param commentUser
+	 * @param gitConfig
+	 * @return isCommentByBot
+	 */
+	public boolean isCommentByBot(String commentUser, GitConfiguration gitConfig) {
+		return commentUser.equals(gitConfig.getBotName());
 	}
 
 	/**
@@ -63,7 +73,7 @@ public class GrammarService {
 	public Boolean checkComment(String comment, GitConfiguration gitConfig) {
 		try {
 			// Check if USERNAME-Keyword equals tagged Botname
-			if (comment.split(" ").length > 1 && !comment.split(" ")[0].equals("@" + gitConfig.getBotName())) {
+			if (comment.split(" ").length > 1 && !isBotMentionedInComment(comment.split(" ")[0], gitConfig)) {
 				return false;
 			}
 

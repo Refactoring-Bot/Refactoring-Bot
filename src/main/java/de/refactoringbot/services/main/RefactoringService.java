@@ -172,7 +172,8 @@ public class RefactoringService {
 
 				BotIssue botIssue;
 
-				if (grammarService.isBotMentionedInComment(comment, config)) {
+				if (grammarService.isBotMentionedInComment(comment.getCommentBody(), config)
+						&& !grammarService.isCommentByBot(comment.getUsername(), config)) {
 					// If can NOT parse comment with ANTLR
 					if (!grammarService.checkComment(comment.getCommentBody(), config)) {
 						// Try to parse with wit.ai
