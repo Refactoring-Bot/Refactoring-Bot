@@ -18,9 +18,8 @@ public class BotOperationsParser extends Parser {
 		new PredictionContextCache();
 	public static final int
 		REFACTORING=1, ADD=2, RENAME=3, REORDER=4, REMOVE=5, ADDKIND=6, REORDERKIND=7, 
-		REMOVEKIND=8, RENAMEKIND=9, METHOD=10, CLASS=11, VARIABLE=12, ANNOTATION=13, 
-		MODIFIER=14, PARAMETER=15, LINE=16, WORD=17, USERNAME=18, DIGIT=19, NUMBER=20, 
-		SYMBOL=21, WHITESPACE=22;
+		REMOVEKIND=8, RENAMEKIND=9, ANNOTATION=10, SUPPORTEDANNOTATIONS=11, PARAMETER=12, 
+		WORD=13, USERNAME=14, DIGIT=15, NUMBER=16, SYMBOL=17, WHITESPACE=18;
 	public static final int
 		RULE_botCommand = 0;
 	public static final String[] ruleNames = {
@@ -28,15 +27,13 @@ public class BotOperationsParser extends Parser {
 	};
 
 	private static final String[] _LITERAL_NAMES = {
-		null, null, null, null, null, null, null, null, null, null, "'METHOD'", 
-		"'CLASS'", "'VARIABLE'", null, "'MODIFIER'", null, "'LINE'", null, null, 
-		null, null, null, "' '"
+		null, null, null, null, null, null, null, "'MODIFIER'", null, "'METHOD'", 
+		null, "'Override'", null, null, null, null, null, null, "' '"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
 		null, "REFACTORING", "ADD", "RENAME", "REORDER", "REMOVE", "ADDKIND", 
-		"REORDERKIND", "REMOVEKIND", "RENAMEKIND", "METHOD", "CLASS", "VARIABLE", 
-		"ANNOTATION", "MODIFIER", "PARAMETER", "LINE", "WORD", "USERNAME", "DIGIT", 
-		"NUMBER", "SYMBOL", "WHITESPACE"
+		"REORDERKIND", "REMOVEKIND", "RENAMEKIND", "ANNOTATION", "SUPPORTEDANNOTATIONS", 
+		"PARAMETER", "WORD", "USERNAME", "DIGIT", "NUMBER", "SYMBOL", "WHITESPACE"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -143,8 +140,8 @@ public class BotOperationsParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\30\n\4\2\t\2\3\2"+
-		"\3\2\3\2\3\2\3\2\3\2\2\2\3\2\2\2\2\b\2\4\3\2\2\2\4\5\7\24\2\2\5\6\7\30"+
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\24\n\4\2\t\2\3\2"+
+		"\3\2\3\2\3\2\3\2\3\2\2\2\3\2\2\2\2\b\2\4\3\2\2\2\4\5\7\20\2\2\5\6\7\24"+
 		"\2\2\6\7\7\3\2\2\7\b\7\2\2\3\b\3\3\2\2\2\2";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
