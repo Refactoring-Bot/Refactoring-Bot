@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class DataAnonymizerService {
 
-	public static final String URLEXP = "(https://|http://|ftp://|file://)?(www.)?([-a-zA-Z0-9+&@#/%=~_|!:,.;\\\\(\\\\)]+[.|/])[-a-zA-Z0-9+&@#/%?=~_|\\\\(\\\\)]+";
+	public static final String URLEXP = "(https://|http://|ftp://|file://)?(www.)?([-a-zA-Z0-9+&@#/%=~_|!:,.;\\\\(\\\\)]+[.|])[-a-zA-Z0-9+&@#/%?=~_|\\\\(\\\\)]+";
 	public static final String TOKENEXP = "[a-z0-9]{40}";
 	public static final String USEREXP = "@([\\w]+)(([\\w])|(-[\\w]))*";
 	public static final String REPOEXP = "([\\w]+)(([\\w])|(-[\\w]))*([/])([\\w-_]+)";
