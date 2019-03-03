@@ -346,8 +346,9 @@ public class RefactoringService {
 				return issueRepo.save(refactoredIssue);
 			}
 		}
-
-		return null;
+		
+		botIssue.setErrorMessage("Could not create a commit message!");
+		return processFailedRefactoring(config, comment, request, botIssue, isCommentRefactoring);
 	}
 
 	/**
