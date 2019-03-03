@@ -133,13 +133,12 @@ public class RefactoringService {
 					// If issue was not already refactored
 					if (isAnalysisIssueValid(botIssue)) {
 						// Perform refactoring
-						allRefactoredIssues = refactorIssue(false, false, config, null, null, botIssue,
-								allRefactoredIssues);
+						allRefactoredIssues.add(refactorIssue(false, false, config, null, null, botIssue));
 						amountBotRequests++;
 					}
 				} catch (Exception e) {
 					// Create failed Refactored-Object
-					botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
+					botIssue.setErrorMessage("Bot could not refactor this issue! Internal server error!");
 					allRefactoredIssues.add(processFailedRefactoring(config, null, null, botIssue, false));
 					logger.error(e.getMessage(), e);
 				}
@@ -207,38 +206,58 @@ public class RefactoringService {
 						}
 					}
 					// Refactor the created BotIssue
-					try {
-						// For Requests created by someone else
-						if (!request.getCreatorName().equals(config.getBotName())) {
-							if (amountBotRequests >= config.getMaxAmountRequests()) {
-								return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
-							}
-							// Perform refactoring
-							allRefactoredIssues = refactorIssue(false, true, config, comment, request, botIssue,
-									allRefactoredIssues);
-							amountBotRequests++;
-							// For Requests created by the bot
-						} else {
-							allRefactoredIssues = refactorIssue(true, true, config, comment, request, botIssue,
-									allRefactoredIssues);
-						}
-					} catch (BotRefactoringException e) {
-						// If refactoring failed
-						botIssue.setErrorMessage(e.getMessage());
-						allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
-						logger.error(e.getMessage(), e);
-						// Catch other errors
-					} catch (Exception e) {
-						// If botservice faild before or after the refactoring
-						botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
-						allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
-						logger.error(e.getMessage(), e);
-					}
+					allRefactoredIssues.add(refactorComment(config, botIssue, request, comment, amountBotRequests));
 				}
 			}
 		}
 
 		return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+	}
+
+	/**
+	 * This method refactors the BotIssue which was created from a comment. It
+	 * returns a RefactoredIssue after a successful or failed refactoring.
+	 * 
+	 * @param config
+	 * @param issue
+	 * @param request
+	 * @param comment
+	 * @param amountBotRequests
+	 * @return refactoredIssue
+	 */
+	private RefactoredIssue refactorComment(GitConfiguration config, BotIssue botIssue, BotPullRequest request,
+			BotPullRequestComment comment, int amountBotRequests) {
+
+		RefactoredIssue refactoredIssue = null;
+
+		// Refactor the created BotIssue
+		try {
+			// For Requests created by someone else
+			if (!request.getCreatorName().equals(config.getBotName())) {
+				if (amountBotRequests >= config.getMaxAmountRequests()) {
+					return null;
+				}
+				// Perform refactoring
+				refactoredIssue = refactorIssue(false, true, config, comment, request, botIssue);
+				amountBotRequests++;
+				// For Requests created by the bot
+			} else {
+				refactoredIssue = refactorIssue(true, true, config, comment, request, botIssue);
+			}
+		} catch (BotRefactoringException e) {
+			// If refactoring failed
+			botIssue.setErrorMessage(e.getMessage());
+			refactoredIssue = processFailedRefactoring(config, comment, request, botIssue, true);
+			logger.error(e.getMessage(), e);
+			// Catch other errors
+		} catch (Exception e) {
+			// If botservice faild before or after the refactoring
+			botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
+			refactoredIssue = processFailedRefactoring(config, comment, request, botIssue, true);
+			logger.error(e.getMessage(), e);
+		}
+
+		return refactoredIssue;
 	}
 
 	/**
@@ -255,9 +274,8 @@ public class RefactoringService {
 	 * @return allRefactoredIssues
 	 * @throws Exception
 	 */
-	public List<RefactoredIssue> refactorIssue(boolean isBotPR, boolean isCommentRefactoring, GitConfiguration config,
-			BotPullRequestComment comment, BotPullRequest request, BotIssue botIssue,
-			List<RefactoredIssue> allRefactoredIssues) throws Exception {
+	public RefactoredIssue refactorIssue(boolean isBotPR, boolean isCommentRefactoring, GitConfiguration config,
+			BotPullRequestComment comment, BotPullRequest request, BotIssue botIssue) throws Exception {
 		// If refactoring via comment
 		if (isCommentRefactoring) {
 			// If PR owner = bot
@@ -278,9 +296,8 @@ public class RefactoringService {
 					// Reply to User
 					grabber.replyToUserInsideBotRequest(request, comment, config);
 
-					// Save to Database + add to list
-					RefactoredIssue savedIssue = issueRepo.save(refactoredIssue);
-					allRefactoredIssues.add(savedIssue);
+					// Save and return refactored issue
+					return issueRepo.save(refactoredIssue);
 				}
 				// If PR owner != bot
 			} else {
@@ -302,9 +319,8 @@ public class RefactoringService {
 					dataGetter.pushChanges(config, botIssue.getCommitMessage());
 					grabber.makeCreateRequest(request, comment, config, newBranch);
 
-					// Save to Database + add to list
-					RefactoredIssue savedIssue = issueRepo.save(refactoredIssue);
-					allRefactoredIssues.add(savedIssue);
+					// Save and return refactored issue
+					return issueRepo.save(refactoredIssue);
 				}
 			}
 			// If analysis service refactoring
@@ -326,13 +342,12 @@ public class RefactoringService {
 				dataGetter.pushChanges(config, botIssue.getCommitMessage());
 				grabber.makeCreateRequestWithAnalysisService(botIssue, config, newBranch);
 
-				// Save to database + add to list
-				RefactoredIssue savedIssue = issueRepo.save(refactoredIssue);
-				allRefactoredIssues.add(savedIssue);
+				// Save and return refactored issue
+				return issueRepo.save(refactoredIssue);
 			}
 		}
 
-		return allRefactoredIssues;
+		return null;
 	}
 
 	/**
