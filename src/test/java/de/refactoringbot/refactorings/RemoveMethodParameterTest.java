@@ -36,9 +36,9 @@ import de.refactoringbot.resources.removeparameter.TestDataSiblingClassRemovePar
 import de.refactoringbot.resources.removeparameter.TestDataSubClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataSuperClassRemoveParameter;
 
-public class RemoveParameterTest extends AbstractRefactoringTests {
+public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 
-	private static final Logger logger = LoggerFactory.getLogger(RemoveParameterTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(RemoveMethodParameterTest.class);
 
 	private static final String SIBLING_CLASS_NAME = "TestDataSiblingClassRemoveParameter";
 	private static final String SUB_CLASS_NAME = "TestDataSubClassRemoveParameter";
