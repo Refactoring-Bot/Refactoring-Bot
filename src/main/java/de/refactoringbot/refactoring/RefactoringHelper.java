@@ -5,11 +5,13 @@ import java.io.FileNotFoundException;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.Position;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -25,11 +27,7 @@ import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.javaparser.ParserRefactoring;
 
 /**
- * This class contains many methods that can be used by multiple
- * Refactoring-Classes.
- * 
- * @author Stefan Basaric
- *
+ * Utility methods for use in performing refactorings
  */
 public class RefactoringHelper {
 
@@ -37,6 +35,137 @@ public class RefactoringHelper {
 
 	private RefactoringHelper() {
 	}
+
+	/**
+	 * @param classOrInterface
+	 * @param methodSignature
+	 * @return true if local method signature is present in given class or
+	 *         interface, false otherwise
+	 */
+	public static boolean isLocalMethodSignaturePresentInClassOrInterface(ClassOrInterfaceDeclaration classOrInterface,
+			String methodSignature) {
+		List<MethodDeclaration> fileMethods = classOrInterface.findAll(MethodDeclaration.class);
+
+		for (MethodDeclaration fileMethod : fileMethods) {
+			if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param methodDeclaration
+	 * @return the local signature of a method as a string
+	 */
+	public static String getLocalMethodSignatureAsString(MethodDeclaration methodDeclaration) {
+		return methodDeclaration.getSignature().asString();
+	}
+
+	/**
+	 * @param methodDeclaration
+	 * @return qualified method signature of the given method declaration
+	 * @throws BotRefactoringException
+	 */
+	public static String getQualifiedMethodSignatureAsString(MethodDeclaration methodDeclaration)
+			throws BotRefactoringException {
+		try {
+			ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
+			return resolvedMethod.getQualifiedSignature();
+		} catch (Exception e) {
+			throw new BotRefactoringException("Method '" + methodDeclaration.getSignature().asString()
+					+ "' can't be resolved. It might have parameters from external projects/libraries or method might be"
+					+ " inside a class that extends a generic class! Error: " + e);
+		}
+	}
+
+	/**
+	 * Finds a method in a compilation unit that starts at the specified line number
+	 * 
+	 * @param lineNumber
+	 * @param cu
+	 * @return MethodDeclaration or null if none found
+	 */
+	public static MethodDeclaration getMethodByLineNumberOfMethodName(int lineNumber, CompilationUnit cu) {
+		MethodDeclaration result = null;
+		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
+		for (MethodDeclaration method : methods) {
+			if (isMethodDeclarationAtLine(method, lineNumber)) {
+				result = method;
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * @param methodDeclaration
+	 * @param lineNumber
+	 * @return true if given method starts at given line, false otherwise
+	 */
+	public static boolean isMethodDeclarationAtLine(MethodDeclaration methodDeclaration, Integer lineNumber) {
+		Optional<Position> beginPositionOfName = methodDeclaration.getName().getBegin();
+		return (beginPositionOfName.isPresent() && lineNumber == beginPositionOfName.get().line);
+	}
+
+	/**
+	 * Finds a field in a compilation unit that starts at the specified line number
+	 * 
+	 * @param lineNumber
+	 * @param cu
+	 * @return FieldDeclaration or null if none found
+	 */
+	public static FieldDeclaration getFieldDeclarationByLineNumber(int lineNumber, CompilationUnit cu) {
+		FieldDeclaration result = null;
+		List<FieldDeclaration> fields = cu.findAll(FieldDeclaration.class);
+		for (FieldDeclaration field : fields) {
+			if (isFieldDeclarationAtLine(field, lineNumber)) {
+				result = field;
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * @param fieldDeclaration
+	 * @param lineNumber
+	 * @return true if given field starts at given line, false otherwise
+	 */
+	public static boolean isFieldDeclarationAtLine(FieldDeclaration fieldDeclaration, Integer lineNumber) {
+		Optional<Position> beginPositionOfField = fieldDeclaration.getBegin();
+		return (beginPositionOfField.isPresent() && beginPositionOfField.get().line == lineNumber);
+	}
+	
+
+	/**
+	 * Get all direct and indirect ancestors of a given class if possible (if
+	 * ancestor is not a external dependency for example).
+	 * 
+	 * @param currentClass
+	 * @return ancestors
+	 */
+	public static List<ResolvedReferenceType> getAllAncestors(ResolvedReferenceTypeDeclaration currentClass) {
+		List<ResolvedReferenceType> ancestors = new ArrayList<>();
+
+		if (!(Object.class.getCanonicalName().equals(currentClass.getQualifiedName()))) {
+			// Get all direct ancestors that can be resolved
+			for (ResolvedReferenceType ancestor : currentClass.getAncestors(true)) {
+				ancestors.add(ancestor);
+				// Get indirect ancestors recursively
+				for (ResolvedReferenceType inheritedAncestor : getAllAncestors(ancestor.getTypeDeclaration())) {
+					if (!ancestors.contains(inheritedAncestor)) {
+						ancestors.add(inheritedAncestor);
+					}
+				}
+			}
+		}
+
+		return ancestors;
+	}
+
+	// ##############################################
+	// Deprecated
+	// ##############################################
 
 	/**
 	 * This method scans all Java files for methods that match the passed method
@@ -79,34 +208,6 @@ public class RefactoringHelper {
 		}
 
 		return refactoring;
-	}
-
-	public static List<ClassOrInterfaceDeclaration> getAllClassesOrInterfacesFromJavaFiles(List<String> javaFiles)
-			throws FileNotFoundException {
-		List<ClassOrInterfaceDeclaration> classesAndInterfaces = new ArrayList<>();
-		for (String javaFile : javaFiles) {
-			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = compilationUnit
-					.findAll(ClassOrInterfaceDeclaration.class);
-			classesAndInterfaces.addAll(classesAndInterfacesInCurrentFile);
-		}
-		return classesAndInterfaces;
-	}
-
-	public static List<MethodDeclaration> findAllMethodDeclarationsWithEqualLocalMethodSignature(
-			List<ClassOrInterfaceDeclaration> classesAndInterfaces, String methodSignature) {
-		List<MethodDeclaration> methodDeclarations = new ArrayList<>();
-		for (ClassOrInterfaceDeclaration classOrInterface : classesAndInterfaces) {
-			List<MethodDeclaration> methodsInClassOrInterface = classOrInterface.getMethods();
-			for (MethodDeclaration method : methodsInClassOrInterface) {
-				if (getLocalMethodSignatureAsString(method).equals(methodSignature)) {
-					methodDeclarations.add(method);
-				}
-			}
-		}
-
-		return methodDeclarations;
 	}
 
 	/**
@@ -229,6 +330,22 @@ public class RefactoringHelper {
 		return refactoring;
 	}
 
+	@Deprecated
+	public static boolean isMethodSignaturePresentInFile(String filePath, String methodSignature)
+			throws FileNotFoundException {
+		FileInputStream is = new FileInputStream(filePath);
+		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(is));
+		List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
+
+		for (MethodDeclaration fileMethod : fileMethods) {
+			if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	/**
 	 * This method checks all given Java files for methods that equal the given
 	 * method signature. This is relevant, for example, to check whether a method
@@ -240,6 +357,7 @@ public class RefactoringHelper {
 	 *             if there is a duplicate
 	 * @throws FileNotFoundException
 	 */
+	@Deprecated
 	public static void checkForDuplicatedMethodSignatures(List<String> javaFiles, String methodSignature)
 			throws BotRefactoringException, FileNotFoundException {
 
@@ -262,140 +380,4 @@ public class RefactoringHelper {
 			}
 		}
 	}
-
-	@Deprecated
-	public static boolean isMethodSignaturePresentInFile(String filePath, String methodSignature)
-			throws FileNotFoundException {
-		FileInputStream is = new FileInputStream(filePath);
-		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(is));
-		List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
-
-		for (MethodDeclaration fileMethod : fileMethods) {
-			if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	public static boolean isLocalMethodSignaturePresentInClassOrInterface(ClassOrInterfaceDeclaration classOrInterface,
-			String methodSignature) {
-		List<MethodDeclaration> fileMethods = classOrInterface.findAll(MethodDeclaration.class);
-
-		for (MethodDeclaration fileMethod : fileMethods) {
-			if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * @param methodDeclaration
-	 * @param position
-	 * @return true if given method starts at given position, false otherwise
-	 */
-	public static boolean isMethodDeclarationAtLine(MethodDeclaration methodDeclaration, Integer position) {
-		if (methodDeclaration.getName().getBegin().isPresent()) {
-			if (position == methodDeclaration.getName().getBegin().get().line) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * @param methodDeclaration
-	 * @return the local signature of a method as a string
-	 */
-	public static String getLocalMethodSignatureAsString(MethodDeclaration methodDeclaration) {
-		return methodDeclaration.getSignature().asString();
-	}
-
-	/**
-	 * @param methodDeclaration
-	 * @return qualified method signature of the given method declaration
-	 * @throws BotRefactoringException
-	 */
-	public static String getQualifiedMethodSignatureAsString(MethodDeclaration methodDeclaration)
-			throws BotRefactoringException {
-		try {
-			ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();
-			return resolvedMethod.getQualifiedSignature();
-		} catch (Exception e) {
-			throw new BotRefactoringException("Method '" + methodDeclaration.getSignature().asString()
-					+ "' can't be resolved. It might have parameters from external projects/libraries or method might be"
-					+ " inside a class that extends a generic class! Error: " + e);
-		}
-	}
-
-	/**
-	 * This method gets all direct and indirect Ancestors of a given class if
-	 * possible. (If ancestor is not a external dependency for example)
-	 * 
-	 * @param currentClass
-	 * @return ancestors
-	 */
-	public static List<ResolvedReferenceType> getAllAncestors(ResolvedReferenceTypeDeclaration currentClass) {
-		// Init ancestor list
-		List<ResolvedReferenceType> ancestors = new ArrayList<>();
-
-		// Check class
-		if (!(Object.class.getCanonicalName().equals(currentClass.getQualifiedName()))) {
-			// Get all direct ancestors that can be resolved
-			for (ResolvedReferenceType ancestor : currentClass.getAncestors(true)) {
-				// Add them to list
-				ancestors.add(ancestor);
-				// Get indirect ancestors recursively
-				for (ResolvedReferenceType inheritedAncestor : getAllAncestors(ancestor.getTypeDeclaration())) {
-					if (!ancestors.contains(inheritedAncestor)) {
-						ancestors.add(inheritedAncestor);
-					}
-				}
-			}
-		}
-
-		return ancestors;
-	}
-
-	/**
-	 * Finds a method in a compilation unit that starts at the specified line number
-	 * 
-	 * @param lineNumber
-	 * @param cu
-	 * @return MethodDeclaration or null if none found
-	 */
-	public static MethodDeclaration getMethodByLineNumberOfMethodName(int lineNumber, CompilationUnit cu) {
-		MethodDeclaration result = null;
-		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
-		for (MethodDeclaration method : methods) {
-			if (isMethodDeclarationAtLine(method, lineNumber)) {
-				result = method;
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * Finds a field in a compilation unit that starts at the specified line number
-	 * 
-	 * @param lineNumber
-	 * @param cu
-	 * @return FieldDeclaration or null if none found
-	 */
-	public static FieldDeclaration getFieldDeclarationByLineNumber(int lineNumber, CompilationUnit cu) {
-		FieldDeclaration result = null;
-		List<FieldDeclaration> fields = cu.findAll(FieldDeclaration.class);
-		for (FieldDeclaration field : fields) {
-			if (field.getBegin().isPresent()) {
-				if (field.getBegin().get().line == lineNumber) {
-					result = field;
-				}
-			}
-		}
-		return result;
-	}
-
 }

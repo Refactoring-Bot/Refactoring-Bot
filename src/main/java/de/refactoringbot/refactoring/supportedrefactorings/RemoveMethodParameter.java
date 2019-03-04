@@ -115,8 +115,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		try {
 			ancestors = targetClass.resolve().getAllAncestors();
 		} catch (UnsolvedSymbolException u) {
-			ancestors = RefactoringHelper.getAllAncestors(targetClass.resolve()); // TODO remove? it seems to be the
-																					// same as getAllAncestors()
+			ancestors = RefactoringHelper.getAllAncestors(targetClass.resolve());
 			logger.warn("Refactored classes might extend/implement classes or interfaces from external dependency! "
 					+ "Please validate the correctness of the refactoring.");
 			// TODO propagate warning
@@ -473,7 +472,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 				logger.error(e.getMessage());
 				// TODO could be the case that an external dependency could not be resolved. In
 				// such case it is fine to return false. However, it is an issue if a method
-				// call that needs to be refacted can not be resolved.
+				// call that needs to be refactored can not be resolved.
 				// see also RefactoringHelper.getQualifiedMethodSignatureAsString
 				return false;
 			}

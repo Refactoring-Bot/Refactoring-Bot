@@ -6,6 +6,7 @@ import java.util.List;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 
+@Deprecated
 public class ParserRefactoring {
 
 	private List<String> classes = new ArrayList<>();
