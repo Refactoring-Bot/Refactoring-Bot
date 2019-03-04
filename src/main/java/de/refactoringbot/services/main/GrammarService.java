@@ -51,9 +51,9 @@ public class GrammarService {
 	public boolean isBotMentionedInComment(String comment, GitConfiguration gitConfig) {
 		return comment.contains("@" + gitConfig.getBotName());
 	}
-	
+
 	/**
-	 * This method checks if the comment is made by the bot himself.
+	 * This method checks whether the comment was created by the bot itself
 	 * 
 	 * @param commentUser
 	 * @param gitConfig
