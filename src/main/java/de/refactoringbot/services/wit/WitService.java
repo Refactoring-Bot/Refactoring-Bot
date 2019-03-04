@@ -48,11 +48,10 @@ public class WitService {
 	 * @param gitConfig
 	 * @param comment
 	 * @return botIssue
-	 * @throws WitAPIException
 	 * @throws ReviewCommentUnclearException
 	 */
 	public BotIssue createBotIssue(GitConfiguration gitConfig, BotPullRequestComment comment)
-			throws WitAPIException, ReviewCommentUnclearException, IOException {
+			throws ReviewCommentUnclearException, IOException {
 		try {
 			BotIssue issue = new BotIssue();
 

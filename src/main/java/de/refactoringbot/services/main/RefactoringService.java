@@ -26,7 +26,6 @@ import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
 import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
-import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -184,7 +183,7 @@ public class RefactoringService {
 							botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
 							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
 							return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-						} catch (ReviewCommentUnclearException | WitAPIException e) {
+						} catch (ReviewCommentUnclearException e) {
 							logger.warn(
 									"Comment translation with 'wit.ai' failed! Comment: " + comment.getCommentBody());
 							botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
