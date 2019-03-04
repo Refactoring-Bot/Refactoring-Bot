@@ -1,28 +1,25 @@
 token literal names:
 null
-'BOT'
 null
 null
 null
 null
 null
-null
-null
-null
-null
-'METHOD'
-'CLASS'
-'VARIABLE'
 null
 'MODIFIER'
 null
-'LINE'
+'METHOD'
+null
+'Override'
+null
+null
+null
+null
 null
 null
 ' '
 
 token symbolic names:
-null
 null
 REFACTORING
 ADD
@@ -33,15 +30,14 @@ ADDKIND
 REORDERKIND
 REMOVEKIND
 RENAMEKIND
-METHOD
-CLASS
-VARIABLE
 ANNOTATION
-MODIFIER
+SUPPORTEDANNOTATIONS
 PARAMETER
-LINE
 WORD
+USERNAME
 DIGIT
+NUMBER
+SYMBOL
 WHITESPACE
 
 rule names:
@@ -49,4 +45,4 @@ botCommand
 
 
 atn:
-[3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 22, 10, 4, 2, 9, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 2, 2, 3, 2, 2, 2, 2, 8, 2, 4, 3, 2, 2, 2, 4, 5, 7, 3, 2, 2, 5, 6, 7, 22, 2, 2, 6, 7, 7, 4, 2, 2, 7, 8, 7, 2, 2, 3, 8, 3, 3, 2, 2, 2, 2]
+[3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 20, 10, 4, 2, 9, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 2, 2, 3, 2, 2, 2, 2, 8, 2, 4, 3, 2, 2, 2, 4, 5, 7, 16, 2, 2, 5, 6, 7, 20, 2, 2, 6, 7, 7, 3, 2, 2, 7, 8, 7, 2, 2, 3, 8, 3, 3, 2, 2, 2, 2]

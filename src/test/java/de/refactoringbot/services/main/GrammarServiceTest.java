@@ -20,10 +20,11 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 public class GrammarServiceTest {
 
 	private static Map<String, Class<? extends RefactoringImpl>> ruleToClassMapping;
-	private final static String VALID_COMMENT_ADD_OVERRIDE = "BOT ADD ANNOTATION Override";
-	private final static String VALID_COMMENT_REORDER_MODIFIER = "BOT REORDER MODIFIER";
-	private final static String VALID_COMMENT_RENAME_METHOD = "BOT RENAME METHOD TO newMethodName";
-	private final static String VALID_COMMENT_REMOVE_PARAM = "BOT REMOVE PARAMETER unusedParam";
+	private final static String VALID_COMMENT_ADD_OVERRIDE = "@CorrectBotName ADD ANNOTATION Override";
+	private final static String VALID_COMMENT_REORDER_MODIFIER = "@CorrectBotName REORDER MODIFIER";
+	private final static String VALID_COMMENT_RENAME_METHOD = "@CorrectBotName RENAME METHOD TO newMethodName";
+	private final static String VALID_COMMENT_REMOVE_PARAM = "@CorrectBotName REMOVE PARAMETER unusedParam";
+	private final static String CORRECT_BOT_USERNAME = "CorrectBotName";
 
 	private FileService fileService;
 
@@ -102,17 +103,28 @@ public class GrammarServiceTest {
 	@Test
 	public void testCheckComment() {
 		GrammarService grammarService = new GrammarService(fileService);
-		SoftAssertions softAssertions = new SoftAssertions();
-		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE)).isTrue();
-		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE)).isTrue();
-		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_REORDER_MODIFIER)).isTrue();
-		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_RENAME_METHOD)).isTrue();
-		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_REMOVE_PARAM)).isTrue();
+		// Init gitconfig with bot username
+		GitConfiguration gitConfig = new GitConfiguration();
+		gitConfig.setBotName(CORRECT_BOT_USERNAME);
 
-		softAssertions.assertThat(grammarService.checkComment("BOT ADD ANNOTATION")).isFalse();
-		softAssertions.assertThat(grammarService.checkComment("BOT RENAME METHOD")).isFalse();
-		softAssertions.assertThat(grammarService.checkComment("BOT, BOT, on the wall, who's the fairest of them all?"))
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_ADD_OVERRIDE, gitConfig)).isTrue();
+		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_REORDER_MODIFIER, gitConfig)).isTrue();
+		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_RENAME_METHOD, gitConfig)).isTrue();
+		softAssertions.assertThat(grammarService.checkComment(VALID_COMMENT_REMOVE_PARAM, gitConfig)).isTrue();
+
+		softAssertions.assertThat(grammarService.checkComment("@IncorrectBotName ADD ANNOTATION", gitConfig)).isFalse();
+		softAssertions.assertThat(grammarService.checkComment("BOT RENAME METHOD", gitConfig)).isFalse();
+		softAssertions
+				.assertThat(
+						grammarService.checkComment("BOT, BOT, on the wall, who's the fairest of them all?", gitConfig))
 				.isFalse();
+		softAssertions.assertThat(grammarService.checkComment("@IncorrectBotName ADD ANNOTATION Override", gitConfig))
+				.isFalse();
+		softAssertions.assertThat(grammarService.checkComment("@CorrectBotName RENAME METHOD newMethodName", gitConfig))
+				.isFalse();
+		softAssertions.assertThat(grammarService.checkComment("BOT REMOVE PARAMETER param", gitConfig)).isFalse();
+		softAssertions.assertThat(grammarService.checkComment("CorrectBotName REORDER MODIFIER", gitConfig)).isFalse();
 
 		softAssertions.assertAll();
 	}

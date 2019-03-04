@@ -25,13 +25,16 @@ import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
+import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.model.refactoredissue.RefactoredIssue;
 import de.refactoringbot.model.refactoredissue.RefactoredIssueRepository;
+import de.refactoringbot.refactoring.RefactoringOperations;
 import de.refactoringbot.refactoring.RefactoringPicker;
 import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
+import de.refactoringbot.services.wit.WitService;
 import javassist.NotFoundException;
 
 /**
@@ -58,13 +61,15 @@ public class RefactoringService {
 	@Autowired
 	BotService botController;
 	@Autowired
-	GrammarService grammarController;
+	GrammarService grammarService;
 	@Autowired
 	RefactoringPicker refactoring;
 	@Autowired
 	SonarQubeObjectTranslator sonarTranslator;
 	@Autowired
 	BotService botService;
+	@Autowired
+	WitService witService;
 
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringService.class);
 
@@ -109,7 +114,7 @@ public class RefactoringService {
 	 * @param allIssues
 	 * @return response
 	 */
-	public ResponseEntity<?> processAnalysisIssues(GitConfiguration config, int amountBotRequests) {
+	private ResponseEntity<?> processAnalysisIssues(GitConfiguration config, int amountBotRequests) {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 		try {
 			// Get issues from analysis service API
@@ -127,15 +132,13 @@ public class RefactoringService {
 					// If issue was not already refactored
 					if (isAnalysisIssueValid(botIssue)) {
 						// Perform refactoring
-						allRefactoredIssues = refactorIssue(false, false, config, null, null, botIssue,
-								allRefactoredIssues);
+						allRefactoredIssues.add(refactorIssue(false, false, config, null, null, botIssue));
 						amountBotRequests++;
 					}
 				} catch (Exception e) {
 					// Create failed Refactored-Object
-					botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
-					allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, null, null, botIssue,
-							false);
+					botIssue.setErrorMessage("Bot could not refactor this issue! Internal server error!");
+					allRefactoredIssues.add(processFailedRefactoring(config, null, null, botIssue, false));
 					logger.error(e.getMessage(), e);
 				}
 			}
@@ -155,60 +158,104 @@ public class RefactoringService {
 	 * @param amountOfBotRequests
 	 * @return response
 	 */
-	public ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests,
+	private ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests,
 			int amountBotRequests) {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
-		// Iterate through all requests
+
 		for (BotPullRequest request : allRequests.getAllPullRequests()) {
-			// Iterate through all comments
 			for (BotPullRequestComment comment : request.getAllComments()) {
-				// When Bot-Pull-Request-Limit reached -> return
-				if (amountBotRequests >= config.getMaxAmountRequests()) {
-					// Return all refactored issues
-					return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+				if (isAlreadyRefactored(config, comment)) {
+					continue;
 				}
 
-				// Check if comment is valid and not already refactored
-				if (isCommentValid(config, comment)) {
-					// Create issue
-					BotIssue botIssue;
-					try {
-						botIssue = createIssueFromComment(config, comment);
-					} catch (Exception e) {
-						logger.error(e.getMessage(), e);
-						return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-					}
+				BotIssue botIssue;
 
-					try {
-						// For Requests created by someone else
-						if (!request.getCreatorName().equals(config.getBotName())) {
-							// Perform refactoring
-							allRefactoredIssues = refactorIssue(false, true, config, comment, request, botIssue,
-									allRefactoredIssues);
-							amountBotRequests++;
-							// For Requests created by the bot
-						} else {
-							allRefactoredIssues = refactorIssue(true, true, config, comment, request, botIssue,
-									allRefactoredIssues);
+				if (grammarService.isBotMentionedInComment(comment.getCommentBody(), config)
+						&& !grammarService.isCommentByBot(comment.getUsername(), config)) {
+					// If can NOT parse comment with ANTLR
+					if (!grammarService.checkComment(comment.getCommentBody(), config)) {
+						// Try to parse with wit.ai
+						try {
+							botIssue = witService.createBotIssue(config, comment);
+							logger.info("Comment translated with 'wit.ai': " + comment.getCommentBody());
+						} catch (IOException e) {
+							logger.error(e.getMessage(), e);
+							botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
+							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
+							return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+						} catch (ReviewCommentUnclearException e) {
+							logger.warn(
+									"Comment translation with 'wit.ai' failed! Comment: " + comment.getCommentBody());
+							botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
+							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
+							continue;
 						}
-					} catch (BotRefactoringException e) {
-						// If refactoring failed
-						botIssue.setErrorMessage(e.getMessage());
-						allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
-								botIssue, true);
-						logger.error(e.getMessage(), e);
-						// Catch other errors
-					} catch (Exception e) {
-						// If botservice faild before or after the refactoring
-						botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
-						allRefactoredIssues = processFailedRefactoring(allRefactoredIssues, config, comment, request,
-								botIssue, true);
-						logger.error(e.getMessage(), e);
+					} else {
+						// Try to refactor with ANTRL4
+						try {
+							// If ANTLR can parse -> create Issue
+							botIssue = grammarService.createIssueFromComment(comment, config);
+							logger.info("Comment translated with 'ANTLR': " + comment.getCommentBody());
+						} catch (Exception g) {
+							logger.error(g.getMessage(), g);
+							// If refactoring failed
+							botIssue = createBotIssueFromInvalidComment(comment, g.getMessage());
+							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
+							continue;
+						}
 					}
+					// Refactor the created BotIssue
+					allRefactoredIssues.add(refactorComment(config, botIssue, request, comment, amountBotRequests));
 				}
 			}
 		}
+
 		return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+	}
+
+	/**
+	 * This method refactors the BotIssue which was created from a comment. It
+	 * returns a RefactoredIssue after a successful or failed refactoring.
+	 * 
+	 * @param config
+	 * @param issue
+	 * @param request
+	 * @param comment
+	 * @param amountBotRequests
+	 * @return refactoredIssue
+	 */
+	private RefactoredIssue refactorComment(GitConfiguration config, BotIssue botIssue, BotPullRequest request,
+			BotPullRequestComment comment, int amountBotRequests) {
+
+		RefactoredIssue refactoredIssue = null;
+
+		// Refactor the created BotIssue
+		try {
+			// For Requests created by someone else
+			if (!request.getCreatorName().equals(config.getBotName())) {
+				if (amountBotRequests >= config.getMaxAmountRequests()) {
+					return null;
+				}
+				// Perform refactoring
+				refactoredIssue = refactorIssue(false, true, config, comment, request, botIssue);
+				amountBotRequests++;
+				// For Requests created by the bot
+			} else {
+				refactoredIssue = refactorIssue(true, true, config, comment, request, botIssue);
+			}
+		} catch (BotRefactoringException e) {
+			// If refactoring failed
+			botIssue.setErrorMessage(e.getMessage());
+			refactoredIssue = processFailedRefactoring(config, comment, request, botIssue, true);
+			logger.error(e.getMessage(), e);
+		} catch (Exception e) {
+			// If botservice failed before or after the refactoring
+			botIssue.setErrorMessage("Bot could not refactor this comment! Internal server error!");
+			refactoredIssue = processFailedRefactoring(config, comment, request, botIssue, true);
+			logger.error(e.getMessage(), e);
+		}
+
+		return refactoredIssue;
 	}
 
 	/**
@@ -225,9 +272,8 @@ public class RefactoringService {
 	 * @return allRefactoredIssues
 	 * @throws Exception
 	 */
-	public List<RefactoredIssue> refactorIssue(boolean isBotPR, boolean isCommentRefactoring, GitConfiguration config,
-			BotPullRequestComment comment, BotPullRequest request, BotIssue botIssue,
-			List<RefactoredIssue> allRefactoredIssues) throws Exception {
+	private RefactoredIssue refactorIssue(boolean isBotPR, boolean isCommentRefactoring, GitConfiguration config,
+			BotPullRequestComment comment, BotPullRequest request, BotIssue botIssue) throws Exception {
 		// If refactoring via comment
 		if (isCommentRefactoring) {
 			// If PR owner = bot
@@ -248,9 +294,8 @@ public class RefactoringService {
 					// Reply to User
 					grabber.replyToUserInsideBotRequest(request, comment, config);
 
-					// Save to Database + add to list
-					RefactoredIssue savedIssue = issueRepo.save(refactoredIssue);
-					allRefactoredIssues.add(savedIssue);
+					// Save and return refactored issue
+					return issueRepo.save(refactoredIssue);
 				}
 				// If PR owner != bot
 			} else {
@@ -272,9 +317,8 @@ public class RefactoringService {
 					dataGetter.pushChanges(config, botIssue.getCommitMessage());
 					grabber.makeCreateRequest(request, comment, config, newBranch);
 
-					// Save to Database + add to list
-					RefactoredIssue savedIssue = issueRepo.save(refactoredIssue);
-					allRefactoredIssues.add(savedIssue);
+					// Save and return refactored issue
+					return issueRepo.save(refactoredIssue);
 				}
 			}
 			// If analysis service refactoring
@@ -296,13 +340,13 @@ public class RefactoringService {
 				dataGetter.pushChanges(config, botIssue.getCommitMessage());
 				grabber.makeCreateRequestWithAnalysisService(botIssue, config, newBranch);
 
-				// Save to database + add to list
-				RefactoredIssue savedIssue = issueRepo.save(refactoredIssue);
-				allRefactoredIssues.add(savedIssue);
+				// Save and return refactored issue
+				return issueRepo.save(refactoredIssue);
 			}
 		}
 
-		return allRefactoredIssues;
+		botIssue.setErrorMessage("Could not create a commit message!");
+		return processFailedRefactoring(config, comment, request, botIssue, isCommentRefactoring);
 	}
 
 	/**
@@ -314,7 +358,7 @@ public class RefactoringService {
 	 * @throws DatabaseConnectionException
 	 * @throws NotFoundException
 	 */
-	public GitConfiguration checkConfigurationExistance(Long configurationId)
+	private GitConfiguration checkConfigurationExistance(Long configurationId)
 			throws DatabaseConnectionException, NotFoundException {
 
 		Optional<GitConfiguration> gitConfig;
@@ -346,35 +390,22 @@ public class RefactoringService {
 	 * @throws Exception
 	 */
 	public BotPullRequests getPullRequests(GitConfiguration config)
-			throws URISyntaxException, GitHubAPIException, IOException, BotRefactoringException, GitWorkflowException {
+			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException {
 		// Fetch target-Repository-Data
 		dataGetter.fetchRemote(config);
 
-		// Get Pull-Requests with comments
-		BotPullRequests allRequests = grabber.getRequestsWithComments(config);
-		Integer amountBotRequests = botController.getAmountOfBotRequests(allRequests, config);
-
-		// Check if max amount is reached
-		if (amountBotRequests >= config.getMaxAmountRequests()) {
-			throw new BotRefactoringException("Maximal amount of requests reached." + "(Maximum = "
-					+ config.getMaxAmountRequests() + "; Currently = " + amountBotRequests + " bot requests are open)");
-		}
-
-		return allRequests;
+		return grabber.getRequestsWithComments(config);
 	}
 
 	/**
-	 * This method checks if a comment is valid for refactoring. The service will
-	 * only refactor the comment if it was not already refactored in the past and if
-	 * the comment fulfills the bot grammar.
+	 * This method checks if a comment was already refactored in the past.
 	 * 
 	 * @param config
 	 * @param comment
-	 * @return isValid
+	 * @return isAlreadyRefactored
 	 */
-	public boolean isCommentValid(GitConfiguration config, BotPullRequestComment comment) {
-		return (grammarController.checkComment(comment.getCommentBody()) && !issueRepo
-				.refactoredComment(config.getRepoService(), comment.getCommentID().toString()).isPresent());
+	public boolean isAlreadyRefactored(GitConfiguration config, BotPullRequestComment comment) {
+		return issueRepo.refactoredComment(config.getRepoService(), comment.getCommentID().toString()).isPresent();
 	}
 
 	/**
@@ -390,33 +421,19 @@ public class RefactoringService {
 	}
 
 	/**
-	 * This method creates an BotIssue for refactoring from a PullRequest-Comment.
-	 * 
-	 * @param config
-	 * @param comment
-	 * @return botIssue
-	 * @throws Exception
-	 */
-	public BotIssue createIssueFromComment(GitConfiguration config, BotPullRequestComment comment) throws Exception {
-		return grammarController.createIssueFromComment(comment, config);
-	}
-
-	/**
 	 * This method processes a faild refactoring. It creates a RefactoredIssue
 	 * object and saves it to the database so that the bot won't try to refactor a
 	 * comment that can not be refactored. Also, a reply is sent to the comment
 	 * creator to inform him of the failure with a proper error message.
 	 * 
-	 * @param allRefactoredIssues
 	 * @param config
 	 * @param comment
 	 * @param request
 	 * @param botIssue
-	 * @return allRefactoredIssues
+	 * @return failedIssue
 	 */
-	public List<RefactoredIssue> processFailedRefactoring(List<RefactoredIssue> allRefactoredIssues,
-			GitConfiguration config, BotPullRequestComment comment, BotPullRequest request, BotIssue botIssue,
-			boolean isCommentRefactoring) {
+	private RefactoredIssue processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,
+			BotPullRequest request, BotIssue botIssue, boolean isCommentRefactoring) {
 		// Create failedIssue
 		RefactoredIssue failedIssue = botController.buildRefactoredIssue(botIssue, config);
 
@@ -429,11 +446,30 @@ public class RefactoringService {
 			}
 		}
 
-		// Save failed refactoring to database + add to list
-		RefactoredIssue savedFailIssue = issueRepo.save(failedIssue);
-		allRefactoredIssues.add(savedFailIssue);
+		// Save failed refactoring and return it
+		return issueRepo.save(failedIssue);
+	}
 
-		return allRefactoredIssues;
+	/**
+	 * This method creates an BotIssue for a failed refactoring because of a invalid
+	 * comment that the bot can not understand.
+	 * 
+	 * @param comment
+	 * @param errorMessage
+	 * @return issue
+	 */
+	private BotIssue createBotIssueFromInvalidComment(BotPullRequestComment comment, String errorMessage) {
+		// Create object
+		BotIssue issue = new BotIssue();
+
+		// Add data to comment
+		issue.setCommentServiceID(comment.getCommentID().toString());
+		issue.setLine(comment.getPosition());
+		issue.setFilePath(comment.getFilepath());
+		issue.setErrorMessage(errorMessage);
+		issue.setRefactoringOperation(RefactoringOperations.UNKNOWN);
+
+		return issue;
 	}
 
 	/**
@@ -444,8 +480,7 @@ public class RefactoringService {
 	 * @return botIssues
 	 * @throws Exception
 	 */
-	public List<BotIssue> getBotIssues(GitConfiguration config) throws Exception {
-		// Get BotIssues from AnalysisServiceIssues
+	private List<BotIssue> getBotIssues(GitConfiguration config) throws Exception {
 		List<BotIssue> botIssues = grabber.getAnalysisServiceIssues(config);
 
 		// BotIssues are null if analysis service not supported
