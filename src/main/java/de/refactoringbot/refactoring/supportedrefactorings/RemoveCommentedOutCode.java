@@ -2,10 +2,8 @@ package de.refactoringbot.refactoring.supportedrefactorings;
 
 import java.io.FileNotFoundException;
 
-import de.refactoringbot.refactoring.RefactoringImpl;
 import org.springframework.stereotype.Component;
 
-import com.github.javaparser.JavaParser;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.comments.Comment;
@@ -38,6 +36,7 @@ import java.util.List;
 public class RemoveCommentedOutCode implements RefactoringImpl {
 
     Integer line;
+    boolean printWithJavaparser = false;
 
     BotConfiguration botConfig;
 
@@ -75,7 +74,6 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
         FileInputStream in = new FileInputStream(path);
         CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
-        // TODO: Is this list sorted?
         List<Comment> comments = compilationUnit.getAllContainedComments();
 
         // Start and end line of the comment(s) that we want to remove
@@ -113,12 +111,15 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
             }
         }
 
-        //removeLinesFromFile(start, end, path, isLineComments);
-
         // Save changes to file
-        PrintWriter out = new PrintWriter(path);
-        out.println(LexicalPreservingPrinter.print(compilationUnit));
-        out.close();
+        
+        if (printWithJavaparser) {
+            PrintWriter out = new PrintWriter(path);
+            out.println(LexicalPreservingPrinter.print(compilationUnit));
+            out.close();
+        } else {
+            removeLinesFromFile(start, end, path, isLineComments);            
+        }
 
         // Return commit message
         return "Removed commented out code at line " + line;
@@ -143,8 +144,9 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
 
             String currentLine;
-            // Default: UNIX style line endings
-            System.setProperty("line.separator", "\r\n");
+            // Default: UNIX style line endings, use \r\n for Windows
+            System.setProperty("line.separator", "\n");
+
             int lineNumber = 0;
 
             while ((currentLine = reader.readLine()) != null) {
@@ -156,8 +158,6 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
                     if ((!currentLine.trim().startsWith("//")) && isLineComments) {
                         sb.append(currentLine.substring(0, currentLine.indexOf("//")))
                                 .append(System.getProperty("line.separator"));
-                        // writer.write(currentLine.substring(0, currentLine.indexOf("//")) +
-                        // lineSeparator);
                     }
                     continue;
                 }
