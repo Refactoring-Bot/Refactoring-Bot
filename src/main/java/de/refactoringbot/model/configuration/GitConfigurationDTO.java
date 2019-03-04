@@ -11,6 +11,7 @@ public class GitConfigurationDTO {
 	private String botToken;
 	private AnalysisProvider analysisService;
 	private String analysisServiceProjectKey;
+	private String analysisServiceApiLink;
 	private Integer maxAmountRequests;
 
 	public String getRepoName() {
@@ -83,6 +84,14 @@ public class GitConfigurationDTO {
 
 	public void setBotEmail(String botEmail) {
 		this.botEmail = botEmail;
+	}
+
+	public String getAnalysisServiceApiLink() {
+		return analysisServiceApiLink;
+	}
+
+	public void setAnalysisServiceApiLink(String analysisServiceApiLink) {
+		this.analysisServiceApiLink = analysisServiceApiLink;
 	}
 
 }

@@ -1,6 +1,7 @@
 package de.refactoringbot.api.sonarqube;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +15,8 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import de.refactoringbot.model.configuration.GitConfiguration;
+import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.exceptions.SonarcloudAPIException;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
 
@@ -37,17 +40,16 @@ public class SonarQubeDataGrabber {
 	 * @return allIssues
 	 * @throws SonarcloudAPIException
 	 */
-	public List<SonarQubeIssues> getIssues(String sonarQubeProjectKey) throws SonarcloudAPIException {
+	public List<SonarQubeIssues> getIssues(GitConfiguration gitConfig) throws SonarcloudAPIException, URISyntaxException {
 		int page = 1;
 
 		List<SonarQubeIssues> issues = new ArrayList<>();
 
 		while (page < 500) {
 			// Build URI
-			UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https")
-					.host("sonarcloud.io").path("api/issues/search");
+			UriComponentsBuilder apiUriBuilder = createUriBuilder(gitConfig.getAnalysisServiceApiLink(), "/issues/search");
 
-			apiUriBuilder.queryParam("componentRoots", sonarQubeProjectKey);
+			apiUriBuilder.queryParam("componentRoots", gitConfig.getAnalysisServiceProjectKey());
 			apiUriBuilder.queryParam("statuses", "OPEN,REOPENED");
 			apiUriBuilder.queryParam("ps", 500);
 			apiUriBuilder.queryParam("p", page);
@@ -88,12 +90,11 @@ public class SonarQubeDataGrabber {
 	 * @param analysisServiceProjectKey
 	 * @throws SonarcloudAPIException
 	 */
-	public void checkSonarData(String analysisServiceProjectKey) throws SonarcloudAPIException {
+	public void checkSonarData(GitConfigurationDTO configuration) throws SonarcloudAPIException, URISyntaxException {
 		// Build URI
-		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("sonarcloud.io")
-				.path("api/components/show");
+		UriComponentsBuilder apiUriBuilder = createUriBuilder(configuration.getAnalysisServiceApiLink(), "/components/show");
 
-		apiUriBuilder.queryParam("component", analysisServiceProjectKey);
+		apiUriBuilder.queryParam("component", configuration.getAnalysisServiceProjectKey());
 
 		URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
 
@@ -112,4 +113,29 @@ public class SonarQubeDataGrabber {
 			throw new SonarcloudAPIException("Project with given project key does not exist on SonarQube!", e);
 		}
 	}
+
+	/**
+	 * Attempts to instantiate a URI object using the specified API link. If
+	 * successful, it creates an UriComponentsBuilder with the created URI and
+	 * returns it.
+	 * 
+	 * @param link
+	 * @param apiEntryPoint
+	 * @return apiUriBuilder
+	 * @throws URISyntaxException
+	 */
+	private UriComponentsBuilder createUriBuilder(String link, String apiEntryPoint) throws URISyntaxException {
+		URI result = null;
+		UriComponentsBuilder apiUriBuilder = null;
+		try {
+			result = new URI(link);
+			apiUriBuilder = UriComponentsBuilder.newInstance().scheme(result.getScheme()).host(result.getHost()).port(result.getPort())
+					.path(result.getPath() + apiEntryPoint);
+			return apiUriBuilder;
+		} catch (URISyntaxException u) {
+			logger.error(u.getMessage(), u);
+			throw new URISyntaxException("Could not create URI from given API link!", u.getMessage());
+		}
+	}
+
 }

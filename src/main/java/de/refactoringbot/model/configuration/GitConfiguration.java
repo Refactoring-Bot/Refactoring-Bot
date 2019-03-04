@@ -29,6 +29,7 @@ public class GitConfiguration {
 	@Enumerated(EnumType.STRING)
 	private AnalysisProvider analysisService;
 	private String analysisServiceProjectKey;
+	private String analysisServiceApiLink;
 	private Integer maxAmountRequests;
 
 	public Long getConfigurationId() {
@@ -153,6 +154,14 @@ public class GitConfiguration {
 
 	public void setSrcFolder(String srcFolder) {
 		this.srcFolder = srcFolder;
+	}
+
+	public String getAnalysisServiceApiLink() {
+		return analysisServiceApiLink;
+	}
+
+	public void setAnalysisServiceApiLink(String analysisServiceApiLink) {
+		this.analysisServiceApiLink = analysisServiceApiLink;
 	}
 
 }
