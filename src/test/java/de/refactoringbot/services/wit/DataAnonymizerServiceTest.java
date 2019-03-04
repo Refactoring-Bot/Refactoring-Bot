@@ -2,14 +2,10 @@ package de.refactoringbot.services.wit;
 
 import org.assertj.core.api.SoftAssertions;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DataAnonymizerServiceTest {
 
 	DataAnonymizerService anonymizer = new DataAnonymizerService();
-	
-	private static final Logger logger = LoggerFactory.getLogger(DataAnonymizerServiceTest.class);
 	
 	public static final String emailComment = "Can you rename this method to 'newName'? Contact me for more information fake@fakemail.com.";
 	public static final String urlComment = "Can you reorder these modifiers? Please do it like https://github.com/Refactoring-Bot/Refactoring-Bot.";
@@ -20,49 +16,49 @@ public class DataAnonymizerServiceTest {
 	
 	@Test
 	public void testEmailComment() {
-		SoftAssertions softAssertions = new SoftAssertions();
 		String anonymizedComment = anonymizer.anonymizeComment(emailComment);
-		logger.debug(anonymizedComment);
+		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(anonymizedComment).isEqualTo("Can you rename this method to 'newName'? Contact me for more information EMAIL.");
+		softAssertions.assertAll();
 	}
 	
 	@Test
 	public void testUrlComment() {
-		SoftAssertions softAssertions = new SoftAssertions();
 		String anonymizedComment = anonymizer.anonymizeComment(urlComment);
-		logger.debug(anonymizedComment);
+		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(anonymizedComment).isEqualTo("Can you reorder these modifiers? Please do it like URL.");
+		softAssertions.assertAll();
 	}
 	
 	@Test
 	public void testUserComment() {
-		SoftAssertions softAssertions = new SoftAssertions();
 		String anonymizedComment = anonymizer.anonymizeComment(userComment);
-		logger.debug(anonymizedComment);
+		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(anonymizedComment).isEqualTo("@USER could you remove the parameter c from this method?");
+		softAssertions.assertAll();
 	}
 	
 	@Test
 	public void testRepoNameComment() {
 		SoftAssertions softAssertions = new SoftAssertions();
 		String anonymizedComment = anonymizer.anonymizeComment(repoNameComment);
-		logger.debug(anonymizedComment);
 		softAssertions.assertThat(anonymizedComment).isEqualTo("REPO is able to override methods? Can you do it too?");
+		softAssertions.assertAll();
 	}
 	
 	@Test
 	public void testTokenComment() {
-		SoftAssertions softAssertions = new SoftAssertions();
 		String anonymizedComment = anonymizer.anonymizeComment(tokenComment);
-		logger.debug(anonymizedComment);
+		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(anonymizedComment).isEqualTo("My fake github token is TOKEN.");
+		softAssertions.assertAll();
 	}
 	
 	@Test
 	public void testAllInOneComment() {
-		SoftAssertions softAssertions = new SoftAssertions();
 		String anonymizedComment = anonymizer.anonymizeComment(allInOneComment);
-		logger.debug(anonymizedComment);
+		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(anonymizedComment).isEqualTo("Could you rename this method to newName like the project REPO from URL, @USER? If you have issues contact me at EMAIL. You can use my github token TOKEN.");
+		softAssertions.assertAll();
 	}
 }
