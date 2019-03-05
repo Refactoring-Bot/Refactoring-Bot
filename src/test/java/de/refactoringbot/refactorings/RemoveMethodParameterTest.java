@@ -76,8 +76,7 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 
 	/**
 	 * Tries to remove the parameter with the given name from the method in the
-	 * given line. Checks if removal was successful and if the additional dummy
-	 * method in the test class remained the same
+	 * given line. Checks if refactoring was successful in all test data classes
 	 * 
 	 * @param lineNumberOfMethodWithParameterToBeRemoved
 	 * @param parameterName

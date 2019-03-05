@@ -36,7 +36,7 @@ public class TestDataClassRenameMethod extends TestDataSuperClassRenameMethod {
 	public class TestDataInnerClassRenameMethod {
 		public int getLineNumberOfCallerInInnerClass() {
 			new TestDataClassRenameMethod().getLineOfMethodToBeRenamed(true);
-			return 36;
+			return 37;
 		}
 
 		public int getLineNumberOfCallerThatShouldRemainUnchanged() {
