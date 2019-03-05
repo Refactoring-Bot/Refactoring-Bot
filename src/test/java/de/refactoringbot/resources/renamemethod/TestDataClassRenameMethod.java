@@ -1,6 +1,6 @@
 package de.refactoringbot.resources.renamemethod;
 
-public class TestDataClassRenameMethod {
+public class TestDataClassRenameMethod extends TestDataSuperClassRenameMethod {
 
 	/**
 	 * Method to be renamed
@@ -8,8 +8,9 @@ public class TestDataClassRenameMethod {
 	 * @param dummyParm
 	 * @return
 	 */
+	@Override
 	public int getLineOfMethodToBeRenamed(boolean dummyParm) {
-		return 11;
+		return 12;
 	}
 
 	/**
@@ -18,7 +19,7 @@ public class TestDataClassRenameMethod {
 	 * @return
 	 */
 	public int getLineOfMethodToBeRenamed() {
-		return 20;
+		return 21;
 	}
 
 	/**
@@ -29,7 +30,23 @@ public class TestDataClassRenameMethod {
 	public int getLineOfMethodThatCallsMethodToBeRenamed() {
 		getLineOfMethodToBeRenamed(true);
 		getLineOfMethodToBeRenamed();
-		return 29;
+		return 30;
+	}
+
+	public class TestDataInnerClassRenameMethod {
+		public int getLineNumberOfCallerInInnerClass() {
+			new TestDataClassRenameMethod().getLineOfMethodToBeRenamed(true);
+			return 36;
+		}
+
+		public int getLineNumberOfCallerThatShouldRemainUnchanged() {
+			getLineOfMethodToBeRenamed(true);
+			return 42;
+		}
+
+		public int getLineOfMethodToBeRenamed(boolean dummyParm) {
+			return 47;
+		}
 	}
 
 }
