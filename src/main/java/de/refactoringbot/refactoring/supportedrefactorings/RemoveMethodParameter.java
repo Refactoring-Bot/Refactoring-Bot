@@ -4,9 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -18,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -29,9 +26,6 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.javadoc.Javadoc;
 import com.github.javaparser.javadoc.JavadocBlockTag;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
-import com.github.javaparser.resolution.UnsolvedSymbolException;
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
-import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
@@ -51,14 +45,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	private static final Logger logger = LoggerFactory.getLogger(RemoveMethodParameter.class);
 
 	/**
-	 * List of qualified names of classes and interfaces which are related to the
-	 * target class, i.e. child/parent/sibling classes
-	 */
-	private Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = new HashSet<>();
-
-	/**
 	 * List of method declarations which are related to the target method, i.e.
-	 * related methods in child/parent/sibling classes. These methods needs to be
+	 * related methods in child/parent/sibling classes. These methods need to be
 	 * refactored.
 	 */
 	private List<MethodDeclaration> allRefactoringRelevantMethodDeclarations = new ArrayList<>();
@@ -73,105 +61,17 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		String parameterName = issue.getRefactorString();
 		String issueFilePath = gitConfig.getRepoFolder() + File.separator + issue.getFilePath();
 		MethodDeclaration targetMethod = findAndValidateTargetMethod(issue, issueFilePath, parameterName);
-		ClassOrInterfaceDeclaration targetClass = getParentNodeAsClassOrInterface(targetMethod);
-		qualifiedNamesOfRelatedClassesAndInterfaces = findQualifiedNamesOfRelatedClassesAndInterfaces(
+		ClassOrInterfaceDeclaration targetClass = RefactoringHelper.getMethodParentNodeAsClassOrInterface(targetMethod);
+		Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = RefactoringHelper.findQualifiedNamesOfRelatedClassesAndInterfaces(
 				issue.getAllJavaFiles(), targetClass);
 
 		HashSet<String> javaFilesRelevantForRefactoring = findJavaFilesRelevantForRefactoring(issue, parameterName,
-				targetMethod);
+				targetMethod, qualifiedNamesOfRelatedClassesAndInterfaces);
 		removeParameterFromRelatedMethodDeclarationsAndMethodCalls(javaFilesRelevantForRefactoring, targetMethod,
 				parameterName);
 
 		String targetMethodSignature = RefactoringHelper.getLocalMethodSignatureAsString(targetMethod);
 		return "Removed method parameter '" + parameterName + "' of method '" + targetMethodSignature + "'";
-	}
-
-	/**
-	 * @param allJavaFiles
-	 * @param targetClass
-	 * @return list of qualified class or interface names which are reachable via
-	 *         the inheritance hierarchy of the given class (ancestors, descendants,
-	 *         siblings, ...)
-	 * @throws BotRefactoringException
-	 * @throws FileNotFoundException
-	 */
-	private Set<String> findQualifiedNamesOfRelatedClassesAndInterfaces(List<String> allJavaFiles,
-			ClassOrInterfaceDeclaration targetClass) throws BotRefactoringException, FileNotFoundException {
-		Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass = findAllAncestors(targetClass);
-		return findQualifiedNamesOfRelatedClassesAndInterfaces(targetClass, ancestorsOfTargetClass, allJavaFiles);
-	}
-
-	/**
-	 * @param targetClass
-	 * @return list of resolved classes and interfaces which are ancestors of the
-	 *         given classes (not including java.lang.Object)
-	 * @throws BotRefactoringException
-	 */
-	private Set<ResolvedReferenceTypeDeclaration> findAllAncestors(ClassOrInterfaceDeclaration targetClass)
-			throws BotRefactoringException {
-		List<ResolvedReferenceType> ancestors = new ArrayList<>();
-		Set<ResolvedReferenceTypeDeclaration> result = new HashSet<>();
-
-		try {
-			ancestors = targetClass.resolve().getAllAncestors();
-		} catch (UnsolvedSymbolException u) {
-			ancestors = RefactoringHelper.getAllAncestors(targetClass.resolve());
-			logger.warn("Refactored classes might extend/implement classes or interfaces from external dependency! "
-					+ "Please validate the correctness of the refactoring.");
-			// TODO propagate warning
-		} catch (InvalidPathException i) {
-			throw new BotRefactoringException("Javaparser could not parse file: " + i.getMessage());
-		} catch (Exception e) {
-			throw new BotRefactoringException("Error while resolving superclasses occured!");
-		}
-
-		for (ResolvedReferenceType ancestor : ancestors) {
-			if (!ancestor.getQualifiedName().equals("java.lang.Object")) {
-				result.add(ancestor.getTypeDeclaration());
-			}
-		}
-
-		return result;
-	}
-
-	/**
-	 * @param targetClass
-	 * @param targetClasses
-	 * @return list of qualified class or interface names which are reachable via
-	 *         the inheritance hierarchy of the given classes (ancestors,
-	 *         descendants, siblings, ...)
-	 * @throws FileNotFoundException
-	 * @throws BotRefactoringException
-	 */
-	private Set<String> findQualifiedNamesOfRelatedClassesAndInterfaces(ClassOrInterfaceDeclaration targetClass,
-			Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass, List<String> allJavaFiles)
-			throws FileNotFoundException, BotRefactoringException {
-		Set<ResolvedReferenceTypeDeclaration> relatedClassesAndInterfaces = new HashSet<>();
-		relatedClassesAndInterfaces.add(targetClass.resolve());
-		relatedClassesAndInterfaces.addAll(ancestorsOfTargetClass);
-
-		for (String file : allJavaFiles) {
-			List<ClassOrInterfaceDeclaration> classesOrInterfaces = getAllClassesAndInterfacesFromFile(file);
-
-			for (ClassOrInterfaceDeclaration classOrInterface : classesOrInterfaces) {
-				if (relatedClassesAndInterfaces.contains(classOrInterface.resolve())) {
-					continue;
-				}
-				Set<ResolvedReferenceTypeDeclaration> ancestorsOfCurrentClassOrInterface = findAllAncestors(
-						classOrInterface);
-				if (!Collections.disjoint(relatedClassesAndInterfaces, ancestorsOfCurrentClassOrInterface)) {
-					// descendant found
-					relatedClassesAndInterfaces.add(classOrInterface.resolve());
-				}
-			}
-		}
-
-		Set<String> result = new HashSet<>();
-		for (ResolvedReferenceTypeDeclaration declaration : relatedClassesAndInterfaces) {
-			result.add(declaration.getQualifiedName());
-		}
-
-		return result;
 	}
 
 	/**
@@ -188,7 +88,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 */
 	private MethodDeclaration findAndValidateTargetMethod(BotIssue issue, String filePath, String parameterToBeRemoved)
 			throws BotRefactoringException, FileNotFoundException {
-		List<ClassOrInterfaceDeclaration> classesAndInterfaces = getAllClassesAndInterfacesFromFile(filePath);
+		List<ClassOrInterfaceDeclaration> classesAndInterfaces = RefactoringHelper
+				.getAllClassesAndInterfacesFromFile(filePath);
 
 		MethodDeclaration targetMethod = null;
 		for (ClassOrInterfaceDeclaration classOrInterface : classesAndInterfaces) {
@@ -250,22 +151,24 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @param issue
 	 * @param parameterToBeRemoved
 	 * @param targetMethod
+	 * @param qualifiedNamesOfRelatedClassesAndInterfaces
 	 * @return
 	 * @throws FileNotFoundException
 	 * @throws BotRefactoringException
 	 */
 	private HashSet<String> findJavaFilesRelevantForRefactoring(BotIssue issue, String parameterToBeRemoved,
-			MethodDeclaration targetMethod) throws FileNotFoundException, BotRefactoringException {
+			MethodDeclaration targetMethod, Set<String> qualifiedNamesOfRelatedClassesAndInterfaces)
+			throws FileNotFoundException, BotRefactoringException {
 		HashSet<String> javaFilesRelevantForRefactoring = new HashSet<>();
 		String postRefactoringSignature = getPostRefactoringSignature(targetMethod, parameterToBeRemoved);
 
 		for (String currentFilePath : issue.getAllJavaFiles()) {
-			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = getAllClassesAndInterfacesFromFile(
-					currentFilePath);
+			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = RefactoringHelper
+					.getAllClassesAndInterfacesFromFile(currentFilePath);
 
 			// search for files containing relevant method declarations
 			for (ClassOrInterfaceDeclaration currentClassOrInterface : classesAndInterfacesInCurrentFile) {
-				if (isRelatedToTargetClass(currentClassOrInterface)) {
+				if (isRelatedToTargetClass(currentClassOrInterface, qualifiedNamesOfRelatedClassesAndInterfaces)) {
 					List<MethodDeclaration> methodDeclarationsInCurrentClass = currentClassOrInterface
 							.findAll(MethodDeclaration.class);
 					for (MethodDeclaration methodDeclaration : methodDeclarationsInCurrentClass) {
@@ -293,8 +196,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			if (javaFilesRelevantForRefactoring.contains(currentFilePath)) {
 				continue;
 			}
-			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = getAllClassesAndInterfacesFromFile(
-					currentFilePath);
+			List<ClassOrInterfaceDeclaration> classesAndInterfacesInCurrentFile = RefactoringHelper
+					.getAllClassesAndInterfacesFromFile(currentFilePath);
 			if (containsTargetMethodCall(classesAndInterfacesInCurrentFile)) {
 				javaFilesRelevantForRefactoring.add(currentFilePath);
 			}
@@ -413,14 +316,6 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			out.println(LexicalPreservingPrinter.print(cu));
 			out.close();
 		}
-	}
-
-	private ClassOrInterfaceDeclaration getParentNodeAsClassOrInterface(MethodDeclaration methodDeclaration) {
-		Optional<Node> parentNode = methodDeclaration.getParentNode();
-		if (parentNode.isPresent()) {
-			return ((ClassOrInterfaceDeclaration) parentNode.get());
-		}
-		throw new IllegalStateException("MethodDeclaration expected to have a parent node.");
 	}
 
 	/**
@@ -542,6 +437,18 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		}
 	}
 
+	/**
+	 * 
+	 * @param candidate
+	 * @return true if candidate is reachable via the inheritance hierarchy
+	 *         (ancestor, descendant, sibling, ...)
+	 */
+	private boolean isRelatedToTargetClass(ClassOrInterfaceDeclaration candidate,
+			Set<String> qualifiedNamesOfRelatedClassesAndInterfaces) {
+		String qualifiedNameOfCandidate = candidate.resolve().getQualifiedName();
+		return qualifiedNamesOfRelatedClassesAndInterfaces.contains(qualifiedNameOfCandidate);
+	}
+	
 	private void configureJavaParserForProject(BotIssue issue) {
 		CombinedTypeSolver typeSolver = new CombinedTypeSolver();
 		for (String javaRoot : issue.getJavaRoots()) {
@@ -550,29 +457,5 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		typeSolver.add(new ReflectionTypeSolver());
 		JavaSymbolSolver javaSymbolSolver = new JavaSymbolSolver(typeSolver);
 		JavaParser.getStaticConfiguration().setSymbolResolver(javaSymbolSolver);
-	}
-
-	/**
-	 * @param filePath
-	 * @return all <code>ClassOrInterfaceDeclaration</code> in the given file
-	 * @throws FileNotFoundException
-	 */
-	private List<ClassOrInterfaceDeclaration> getAllClassesAndInterfacesFromFile(String filePath)
-			throws FileNotFoundException {
-		FileInputStream is = new FileInputStream(filePath);
-		CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(is));
-
-		return cu.findAll(ClassOrInterfaceDeclaration.class);
-	}
-
-	/**
-	 * 
-	 * @param candidate
-	 * @return true if candidate is reachable via the inheritance hierarchy
-	 *         (ancestor, descendant, sibling, ...)
-	 */
-	private boolean isRelatedToTargetClass(ClassOrInterfaceDeclaration candidate) {
-		String qualifiedNameOfCandidate = candidate.resolve().getQualifiedName();
-		return qualifiedNamesOfRelatedClassesAndInterfaces.contains(qualifiedNameOfCandidate);
 	}
 }

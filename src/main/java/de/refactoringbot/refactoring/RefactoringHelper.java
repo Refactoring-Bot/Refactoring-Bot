@@ -4,8 +4,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.Position;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -97,7 +101,7 @@ public class RefactoringHelper {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * @param methodDeclaration
 	 * @param lineNumber
@@ -125,7 +129,7 @@ public class RefactoringHelper {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * @param fieldDeclaration
 	 * @param lineNumber
@@ -135,16 +139,141 @@ public class RefactoringHelper {
 		Optional<Position> beginPositionOfField = fieldDeclaration.getBegin();
 		return (beginPositionOfField.isPresent() && beginPositionOfField.get().line == lineNumber);
 	}
-	
+
+	/**
+	 * @param methodDeclaration
+	 * @return parent node of the given method declaration as
+	 *         ClassOrInterfaceDeclaration
+	 * @throws IllegalStateException
+	 *             if no parent node is present
+	 */
+	public static ClassOrInterfaceDeclaration getMethodParentNodeAsClassOrInterface(
+			MethodDeclaration methodDeclaration) {
+		Optional<Node> parentNode = methodDeclaration.getParentNode();
+		if (parentNode.isPresent()) {
+			return ((ClassOrInterfaceDeclaration) parentNode.get());
+		}
+		throw new IllegalStateException("MethodDeclaration expected to have a parent node.");
+	}
+
+	/**
+	 * @param filePath
+	 * @return all <code>ClassOrInterfaceDeclaration</code> in the given file
+	 * @throws FileNotFoundException
+	 */
+	public static List<ClassOrInterfaceDeclaration> getAllClassesAndInterfacesFromFile(String filePath)
+			throws FileNotFoundException {
+		FileInputStream is = new FileInputStream(filePath);
+		CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(is));
+		return cu.findAll(ClassOrInterfaceDeclaration.class);
+	}
+
+	/**
+	 * @param allJavaFiles
+	 * @param targetClass
+	 * @return list of qualified class or interface names which are reachable via
+	 *         the inheritance hierarchy of the given class (ancestors, descendants,
+	 *         siblings, ...)
+	 * @throws BotRefactoringException
+	 * @throws FileNotFoundException
+	 */
+	public static Set<String> findQualifiedNamesOfRelatedClassesAndInterfaces(List<String> allJavaFiles,
+			ClassOrInterfaceDeclaration targetClass) throws BotRefactoringException, FileNotFoundException {
+		Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass = findAllAncestors(targetClass);
+		return findQualifiedNamesOfRelatedClassesAndInterfaces(targetClass, ancestorsOfTargetClass, allJavaFiles);
+	}
+
+	/**
+	 * @param targetClass
+	 * @return list of resolved classes and interfaces which are ancestors of the
+	 *         given classes (not including java.lang.Object or external
+	 *         dependencies)
+	 * @throws BotRefactoringException
+	 */
+	private static Set<ResolvedReferenceTypeDeclaration> findAllAncestors(ClassOrInterfaceDeclaration targetClass)
+			throws BotRefactoringException {
+		List<ResolvedReferenceType> ancestors = new ArrayList<>();
+		Set<ResolvedReferenceTypeDeclaration> result = new HashSet<>();
+
+		try {
+			ancestors = targetClass.resolve().getAllAncestors();
+		} catch (UnsolvedSymbolException u) {
+			ancestors = RefactoringHelper.getAllAncestorsAcceptIncompleteList(targetClass.resolve());
+			logger.warn("Refactored classes might extend/implement classes or interfaces from external dependency! "
+					+ "Please validate the correctness of the refactoring.");
+			// TODO propagate warning
+		} catch (InvalidPathException i) {
+			throw new BotRefactoringException("Javaparser could not parse file: " + i.getMessage());
+		} catch (Exception e) {
+			throw new BotRefactoringException("Error while resolving superclasses occured!");
+		}
+
+		for (ResolvedReferenceType ancestor : ancestors) {
+			if (!ancestor.getQualifiedName().equals("java.lang.Object")) {
+				result.add(ancestor.getTypeDeclaration());
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * @param targetClass
+	 * @param ancestorsOfTargetClass
+	 * @param allJavaFiles
+	 * @return list of qualified class or interface names which are reachable via
+	 *         the inheritance hierarchy of the given classes (ancestors,
+	 *         descendants, siblings, ...)
+	 * @throws FileNotFoundException
+	 * @throws BotRefactoringException
+	 */
+	private static Set<String> findQualifiedNamesOfRelatedClassesAndInterfaces(ClassOrInterfaceDeclaration targetClass,
+			Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass, List<String> allJavaFiles)
+			throws FileNotFoundException, BotRefactoringException {
+		Set<ResolvedReferenceTypeDeclaration> relatedClassesAndInterfaces = new HashSet<>();
+		relatedClassesAndInterfaces.add(targetClass.resolve());
+		relatedClassesAndInterfaces.addAll(ancestorsOfTargetClass);
+
+		for (String file : allJavaFiles) {
+			List<ClassOrInterfaceDeclaration> classesOrInterfaces = RefactoringHelper
+					.getAllClassesAndInterfacesFromFile(file);
+
+			for (ClassOrInterfaceDeclaration classOrInterface : classesOrInterfaces) {
+				if (relatedClassesAndInterfaces.contains(classOrInterface.resolve())) {
+					continue;
+				}
+				Set<ResolvedReferenceTypeDeclaration> ancestorsOfCurrentClassOrInterface = findAllAncestors(
+						classOrInterface);
+				if (!Collections.disjoint(relatedClassesAndInterfaces, ancestorsOfCurrentClassOrInterface)) {
+					// descendant found
+					relatedClassesAndInterfaces.add(classOrInterface.resolve());
+				}
+			}
+		}
+
+		Set<String> result = new HashSet<>();
+		for (ResolvedReferenceTypeDeclaration declaration : relatedClassesAndInterfaces) {
+			result.add(declaration.getQualifiedName());
+		}
+
+		return result;
+	}
 
 	/**
 	 * Get all direct and indirect ancestors of a given class if possible (if
 	 * ancestor is not a external dependency for example).
 	 * 
+	 * This is a modified (fallback) implementation of
+	 * ResolvedReferenceTypeDeclaration.getAllAncestors() that we use in case, for
+	 * example, that external classes are extended (which would throw an
+	 * UnresolvedSymbolException).
+	 * 
 	 * @param currentClass
 	 * @return ancestors
 	 */
-	public static List<ResolvedReferenceType> getAllAncestors(ResolvedReferenceTypeDeclaration currentClass) {
+	public static List<ResolvedReferenceType> getAllAncestorsAcceptIncompleteList(
+			ResolvedReferenceTypeDeclaration currentClass) {
+		// TODO make private as soon as RenameMethod.java has been refactored
 		List<ResolvedReferenceType> ancestors = new ArrayList<>();
 
 		if (!(Object.class.getCanonicalName().equals(currentClass.getQualifiedName()))) {
@@ -152,7 +281,8 @@ public class RefactoringHelper {
 			for (ResolvedReferenceType ancestor : currentClass.getAncestors(true)) {
 				ancestors.add(ancestor);
 				// Get indirect ancestors recursively
-				for (ResolvedReferenceType inheritedAncestor : getAllAncestors(ancestor.getTypeDeclaration())) {
+				for (ResolvedReferenceType inheritedAncestor : getAllAncestorsAcceptIncompleteList(
+						ancestor.getTypeDeclaration())) {
 					if (!ancestors.contains(inheritedAncestor)) {
 						ancestors.add(inheritedAncestor);
 					}
@@ -289,7 +419,7 @@ public class RefactoringHelper {
 				try {
 					ancestors = currentClass.resolve().getAllAncestors();
 				} catch (InvalidPathException | UnsolvedSymbolException i) {
-					ancestors = getAllAncestors(currentClass.resolve());
+					ancestors = getAllAncestorsAcceptIncompleteList(currentClass.resolve());
 					hasExternalDep = true;
 				} catch (Exception e) {
 					logger.debug(e.getMessage());

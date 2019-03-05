@@ -102,7 +102,7 @@ public class RenameMethod implements RefactoringImpl {
 					try {
 						ancestors = currentClass.resolve().getAllAncestors();
 					} catch (UnsolvedSymbolException u) {
-						ancestors = RefactoringHelper.getAllAncestors(currentClass.resolve());
+						ancestors = RefactoringHelper.getAllAncestorsAcceptIncompleteList(currentClass.resolve());
 						refactoring.setWarning(
 								" Refactored classes might extend/implement external project! Check if overriden method was NOT renamed!");
 					} catch (InvalidPathException i) {
