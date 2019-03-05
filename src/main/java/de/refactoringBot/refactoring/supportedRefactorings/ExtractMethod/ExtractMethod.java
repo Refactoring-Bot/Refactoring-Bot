@@ -1,36 +1,19 @@
 package de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod;
 
 import com.sun.source.tree.*;
-import com.sun.source.util.JavacTask;
-import com.sun.source.util.SourcePositions;
-import com.sun.source.util.TreeScanner;
-import com.sun.source.util.Trees;
-import com.sun.tools.javac.tree.JCTree;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.refactoring.RefactoringImpl;
-import org.apache.tomcat.jni.Local;
 import org.checkerframework.dataflow.analysis.Analysis;
-import org.checkerframework.dataflow.cfg.CFGBuilder;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.DOTCFGVisualizer;
-import org.checkerframework.dataflow.cfg.block.*;
-import org.checkerframework.dataflow.cfg.node.*;
 import org.checkerframework.dataflow.constantpropagation.Constant;
 import org.checkerframework.dataflow.constantpropagation.ConstantPropagationStore;
 import org.checkerframework.dataflow.constantpropagation.ConstantPropagationTransfer;
 import org.springframework.stereotype.Component;
 
-import javax.tools.*;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.Statement;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-
-import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.StatementGraphNode.StatementGraphNodeType.*;
 
 /**
  * This refactoring class is used for renaming methods inside a java project.

@@ -898,8 +898,16 @@ public class ExtractMethodUtil {
                 // generate cfg
                 return new CFGContainer(CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv), startLine, endLine);
             } else {
-                return super.visitMethod(node, aVoid);
+                return null;
             }
+        }
+
+        @Override
+        public CFGContainer reduce(CFGContainer r1, CFGContainer r2) {
+            if (r1 != null) {
+                return r1;
+            }
+            return r2;
         }
     }
 }
