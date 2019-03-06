@@ -5,7 +5,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -54,22 +57,18 @@ public class FileService {
 	}
 
 	/**
-	 * This method returns all root-folders of java files (like the src folder or
-	 * the src/main/java folder from maven projects)
+	 * This method returns all root folders' absolute paths of the given java files
+	 * (like the src folder or the src/main/java folder of maven projects)
 	 * 
 	 * @param allJavaFiles
 	 * @return javaRoots
 	 * @throws FileNotFoundException
 	 */
 	public List<String> findJavaRoots(List<String> allJavaFiles) throws FileNotFoundException {
-
-		// Init roots list
-		List<String> javaRoots = new ArrayList<>();
+		Set<String> javaRoots = new HashSet<>();
 
 		for (String javaFile : allJavaFiles) {
-			// parse a file
 			FileInputStream filepath = new FileInputStream(javaFile);
-
 			CompilationUnit compilationUnit;
 
 			try {
@@ -79,51 +78,21 @@ public class FileService {
 				continue;
 			}
 
-			// Get all Classes
+			File file = new File(javaFile);
 			List<PackageDeclaration> packageDeclarations = compilationUnit.findAll(PackageDeclaration.class);
-
-			// If javafile has no package
-			if (packageDeclarations.isEmpty()) {
-				// Get javafile
-				File rootlessFile = new File(javaFile);
-				// Add parent of file to root
-				if (!javaRoots.contains(rootlessFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
-					javaRoots.add(rootlessFile.getParentFile().getAbsolutePath());
-				}
-			} else {
-				// Only 1 package declaration for each file
+			if (!packageDeclarations.isEmpty()) {
+				// current java file should contain exactly one package declaration
 				PackageDeclaration packageDeclaration = packageDeclarations.get(0);
-				String rootPackage;
+				String rootPackage = packageDeclaration.getNameAsString().split("\\.")[0];
+				String javaRoot = file.getAbsolutePath()
+						.split(Pattern.quote(File.separator) + rootPackage + Pattern.quote(File.separator))[0];
 
-				if (packageDeclaration.getNameAsString().split("\\.").length == 1) {
-					rootPackage = packageDeclaration.getNameAsString();
-				} else {
-					rootPackage = packageDeclaration.getNameAsString().split("\\.")[0];
-				}
-
-				// Get javafile
-				File currentFile = new File(javaFile);
-
-				// Until finding the root package
-				while (currentFile.getParentFile() != null && !currentFile.isDirectory()
-						|| !currentFile.getName().equals(rootPackage)) {
-					if (currentFile.getParentFile() != null) {
-						currentFile = currentFile.getParentFile();
-					} else {
-						break;
-					}
-				}
-
-				// Add parent of rootPackage as java root
-				if (currentFile.getParentFile() != null) {
-					if (!javaRoots.contains(currentFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
-						javaRoots.add(currentFile.getParentFile().getAbsolutePath());
-					}
-				}
+				javaRoots.add(javaRoot);
+			} else if (file.getParentFile() != null) {
+				javaRoots.add(file.getParentFile().getAbsolutePath());
 			}
-
 		}
 
-		return javaRoots;
+		return new ArrayList<>(javaRoots);
 	}
 }
