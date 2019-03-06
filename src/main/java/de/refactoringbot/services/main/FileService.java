@@ -9,14 +9,14 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class has methods that work with Files and Folders of Java-Projects.
@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
  */
 @Service
 public class FileService {
-    
-        private static final Logger logger = LoggerFactory.getLogger(FileService.class);
+
+	private static final Logger logger = LoggerFactory.getLogger(FileService.class);
 
 	/**
 	 * This method returns all Javafile-Paths of a project from a configuration.
@@ -52,7 +52,7 @@ public class FileService {
 		}
 		return allJavaFiles;
 	}
-	
+
 	/**
 	 * This method returns all root-folders of java files (like the src folder or
 	 * the src/main/java folder from maven projects)
@@ -69,15 +69,15 @@ public class FileService {
 		for (String javaFile : allJavaFiles) {
 			// parse a file
 			FileInputStream filepath = new FileInputStream(javaFile);
-                        
-                        CompilationUnit compilationUnit;
-                        
-                        try {
-                            compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-                        } catch (Exception e) {
-                            logger.error(e.getMessage(), e);
-                            continue;
-                        }
+
+			CompilationUnit compilationUnit;
+
+			try {
+				compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
+				continue;
+			}
 
 			// Get all Classes
 			List<PackageDeclaration> packageDeclarations = compilationUnit.findAll(PackageDeclaration.class);
@@ -103,21 +103,22 @@ public class FileService {
 
 				// Get javafile
 				File currentFile = new File(javaFile);
-                               
+
 				// Until finding the root package
-				while (currentFile.getParentFile() != null && !currentFile.isDirectory() || !currentFile.getName().equals(rootPackage)) {
-                                        if (currentFile.getParentFile() != null) {
-                                            currentFile = currentFile.getParentFile();
-                                        } else {
-                                            break;
-                                        }
+				while (currentFile.getParentFile() != null && !currentFile.isDirectory()
+						|| !currentFile.getName().equals(rootPackage)) {
+					if (currentFile.getParentFile() != null) {
+						currentFile = currentFile.getParentFile();
+					} else {
+						break;
+					}
 				}
 
 				// Add parent of rootPackage as java root
-                                if (currentFile.getParentFile() != null) {
-                                    if (!javaRoots.contains(currentFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
-					javaRoots.add(currentFile.getParentFile().getAbsolutePath());
-                                    }
+				if (currentFile.getParentFile() != null) {
+					if (!javaRoots.contains(currentFile.getParentFile().getAbsoluteFile().getAbsolutePath())) {
+						javaRoots.add(currentFile.getParentFile().getAbsolutePath());
+					}
 				}
 			}
 
