@@ -20,6 +20,8 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * This class has methods that work with Files and Folders of Java-Projects.
@@ -87,12 +89,12 @@ public class FileService {
 				String javaRoot = file.getAbsolutePath()
 						.split(Pattern.quote(File.separator) + rootPackage + Pattern.quote(File.separator))[0];
 
-				javaRoots.add(javaRoot);
-			} else if (file.getParentFile() != null) {
-				javaRoots.add(file.getParentFile().getAbsolutePath());
+                                // If we have a made-up package name the path will not exist, so we don't add it
+                                if (Files.exists(Paths.get(javaRoot))) {
+                                    javaRoots.add(javaRoot);
+                                }
 			}
 		}
-
 		return new ArrayList<>(javaRoots);
 	}
 }
