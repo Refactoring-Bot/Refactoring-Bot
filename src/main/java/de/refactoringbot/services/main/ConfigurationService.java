@@ -170,8 +170,6 @@ public class ConfigurationService {
 		// Add repo path and src-folder path to config
 		config.setRepoFolder(
 				Paths.get(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()).toString());
-		config.setSrcFolder(
-				botService.findSrcFolder(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()));
 		config = repo.save(config);
 
 		// Fetch target-Repository-Data
