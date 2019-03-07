@@ -15,6 +15,7 @@ public class BotConfiguration {
 
 	private String botRefactoringDirectory = "";
 	private String witClientToken = "";
+	private boolean enableScheduling;
 
 	public String getBotRefactoringDirectory() {
 		return botRefactoringDirectory;
@@ -30,6 +31,14 @@ public class BotConfiguration {
 
 	public void setWitClientToken(String witClientToken) {
 		this.witClientToken = witClientToken;
+	}
+
+	public boolean isEnableScheduling() {
+		return enableScheduling;
+	}
+
+	public void setEnableScheduling(boolean enableScheduling) {
+		this.enableScheduling = enableScheduling;
 	}
 
 }
