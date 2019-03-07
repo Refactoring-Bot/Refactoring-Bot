@@ -54,7 +54,8 @@ public class ReorderModifier implements RefactoringImpl {
 			method.setModifiers(new NodeList<Modifier>());
 			method.setModifiers(modifiersInCorrectOrder);
 		} else {
-			throw new BotRefactoringException("Could not find method or field declaration at the given line.");
+			throw new BotRefactoringException(
+					"Could not find method or field declaration at the given line! Please check if you placed your comment on a method or field declaration.");
 		}
 
 		if (isModifierListUnchanged) {

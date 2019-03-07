@@ -93,7 +93,8 @@ public class WitService {
 
 		// If wit returns multiple operations or none refactorings
 		if (witObject.getEntities().getRefactoring().size() != 1) {
-			throw new ReviewCommentUnclearException("Not sure what refactoring to execute!");
+			throw new ReviewCommentUnclearException(
+					"Not sure what refactoring to execute! Please give me a more specific order in a new comment.");
 		}
 
 		// Read unique operation + object
@@ -102,7 +103,8 @@ public class WitService {
 		if (refactoring.getValue().equals("ADD-ANNOTATION")) {
 			// If 0/2+ possilbe annotations returned
 			if (witObject.getEntities().getJavaAnnotations().size() != 1) {
-				throw new ReviewCommentUnclearException("Not sure which annotation you want to add!");
+				throw new ReviewCommentUnclearException(
+						"You proposed a 'add annotation' refactoring without telling me what annotation to add! Please rephrase your proposal with a new comment that also contains the name of the annotation you want to add.");
 			}
 			// Read unique java annotation
 			WitEntity javaAnnot = witObject.getEntities().getJavaAnnotations().get(0);
@@ -129,7 +131,8 @@ public class WitService {
 		else if (refactoring.getValue().equals("RENAME-METHOD")) {
 			// If new method name is uncertain
 			if (witObject.getEntities().getRefactoringString().size() != 1) {
-				throw new ReviewCommentUnclearException("Not sure what the new method name is!");
+				throw new ReviewCommentUnclearException(
+						"You proposed a 'rename method' refactoring without telling me the new method name! Please rephrase your proposal with a new comment that also contains the new method name.");
 			}
 			// Annotations are not involved
 			if (witObject.getEntities().getJavaAnnotations().size() != 0) {
@@ -144,7 +147,8 @@ public class WitService {
 		else if (refactoring.getValue().equals("REMOVE-PARAMETER")) {
 			// If parameter name is uncertain
 			if (witObject.getEntities().getRefactoringString().size() != 1) {
-				throw new ReviewCommentUnclearException("Not sure which parameter to remove!");
+				throw new ReviewCommentUnclearException(
+						"You proposed a 'remove parameter' refactoring without telling me the name of the parameter you want to remove! Please rephrase your proposal with a new comment that also contains the name of the parameter you want removed.");
 			}
 			// Annotations are not involved
 			if (witObject.getEntities().getJavaAnnotations().size() != 0) {
@@ -156,7 +160,8 @@ public class WitService {
 			issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 			issue.setRefactorString(refStr.getValue());
 		} else {
-			throw new ReviewCommentUnclearException("I don't know what you want me to do.");
+			throw new ReviewCommentUnclearException(
+					"I don't know what refactoring you want me to perform! Please make a new comment with a more specific refactoring proposal.");
 		}
 	}
 }
