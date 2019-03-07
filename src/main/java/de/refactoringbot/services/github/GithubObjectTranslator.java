@@ -166,29 +166,6 @@ public class GithubObjectTranslator {
 	}
 
 	/**
-	 * This method creates an Object that can be used to update a Pull-Request on
-	 * GitHub.
-	 * 
-	 * @param refactoredRequest
-	 * @return sendRequest
-	 */
-	public GithubUpdateRequest makeUpdateRequest(BotPullRequest refactoredRequest, GitConfiguration gitConfig) {
-		// Create object
-		GithubUpdateRequest sendRequest = new GithubUpdateRequest();
-
-		// Create timestamp
-		SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
-		Date now = new Date();
-		String date = sdf.format(now);
-
-		// Fill object with data
-		sendRequest.setBody("Updated by " + gitConfig.getBotName() + " on " + date + ".");
-		sendRequest.setMaintainer_can_modify(true);
-
-		return sendRequest;
-	}
-
-	/**
 	 * This method creates an object that can be used to create a Pull-Request on
 	 * GitHub after a request comment refactoring.
 	 * 
