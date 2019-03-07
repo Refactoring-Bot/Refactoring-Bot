@@ -33,6 +33,11 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 		testRemoveComment(6,"int c = a + b;");
 	}
 	
+        @Test
+	public void testRemoveMultipleLineComments() throws Exception {
+		testRemoveComment(20,"}");
+	}
+        
 	@Test
 	public void testRemoveBlockComment() throws Exception {
 		testRemoveComment(10,"/**");

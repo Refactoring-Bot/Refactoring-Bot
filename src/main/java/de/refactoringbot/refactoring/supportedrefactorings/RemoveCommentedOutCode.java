@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -36,9 +37,8 @@ import java.util.List;
 public class RemoveCommentedOutCode implements RefactoringImpl {
 
     Integer line;
-    boolean printWithJavaparser = false;
-
     BotConfiguration botConfig;
+    HashMap<Integer,Comment> commentsWithLine;
 
     /**
      * This method performs the refactoring and returns a commit message.
@@ -80,25 +80,30 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
         int start = line;
         int end = line;
 
-        // Remembering the current line to find a block of comments
-        int currentLine = line;
-
         boolean isLineComments = true;
 
         for (Comment comment : comments) {      
-            if ((currentLine >= comment.getBegin().get().line) && (currentLine <= comment.getEnd().get().line)) {
+            if ((line >= comment.getBegin().get().line) && (line <= comment.getEnd().get().line)) {
                 if (comment.isLineComment()) {
-
-                    // Current comment does not contain code -> Stop
-                    if ((currentLine != start) && !isCommentedOutCode(comment.getContent())) {
-                        break;
+                    commentsWithLine = getCommentsWithLine(comments);
+                    
+                    int currentLine = line;
+                    
+                    while (isCommentedOutCode(currentLine + 1)) {
+                        currentLine++;
                     }
-
-                    // Trying to find more line comments below since Sonarqube only reports the
-                    // first
-                    comment.remove();
-                    end = comment.getBegin().get().line;
-                    currentLine++;
+                    
+                    end = currentLine;
+                    
+                    currentLine = line;
+                    
+                    while (isCommentedOutCode(currentLine - 1)) {
+                        currentLine--;
+                    }
+                    
+                    start = currentLine;
+                    
+                    break;
 
                 } else {
                     // The comment is a multi-line comment, so we remove the entire thing right away
@@ -111,9 +116,10 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
             }
         }
 
-        // Save changes to file
+        // If it's a block or Javadoc comment, we can use JavaParser to print the output file
+        // For line comments, JavaParser can't properly remove them, so the method below is used
         
-        if (printWithJavaparser) {
+        if (!isLineComments) {
             PrintWriter out = new PrintWriter(path);
             out.println(LexicalPreservingPrinter.print(compilationUnit));
             out.close();
@@ -183,22 +189,40 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
      * @param line The content of the comment
      * @return Whether or not the comment contains code
      */
-    private boolean isCommentedOutCode(String line) {
+    private boolean isCommentedOutCode(int line) {
+        String content;
+        
+        if (commentsWithLine.containsKey(line)) {
+            content = commentsWithLine.get(line).getContent();
+        } else {
+            return false;
+        }
 
         // Method call
-        if (line.matches("[a-zA-Z]+\\.[a-zA-Z] +\\(.*\\)")) {
+        if (content.matches("[a-zA-Z]+\\.[a-zA-Z] +\\(.*\\)")) {
             return true;
             // if or while statement
-        } else if (line.matches("(if\\s*\\(.*)| (while\\s*\\(.*)")) {
+        } else if (content.matches("(if\\s*\\(.*)| (while\\s*\\(.*)")) {
             return true;
-        } else if ((line.trim().endsWith(";")) || line.trim().equals("")) {
+            // empty lines or lines ending with a semicolon
+        } else if ((content.trim().endsWith(";")) || content.trim().equals("")) {
             return true;
             // Single brackets (from methods or if statements)
-        } else if ((line.trim().equals("{")) || line.trim().equals("}")) {
+        } else if ((content.trim().equals("{")) || content.trim().equals("}")) {
             return true;
         }
 
         return false;
     }
-
+    
+    private HashMap<Integer,Comment> getCommentsWithLine (List<Comment> comments) {
+        HashMap<Integer,Comment> commentsWithLine = new HashMap<>();
+        
+        for (Comment comment: comments) {
+            commentsWithLine.put(comment.getBegin().get().line, comment);
+        }
+        
+        return commentsWithLine;
+    }
+     
 }
