@@ -19,7 +19,6 @@ public class GitConfiguration {
 	private FileHoster repoService;
 
 	private String repoFolder;
-	private String srcFolder;
 
 	private String botName;
 	private String botEmail;
@@ -146,14 +145,6 @@ public class GitConfiguration {
 
 	public void setRepoFolder(String repoFolder) {
 		this.repoFolder = repoFolder;
-	}
-
-	public String getSrcFolder() {
-		return srcFolder;
-	}
-
-	public void setSrcFolder(String srcFolder) {
-		this.srcFolder = srcFolder;
 	}
 
 	public String getAnalysisServiceApiLink() {
