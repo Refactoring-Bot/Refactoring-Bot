@@ -12,7 +12,7 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.services.main.RefactoringService;
 
 /**
- * Diese Klasse führt geschedulte Funktionen aus.
+ * This class performs scheduled tasks.
  * 
  * @author Stefan Basaric
  *

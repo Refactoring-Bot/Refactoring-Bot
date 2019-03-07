@@ -20,7 +20,6 @@ import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
-import de.refactoringbot.model.github.pullrequest.GithubUpdateRequest;
 import de.refactoringbot.model.github.pullrequestcomment.GitHubPullRequestComments;
 import de.refactoringbot.model.github.pullrequestcomment.PullRequestComment;
 import de.refactoringbot.model.github.pullrequestcomment.ReplyComment;
