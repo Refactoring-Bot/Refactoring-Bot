@@ -199,15 +199,10 @@ public class GithubObjectTranslator {
 		// Create object
 		GithubCreateRequest createRequest = new GithubCreateRequest();
 
-		// Create timestamp
-		SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
-		Date now = new Date();
-		String date = sdf.format(now);
-
 		// Fill object with data
 		createRequest.setTitle("Bot Pull-Request Refactoring for PullRequest #" + refactoredRequest.getRequestNumber());
-		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + " for PullRequest "
-				+ refactoredRequest.getRequestLink() + ".");
+		createRequest.setBody(
+				"Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this pull request by creating line specific (review) comments inside the 'Files changed' tab of this pull request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment.");
 		createRequest.setHead(gitConfig.getBotName() + ":" + botBranchName);
 		createRequest.setBase(refactoredRequest.getBranchName());
 		createRequest.setMaintainer_can_modify(true);
@@ -228,16 +223,10 @@ public class GithubObjectTranslator {
 		// Create object
 		GithubCreateRequest createRequest = new GithubCreateRequest();
 
-		// Create timestamp
-		SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
-		Date now = new Date();
-		String date = sdf.format(now);
-
 		// Fill object with data
-		// TODO: Dynamic branches
 		createRequest.setTitle("Bot Pull-Request Refactoring with '" + gitConfig.getAnalysisService() + "'");
-		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + " for the "
-				+ gitConfig.getAnalysisService() + "-Issue '" + issue.getCommentServiceID() + "'.");
+		createRequest.setBody(
+				"Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this pull request by creating line specific (review) comments inside the 'Files changed' tab of this pull request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment.");
 		createRequest.setHead(gitConfig.getBotName() + ":" + newBranch);
 		createRequest.setBase("master");
 		createRequest.setMaintainer_can_modify(true);
