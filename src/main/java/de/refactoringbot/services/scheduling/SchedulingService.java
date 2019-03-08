@@ -28,7 +28,7 @@ public class SchedulingService {
 	@Autowired
 	ConfigurationRepository repo;
 	
-	@Value("${scheduling.enable}")
+	@Value("${scheduling.enable:false}")
 	private boolean isSchedulingEnabled;
 	
 	private static final Logger logger = LoggerFactory.getLogger(SchedulingService.class);
