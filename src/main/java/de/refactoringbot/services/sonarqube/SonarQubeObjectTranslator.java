@@ -18,7 +18,7 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 import de.refactoringbot.services.main.FileService;
 
 /**
- * This class translates SonarCube Objects into Bot-Objects.
+ * This class translates SonarQube Objects into Bot-Objects.
  * 
  * @author Stefan Basaric
  *
@@ -30,7 +30,7 @@ public class SonarQubeObjectTranslator {
 	FileService fileController;
 
 	/**
-	 * This method translates all SonarCubeIssues to BotIssues.
+	 * This method translates all SonarQubeIssues to BotIssues.
 	 * 
 	 * @param issues
 	 * @return botIssue
@@ -40,7 +40,7 @@ public class SonarQubeObjectTranslator {
 		// Create empty list of bot issues
 		List<BotIssue> botIssues = new ArrayList<>();
 
-		// Iterate all SonarCube issues
+		// Iterate all SonarQube issues
 		for (SonarIssue issue : issues.getIssues()) {
 			// Create bot issue
 			BotIssue botIssue = new BotIssue();
@@ -90,7 +90,7 @@ public class SonarQubeObjectTranslator {
 			// Set creation date to determine the age of the issue
 			botIssue.setCreationDate(issue.getCreationDate());
 
-			// Translate SonarCube rule
+			// Translate SonarQube rule
 			switch (issue.getRule()) {
 			case "squid:S1161":
 				botIssue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
@@ -121,8 +121,8 @@ public class SonarQubeObjectTranslator {
 	}
 
 	/**
-	 * This method scans the message of a "RemoveParameter" issue of
-	 * SonarCloud/SonarQube and returns the parameter name of the unused parameter.
+	 * This method scans the message of a "RemoveParameter" issue of SonarQube and
+	 * returns the parameter name of the unused parameter.
 	 * 
 	 * @param issue
 	 * @return parameterName

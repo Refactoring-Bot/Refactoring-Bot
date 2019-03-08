@@ -21,7 +21,7 @@ import de.refactoringbot.model.exceptions.SonarQubeAPIException;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
 
 /**
- * This class gets all kinds of data from SonarCube.
+ * This class gets all kinds of data from SonarQube.
  * 
  * @author Stefan Basaric
  *
@@ -34,7 +34,7 @@ public class SonarQubeDataGrabber {
 	private static final Logger logger = LoggerFactory.getLogger(SonarQubeDataGrabber.class);
 
 	/**
-	 * This method gets all SonarCubeIssues of a Project.
+	 * This method gets all SonarQubeIssues of a Project.
 	 * 
 	 * @param sonarQubeProjectKey
 	 * @return allIssues
@@ -70,7 +70,7 @@ public class SonarQubeDataGrabber {
 			} catch (RestClientException e) {
 				if (page == 1) {
 					logger.error(e.getMessage(), e);
-					throw new SonarQubeAPIException("Could not access SonarCube API!", e);
+					throw new SonarQubeAPIException("Could not access SonarQube API!", e);
 				}
 
 				break;
@@ -85,7 +85,7 @@ public class SonarQubeDataGrabber {
 
 	/**
 	 * This method checks if a project with the given project key exists on
-	 * SonarQube/SonarCloud.
+	 * SonarQube.
 	 * 
 	 * @param analysisServiceProjectKey
 	 * @throws SonarQubeAPIException

@@ -49,7 +49,7 @@ public class RefactoringService {
 	@Autowired
 	ApiGrabber grabber;
 	@Autowired
-	SonarQubeDataGrabber sonarCubeGrabber;
+	SonarQubeDataGrabber sonarQubeGrabber;
 	@Autowired
 	GitService dataGetter;
 	@Autowired
@@ -324,7 +324,7 @@ public class RefactoringService {
 			// If analysis service refactoring
 		} else {
 			// Create new branch for refactoring
-			String newBranch = "sonarCube_Refactoring_" + botIssue.getCommentServiceID();
+			String newBranch = "sonarQube_Refactoring_" + botIssue.getCommentServiceID();
 			// Check if branch already exists (throws exception if it does)
 			grabber.checkBranch(config, newBranch);
 			dataGetter.createBranch(config, "master", newBranch, "upstream");
