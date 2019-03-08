@@ -132,8 +132,8 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
     }
 
     /**
-     * We have to manually edit the file, since Javaparser doesn't let you
-     * remove comments when using the LexicalPreservingPrinter
+     * This method is used to print the output file when line comments were
+     * removed, since Javaparser can't handle this case correctly
      *
      * @param start The starting line of the comment block to remove
      * @param end The end line of the comment block
@@ -184,7 +184,7 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
 
     /**
      * Since sonarqube only provides one line per comment block, this method is
-     * used to determine if the following comments also contain code
+     * used to determine if other comments also contain code
      *
      * @param line The content of the comment
      * @return Whether or not the comment contains code
@@ -192,6 +192,7 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
     private boolean isCommentedOutCode(int line) {
         String content;
         
+        // If the line doesn't have a comment at all, we return false
         if (commentsWithLine.containsKey(line)) {
             content = commentsWithLine.get(line).getContent();
         } else {
@@ -215,14 +216,21 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
         return false;
     }
     
+    /**
+     * To check for additional line comments above and below the line reported
+     * by SonarQube, this method collects all comments along with the code line
+     * @param comments The list of comments to be analyzed
+     * @return A Hashmap with comments and their associated code line
+     */
+    
     private HashMap<Integer,Comment> getCommentsWithLine (List<Comment> comments) {
-        HashMap<Integer,Comment> commentsWithLine = new HashMap<>();
+        HashMap<Integer,Comment> collectCommentsWithLine = new HashMap<>();
         
         for (Comment comment: comments) {
-            commentsWithLine.put(comment.getBegin().get().line, comment);
+            collectCommentsWithLine.put(comment.getBegin().get().line, comment);
         }
         
-        return commentsWithLine;
+        return collectCommentsWithLine;
     }
      
 }

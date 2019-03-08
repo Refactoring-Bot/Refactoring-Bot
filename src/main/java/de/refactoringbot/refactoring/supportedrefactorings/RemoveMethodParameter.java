@@ -7,7 +7,6 @@ import java.nio.file.InvalidPathException;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.github.javaparser.JavaParser;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
