@@ -158,7 +158,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			if (checkIfParameterUsed(method, issue.getRefactorString())) {
 				throw new BotRefactoringException("Parameter '" + issue.getRefactorString()
 						+ "' is used inside the method '" + RefactoringHelper.getFullMethodSignature(method)
-						+ "' which is inside a super/sub class of the class of the given method! Therefor, I cannot remove this parameter.");
+						+ "' which is inside a super/sub class of the class of the given method! Therefore, I cannot remove this parameter.");
 			}
 		}
 

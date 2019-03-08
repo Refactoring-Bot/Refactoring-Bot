@@ -94,7 +94,7 @@ public class WitService {
 		// If wit returns multiple operations or none refactorings
 		if (witObject.getEntities().getRefactoring().size() != 1) {
 			throw new ReviewCommentUnclearException(
-					"Not sure what refactoring to execute! Please give me a more specific order in a new comment.");
+					"Not sure what refactoring to execute! Please give me a more specific instruction in a new comment.");
 		}
 
 		// Read unique operation + object
@@ -104,7 +104,7 @@ public class WitService {
 			// If 0/2+ possilbe annotations returned
 			if (witObject.getEntities().getJavaAnnotations().size() != 1) {
 				throw new ReviewCommentUnclearException(
-						"You proposed a 'add annotation' refactoring without telling me what annotation to add! Please rephrase your proposal with a new comment that also contains the name of the annotation you want to add.");
+						"You proposed a 'add annotation' refactoring without telling me what annotation to add! Please rephrase your proposal with a new comment that also contains the name of the annotation you want me to add.");
 			}
 			// Read unique java annotation
 			WitEntity javaAnnot = witObject.getEntities().getJavaAnnotations().get(0);

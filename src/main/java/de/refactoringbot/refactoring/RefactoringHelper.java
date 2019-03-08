@@ -227,7 +227,7 @@ public class RefactoringHelper {
 			for (MethodDeclaration fileMethod : fileMethods) {
 				if (getMethodSignatureAsString(fileMethod).equals(methodSignature)) {
 					throw new BotRefactoringException(
-							"File '" + javaFile + "' would have a duplicate method after refactoring! Therefor, I cannot perform wished changes.");
+							"File '" + javaFile + "' would have a duplicate method after refactoring! Therefore, I cannot perform the desired changes.");
 				}
 			}
 		}
