@@ -60,15 +60,12 @@ public class ApiGrabber {
 	 */
 	public BotPullRequests getRequestsWithComments(GitConfiguration gitConfig)
 			throws URISyntaxException, GitHubAPIException, IOException {
-		// Init bot object
 		BotPullRequests botRequests = null;
 
-		// Pick correct filehoster
+		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Get data from github
 			GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
-			// Translate github object
 			botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
 			break;
 		}
@@ -89,7 +86,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Reply to comment
 			githubGrabber.responseToBotComment(githubTranslator.createReplyComment(comment, gitConfig, null), gitConfig,
 					request.getRequestNumber());
 			break;
@@ -108,11 +104,8 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Create createRequest
 			GithubCreateRequest createRequest = githubTranslator.makeCreateRequest(request, gitConfig, botBranchName);
-			// Create request
 			GithubPullRequest newGithubRequest = githubGrabber.createRequest(createRequest, gitConfig);
-			// Reply to comment
 			githubGrabber.responseToBotComment(
 					githubTranslator.createReplyComment(comment, gitConfig, newGithubRequest.getHtmlUrl()), gitConfig,
 					request.getRequestNumber());
@@ -132,7 +125,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Reply to comment
 			githubGrabber.responseToBotComment(githubTranslator.createFailureReply(comment, errorMessage), gitConfig,
 					request.getRequestNumber());
 			break;
@@ -149,7 +141,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Reply to comment
 			githubGrabber.checkBranch(gitConfig, branchName);
 			break;
 		}
@@ -169,11 +160,8 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (configuration.getRepoService()) {
 		case github:
-			// Check repository
 			githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
 					configuration.getBotToken());
-
-			// Check bot user and bot token
 			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
 					configuration.getBotEmail());
 
@@ -196,7 +184,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Delete repository
 			githubGrabber.deleteRepository(gitConfig);
 			break;
 		}
@@ -212,7 +199,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Create fork if not already exists
 			githubGrabber.createFork(gitConfig);
 			break;
 		}
@@ -255,10 +241,8 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Create createRequest
 			GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue, gitConfig,
 					newBranch);
-			// Create request on filehoster
 			githubGrabber.createRequest(createRequest, gitConfig);
 			break;
 		}
