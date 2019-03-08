@@ -17,7 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
-import de.refactoringbot.model.exceptions.SonarcloudAPIException;
+import de.refactoringbot.model.exceptions.SonarQubeAPIException;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
 
 /**
@@ -38,9 +38,9 @@ public class SonarQubeDataGrabber {
 	 * 
 	 * @param sonarQubeProjectKey
 	 * @return allIssues
-	 * @throws SonarcloudAPIException
+	 * @throws SonarQubeAPIException
 	 */
-	public List<SonarQubeIssues> getIssues(GitConfiguration gitConfig) throws SonarcloudAPIException, URISyntaxException {
+	public List<SonarQubeIssues> getIssues(GitConfiguration gitConfig) throws SonarQubeAPIException, URISyntaxException {
 		int page = 1;
 
 		List<SonarQubeIssues> issues = new ArrayList<>();
@@ -70,7 +70,7 @@ public class SonarQubeDataGrabber {
 			} catch (RestClientException e) {
 				if (page == 1) {
 					logger.error(e.getMessage(), e);
-					throw new SonarcloudAPIException("Could not access SonarCube API!", e);
+					throw new SonarQubeAPIException("Could not access SonarCube API!", e);
 				}
 
 				break;
@@ -88,9 +88,9 @@ public class SonarQubeDataGrabber {
 	 * SonarQube/SonarCloud.
 	 * 
 	 * @param analysisServiceProjectKey
-	 * @throws SonarcloudAPIException
+	 * @throws SonarQubeAPIException
 	 */
-	public void checkSonarData(GitConfigurationDTO configuration) throws SonarcloudAPIException, URISyntaxException {
+	public void checkSonarData(GitConfigurationDTO configuration) throws SonarQubeAPIException, URISyntaxException {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = createUriBuilder(configuration.getAnalysisServiceApiLink(), "/components/show");
 
@@ -110,7 +110,7 @@ public class SonarQubeDataGrabber {
 			rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
-			throw new SonarcloudAPIException("Project with given project key does not exist on SonarQube!", e);
+			throw new SonarQubeAPIException("Project with given project key does not exist on SonarQube!", e);
 		}
 	}
 
