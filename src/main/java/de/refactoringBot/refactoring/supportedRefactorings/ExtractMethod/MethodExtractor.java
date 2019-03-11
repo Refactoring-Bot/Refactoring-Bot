@@ -135,11 +135,12 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                             removedNodes.add(statement);
                         }
                     }
+                    int index = n.getBody().get().getStatements().indexOf(removedNodes.get(0));
+                    n.getBody().get().addStatement(index, this.methodCall);
+                    return removedNodes;
                 }
-                int index = n.getBody().get().getStatements().indexOf(removedNodes.get(0));
-                n.getBody().get().addStatement(index, this.methodCall);
             }
-            return removedNodes;
+            return null;
         }
 
         private boolean candidateContainsStatement(Statement statement) {
