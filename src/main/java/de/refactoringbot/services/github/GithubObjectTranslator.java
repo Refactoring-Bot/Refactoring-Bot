@@ -3,8 +3,6 @@ package de.refactoringbot.services.github;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
