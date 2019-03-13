@@ -59,18 +59,19 @@ public class ApiGrabber {
 	 * @throws GitHubAPIException
 	 * @throws IOException
 	 */
-	public BotPullRequests getRequestsWithComments(GitConfiguration gitConfig) throws URISyntaxException, GitHubAPIException, IOException {
+	public BotPullRequests getRequestsWithComments(GitConfiguration gitConfig)
+			throws URISyntaxException, GitHubAPIException, IOException {
 		// Init bot object
 		BotPullRequests botRequests = null;
 
 		// Pick correct filehoster
 		switch (gitConfig.getRepoService()) {
-			case github:
-				// Get data from github
-				GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
-				// Translate github object
-				botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
-				break;
+		case github:
+			// Get data from github
+			GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
+			// Translate github object
+			botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
+			break;
 		}
 		return botRequests;
 	}
@@ -88,11 +89,11 @@ public class ApiGrabber {
 			GitConfiguration gitConfig) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-			case github:
-				// Reply to comment
-				githubGrabber.responseToBotComment(githubTranslator.createReplyComment(comment, gitConfig, null),
-						gitConfig, request.getRequestNumber());
-				break;
+		case github:
+			// Reply to comment
+			githubGrabber.responseToBotComment(githubTranslator.createReplyComment(comment, null), gitConfig,
+					request.getRequestNumber());
+			break;
 		}
 	}
 
@@ -107,16 +108,16 @@ public class ApiGrabber {
 			String botBranchName) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-			case github:
-				// Create createRequest
-				GithubCreateRequest createRequest = githubTranslator.makeCreateRequest(request, gitConfig, botBranchName);
-				// Create request
-				GithubPullRequest newGithubRequest = githubGrabber.createRequest(createRequest, gitConfig);
-				// Reply to comment
-				githubGrabber.responseToBotComment(
-						githubTranslator.createReplyComment(comment, gitConfig, newGithubRequest.getHtmlUrl()),
-						gitConfig, request.getRequestNumber());
-				break;
+		case github:
+			// Create createRequest
+			GithubCreateRequest createRequest = githubTranslator.makeCreateRequest(request, gitConfig, botBranchName);
+			// Create request
+			GithubPullRequest newGithubRequest = githubGrabber.createRequest(createRequest, gitConfig);
+			// Reply to comment
+			githubGrabber.responseToBotComment(
+					githubTranslator.createReplyComment(comment, newGithubRequest.getHtmlUrl()), gitConfig,
+					request.getRequestNumber());
+			break;
 		}
 	}
 
@@ -131,11 +132,11 @@ public class ApiGrabber {
 			GitConfiguration gitConfig, String errorMessage) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-			case github:
-				// Reply to comment
-				githubGrabber.responseToBotComment(githubTranslator.createFailureReply(comment, errorMessage),
-						gitConfig, request.getRequestNumber());
-				break;
+		case github:
+			// Reply to comment
+			githubGrabber.responseToBotComment(githubTranslator.createFailureReply(comment, errorMessage), gitConfig,
+					request.getRequestNumber());
+			break;
 		}
 	}
 
@@ -148,10 +149,10 @@ public class ApiGrabber {
 	public void checkBranch(GitConfiguration gitConfig, String branchName) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-			case github:
-				// Reply to comment
-				githubGrabber.checkBranch(gitConfig, branchName);
-				break;
+		case github:
+			// Reply to comment
+			githubGrabber.checkBranch(gitConfig, branchName);
+			break;
 		}
 	}
 
@@ -195,7 +196,7 @@ public class ApiGrabber {
 	public void deleteRepository(GitConfiguration gitConfig) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-			case github:
+		case github:
 			// Delete repository
 			githubGrabber.deleteRepository(gitConfig);
 			break;
@@ -211,10 +212,10 @@ public class ApiGrabber {
 	public void createFork(GitConfiguration gitConfig) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-			case github:
-				// Create fork if not already exists
-				githubGrabber.createFork(gitConfig);
-				break;
+		case github:
+			// Create fork if not already exists
+			githubGrabber.createFork(gitConfig);
+			break;
 		}
 	}
 
@@ -228,16 +229,16 @@ public class ApiGrabber {
 	public List<BotIssue> getAnalysisServiceIssues(GitConfiguration gitConfig) throws Exception {
 		// Pick service
 		switch (gitConfig.getAnalysisService()) {
-            case sonarqube:
-                // Get issues and translate them
-                List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
-                List<BotIssue> botIssues = new ArrayList<>();
-                for (SonarQubeIssues i : issues) {
-                    botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
-                }
-                return botIssues;
-            default:
-                return null;
+		case sonarqube:
+			// Get issues and translate them
+			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
+			List<BotIssue> botIssues = new ArrayList<>();
+			for (SonarQubeIssues i : issues) {
+				botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
+			}
+			return botIssues;
+		default:
+			return null;
 		}
 	}
 
@@ -254,13 +255,13 @@ public class ApiGrabber {
 			throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
-			case github:
-				// Create createRequest
-				GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue,
-						gitConfig, newBranch);
-				// Create request on filehoster
-				githubGrabber.createRequest(createRequest, gitConfig);
-				break;
+		case github:
+			// Create createRequest
+			GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue, gitConfig,
+					newBranch);
+			// Create request on filehoster
+			githubGrabber.createRequest(createRequest, gitConfig);
+			break;
 		}
 	}
 
@@ -271,16 +272,16 @@ public class ApiGrabber {
 	 * @param analysisServiceProjectKey
 	 */
 	private void checkAnalysisService(AnalysisProvider analysisService, String analysisServiceProjectKey)
-            throws Exception {
+			throws Exception {
 		// Check if input exists
 		if (analysisService == null || analysisServiceProjectKey == null) {
 			return;
 		}
 		// Pick service
 		switch (analysisService) {
-            case sonarqube:
-                sonarQubeGrabber.checkSonarData(analysisServiceProjectKey);
-                break;
+		case sonarqube:
+			sonarQubeGrabber.checkSonarData(analysisServiceProjectKey);
+			break;
 		}
 
 	}

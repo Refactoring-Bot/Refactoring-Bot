@@ -213,29 +213,23 @@ public class GithubObjectTranslator {
 	 * This method creates an object that can be used reply to a comment on GitHub.
 	 * 
 	 * @param replyTo
+	 * @param newRequestURL
 	 * @return comment
 	 */
-	public ReplyComment createReplyComment(BotPullRequestComment replyTo, GitConfiguration gitConfig,
-			String newRequestURL) {
+	public ReplyComment createReplyComment(BotPullRequestComment replyTo, String newRequestURL) {
 		// Create objcet
 		ReplyComment comment = new ReplyComment();
 
 		// Fill with data
 		comment.setIn_reply_to(replyTo.getCommentID());
 
-		// Create timestamp
-		SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
-		Date now = new Date();
-		String date = sdf.format(now);
-
 		// Create response
 		if (newRequestURL != null) {
 			// If new PullRequest created
-			comment.setBody(
-					"Refactored by " + gitConfig.getBotName() + " on " + date + ". See request " + newRequestURL + ".");
+			comment.setBody("Refactoring was successfull! See request " + newRequestURL + ".");
 		} else {
 			// If old request updated
-			comment.setBody("Refactored by " + gitConfig.getBotName() + " on " + date + ".");
+			comment.setBody("Refactoring was successfull!");
 		}
 
 		return comment;
