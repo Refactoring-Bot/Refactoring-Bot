@@ -441,7 +441,7 @@ public class RefactoringService {
 		if (isCommentRefactoring) {
 			try {
 				grabber.replyToUserForFailedRefactoring(request, comment, config,
-						createErrorMessage(botIssue.getErrorMessage()));
+						createCommentReplyMessage(botIssue.getErrorMessage()));
 			} catch (Exception u) {
 				logger.error(u.getMessage(), u);
 			}
@@ -458,7 +458,7 @@ public class RefactoringService {
 	 * @param exceptionMessage
 	 * @return replyMessage
 	 */
-	private String createErrorMessage(String exceptionMessage) {
+	private String createCommentReplyMessage(String exceptionMessage) {
 		return exceptionMessage + " Please rephrase your instruction in a new comment.";
 	}
 

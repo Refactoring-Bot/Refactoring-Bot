@@ -224,10 +224,10 @@ public class GithubObjectTranslator {
 		// Create response
 		if (newRequestURL != null) {
 			// If new PullRequest created
-			comment.setBody("Refactoring was successfull! See request " + newRequestURL + ".");
+			comment.setBody("Refactoring was successful! See request " + newRequestURL + ".");
 		} else {
 			// If old request updated
-			comment.setBody("Refactoring was successfull!");
+			comment.setBody("Refactoring was successful!");
 		}
 
 		return comment;
