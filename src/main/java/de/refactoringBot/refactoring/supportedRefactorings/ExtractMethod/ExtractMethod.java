@@ -101,12 +101,13 @@ public class ExtractMethod implements RefactoringImpl {
 				ExtractMethodCandidateSelector selector = new ExtractMethodCandidateSelector(graph, candidates, variableMap, commentLines, emptyLines, this.cfgContainer.startLine, this.cfgContainer.endLine);
 				RefactorCandidate bestCandidate = selector.selectBestCandidate();
 
+				/*
 				try {
 					MethodExtractor methodExtractor = new MethodExtractor(bestCandidate, sourcePath);
 					methodExtractor.apply();
 				} catch (FileNotFoundException ex) {
 					ex.printStackTrace();
-				}
+				}*/
 
 				System.out.println(bestCandidate);
 

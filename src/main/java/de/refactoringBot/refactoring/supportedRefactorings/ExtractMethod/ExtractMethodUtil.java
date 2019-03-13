@@ -16,6 +16,7 @@ import com.sun.source.util.JavacTask;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreeScanner;
 import com.sun.source.util.Trees;
+import com.sun.tools.javac.api.JavacTool;
 import com.sun.tools.javac.tree.JCTree;
 import java.io.File;
 import java.io.IOException;
@@ -55,7 +56,7 @@ public class ExtractMethodUtil {
 
     // MARK: begin java parser
     public static ParseResult parseJava(String sourcePath) {
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        JavaCompiler compiler =  JavacTool.create(); //ToolProvider.getSystemJavaCompiler();
         DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
         StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnosticCollector, null, null);
         Iterable<? extends JavaFileObject> fileObjects = fileManager.getJavaFileObjects(sourcePath);

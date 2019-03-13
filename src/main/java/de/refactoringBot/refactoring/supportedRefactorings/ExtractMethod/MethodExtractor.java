@@ -15,6 +15,7 @@ import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithBody;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.stmt.Statement;
@@ -116,6 +117,10 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
         private RefactorCandidate candidate;
         private Expression methodCall;
 
+        private enum StatementResult {
+            NONE, SUBSTATEMENT, STATEMENT
+        }
+
         public MethodVisitor(RefactorCandidate candidate, Expression methodCall) {
             this.candidate = candidate;
             this.methodCall = methodCall;
@@ -130,30 +135,63 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                 int startLine = beginPosition.get().line;
                 int endLine = endPosition.get().line;
                 if (startLine <= candidate.startLine && endLine >= candidate.endLine) {
+
                     for (Statement statement : n.getBody().get().getStatements()) {
-                        if (this.candidateContainsStatement(statement)) {
-                            removedNodes.add(statement);
+                        switch (this.candidateContainsStatement(statement)) {
+                            case NONE:
+                                break;
+                            case STATEMENT:
+                                removedNodes.add(statement);
+                                break;
+                            case SUBSTATEMENT:
+                                statement.getChildNodes();
+                                break;
                         }
                     }
                     int index = n.getBody().get().getStatements().indexOf(removedNodes.get(0));
                     n.getBody().get().addStatement(index, this.methodCall);
                     return removedNodes;
+
+                    //removedNodes = this.analyseStatements(n.getBody().get(), removedNodes);
                 }
             }
             return null;
         }
+/*
+        private List<Statement> analyseStatements(Node parentNode, List<Statement> removedNodes) {
+            for (Node node : parentNode.getChildNodes()) {
+                Statement statement = (Statement) node;
+                switch (this.candidateContainsStatement(statement)) {
+                    case NONE:
+                        break;
+                    case STATEMENT:
+                        removedNodes.add(statement);
+                        break;
+                    case SUBSTATEMENT:
+                        removedNodes = this.analyseStatements(statement, removedNodes);
+                        break;
+                }
+            }
+            int index = parentNode.getChildNodes().indexOf(removedNodes.get(0));
+            //int index = n.getBody().get().getStatements().indexOf(removedNodes.get(0));
+            ((Statement) parentNode).asBlockStmt().addStatement()
+            n.getBody().get().addStatement(index, this.methodCall);
+            return removedNodes;
+        }*/
 
-        private boolean candidateContainsStatement(Statement statement) {
+        private StatementResult candidateContainsStatement(Statement statement) {
             Optional<Position> beginPosition = statement.getBegin();
             Optional<Position> endPosition = statement.getEnd();
             if (beginPosition.isPresent() && endPosition.isPresent()) {
                 int startLine = beginPosition.get().line;
                 int endLine = endPosition.get().line;
-                if (this.candidate.containsLine(startLine) || this.candidate.containsLine(endLine)) {
-                    return true;
+                if (startLine < this.candidate.startLine && endLine >= this.candidate.endLine) {
+                    return StatementResult.SUBSTATEMENT;
+                } else if (this.candidate.containsLine(startLine) || this.candidate.containsLine(endLine)) {
+                    return StatementResult.STATEMENT;
                 }
             }
-            return false;
+            return StatementResult.NONE;
         }
     }
 }
