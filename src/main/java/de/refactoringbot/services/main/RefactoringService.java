@@ -459,7 +459,7 @@ public class RefactoringService {
 	 * @return replyMessage
 	 */
 	private String createErrorMessage(String exceptionMessage) {
-		return exceptionMessage + " Please fix this issue by rephrasing your instruction in a new comment.";
+		return exceptionMessage + " Please rephrase your instruction in a new comment.";
 	}
 
 	/**
