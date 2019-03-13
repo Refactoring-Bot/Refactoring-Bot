@@ -129,13 +129,12 @@ public class RenameMethod implements RefactoringImpl {
 
 		// If refactor-method not found
 		if (methodToRefactor == null) {
-			throw new BotRefactoringException(
-					"Could not find specified method declaration at given line! Please check if you placed your comment on a method declaration.");
+			throw new BotRefactoringException("Could not find specified method declaration at given line!");
 		}
 
 		// If new name equals old
 		if (oldMethodName != null && oldMethodName.equals(issue.getRefactorString())) {
-			throw new BotRefactoringException("New method name must differ from the current one! Please create a new comment with a different method name.");
+			throw new BotRefactoringException("New method name must differ from the current one!");
 		}
 
 		// Add all Subclasses and their Superclasses to AST-Tree

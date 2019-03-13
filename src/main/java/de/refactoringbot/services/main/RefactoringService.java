@@ -440,7 +440,8 @@ public class RefactoringService {
 		// Reply to user if refactoring comments
 		if (isCommentRefactoring) {
 			try {
-				grabber.replyToUserForFailedRefactoring(request, comment, config, botIssue.getErrorMessage());
+				grabber.replyToUserForFailedRefactoring(request, comment, config,
+						createErrorMessage(botIssue.getErrorMessage()));
 			} catch (Exception u) {
 				logger.error(u.getMessage(), u);
 			}
@@ -448,6 +449,17 @@ public class RefactoringService {
 
 		// Save failed refactoring and return it
 		return issueRepo.save(failedIssue);
+	}
+
+	/**
+	 * This method creates a reply message with the help from the error message of a
+	 * BotRefactoringException.
+	 * 
+	 * @param exceptionMessage
+	 * @return replyMessage
+	 */
+	private String createErrorMessage(String exceptionMessage) {
+		return exceptionMessage + " Please fix this issue by rephrasing your instruction in a new comment.";
 	}
 
 	/**

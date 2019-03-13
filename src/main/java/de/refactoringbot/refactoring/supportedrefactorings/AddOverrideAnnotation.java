@@ -37,8 +37,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		MethodDeclaration methodDeclarationToModify = RefactoringHelper
 				.getMethodByLineNumberOfMethodName(issue.getLine(), compilationUnit);
 		if (methodDeclarationToModify == null) {
-			throw new BotRefactoringException(
-					"Could not find a method declaration at specified line! Please check if you placed your comment on a method declaration.");
+			throw new BotRefactoringException("Could not find a method declaration at specified line!");
 		}
 		if (isOverrideAnnotationExisting(methodDeclarationToModify)) {
 			throw new BotRefactoringException("Method is already annotated with 'Override'!");
