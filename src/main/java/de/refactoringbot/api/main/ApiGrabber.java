@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.api.sonarqube.SonarQubeDataGrabber;
 import de.refactoringbot.model.botissue.BotIssue;
-import de.refactoringbot.model.configuration.AnalysisProvider;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
@@ -61,15 +60,13 @@ public class ApiGrabber {
 	 */
 	public BotPullRequests getRequestsWithComments(GitConfiguration gitConfig)
 			throws URISyntaxException, GitHubAPIException, IOException {
-		// Init bot object
+
 		BotPullRequests botRequests = null;
 
-		// Pick correct filehoster
+		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Get data from github
 			GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
-			// Translate github object
 			botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
 			break;
 		}
@@ -90,7 +87,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Reply to comment
 			githubGrabber.responseToBotComment(githubTranslator.createReplyComment(comment, null), gitConfig,
 					request.getRequestNumber());
 			break;
@@ -109,11 +105,10 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Create createRequest
+			// Create PR Object
 			GithubCreateRequest createRequest = githubTranslator.makeCreateRequest(request, gitConfig, botBranchName);
-			// Create request
+			// Create PR on filehoster
 			GithubPullRequest newGithubRequest = githubGrabber.createRequest(createRequest, gitConfig);
-			// Reply to comment
 			githubGrabber.responseToBotComment(
 					githubTranslator.createReplyComment(comment, newGithubRequest.getHtmlUrl()), gitConfig,
 					request.getRequestNumber());
@@ -133,7 +128,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Reply to comment
 			githubGrabber.responseToBotComment(githubTranslator.createFailureReply(comment, errorMessage), gitConfig,
 					request.getRequestNumber());
 			break;
@@ -150,7 +144,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Reply to comment
 			githubGrabber.checkBranch(gitConfig, branchName);
 			break;
 		}
@@ -165,16 +158,13 @@ public class ApiGrabber {
 	 */
 	public GitConfiguration createConfigurationForRepo(GitConfigurationDTO configuration) throws Exception {
 		// Check analysis service data
-		checkAnalysisService(configuration.getAnalysisService(), configuration.getAnalysisServiceProjectKey());
+		checkAnalysisService(configuration);
 
 		// Pick filehoster
 		switch (configuration.getRepoService()) {
 		case github:
-			// Check repository
 			githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
 					configuration.getBotToken());
-
-			// Check bot user and bot token
 			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
 					configuration.getBotEmail());
 
@@ -197,7 +187,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Delete repository
 			githubGrabber.deleteRepository(gitConfig);
 			break;
 		}
@@ -213,7 +202,6 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Create fork if not already exists
 			githubGrabber.createFork(gitConfig);
 			break;
 		}
@@ -231,7 +219,7 @@ public class ApiGrabber {
 		switch (gitConfig.getAnalysisService()) {
 		case sonarqube:
 			// Get issues and translate them
-			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig.getAnalysisServiceProjectKey());
+			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig);
 			List<BotIssue> botIssues = new ArrayList<>();
 			for (SonarQubeIssues i : issues) {
 				botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
@@ -256,10 +244,10 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			// Create createRequest
+			// Create PR object
 			GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue, gitConfig,
 					newBranch);
-			// Create request on filehoster
+			// Create PR on filehoster
 			githubGrabber.createRequest(createRequest, gitConfig);
 			break;
 		}
@@ -271,16 +259,16 @@ public class ApiGrabber {
 	 * @param analysisService
 	 * @param analysisServiceProjectKey
 	 */
-	private void checkAnalysisService(AnalysisProvider analysisService, String analysisServiceProjectKey)
-			throws Exception {
+	private void checkAnalysisService(GitConfigurationDTO configuration) throws Exception {
 		// Check if input exists
-		if (analysisService == null || analysisServiceProjectKey == null) {
+		if (configuration.getAnalysisService() == null || configuration.getAnalysisServiceProjectKey() == null
+				|| configuration.getAnalysisServiceApiLink() == null) {
 			return;
 		}
 		// Pick service
-		switch (analysisService) {
+		switch (configuration.getAnalysisService()) {
 		case sonarqube:
-			sonarQubeGrabber.checkSonarData(analysisServiceProjectKey);
+			sonarQubeGrabber.checkSonarData(configuration);
 			break;
 		}
 

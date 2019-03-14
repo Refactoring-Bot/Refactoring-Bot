@@ -18,7 +18,7 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 import de.refactoringbot.services.main.FileService;
 
 /**
- * This class translates SonarCube Objects into Bot-Objects.
+ * This class translates SonarQube Objects into Bot-Objects.
  * 
  * @author Stefan Basaric
  *
@@ -30,19 +30,16 @@ public class SonarQubeObjectTranslator {
 	FileService fileController;
 
 	/**
-	 * This method translates all SonarCubeIssues to BotIssues.
+	 * This method translates all SonarQubeIssues to BotIssues.
 	 * 
 	 * @param issues
 	 * @return botIssue
 	 * @throws IOException
 	 */
 	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) throws IOException {
-		// Create empty list of bot issues
 		List<BotIssue> botIssues = new ArrayList<>();
 
-		// Iterate all SonarCube issues
 		for (SonarIssue issue : issues.getIssues()) {
-			// Create bot issue
 			BotIssue botIssue = new BotIssue();
 
 			// Create filepath
@@ -82,24 +79,20 @@ public class SonarQubeObjectTranslator {
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 
 			botIssue.setFilePath(translatedPath);
-
-			// Fill object
 			botIssue.setLine(issue.getLine());
 			botIssue.setCommentServiceID(issue.getKey());
-
+			
 			// Set creation date to determine the age of the issue
 			botIssue.setCreationDate(issue.getCreationDate());
 
-			// Translate SonarCube rule
+			// Translate SonarQube rule
 			switch (issue.getRule()) {
 			case "squid:S1161":
 				botIssue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
-				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
 			case "squid:ModifiersOrderCheck":
 				botIssue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
-				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
 			case "squid:CommentedOutCodeLine":
@@ -121,8 +114,8 @@ public class SonarQubeObjectTranslator {
 	}
 
 	/**
-	 * This method scans the message of a "RemoveParameter" issue of
-	 * SonarCloud/SonarQube and returns the parameter name of the unused parameter.
+	 * This method scans the message of a "RemoveParameter" issue of SonarQube and
+	 * returns the parameter name of the unused parameter.
 	 * 
 	 * @param issue
 	 * @return parameterName
