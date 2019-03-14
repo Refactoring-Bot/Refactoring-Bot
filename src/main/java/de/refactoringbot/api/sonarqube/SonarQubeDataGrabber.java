@@ -56,15 +56,14 @@ public class SonarQubeDataGrabber {
 
 			URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
 
-			// Create REST-Template
 			RestTemplate rest = new RestTemplate();
-			// Build Header
+
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("User-Agent", USER_AGENT);
 			HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
-			// Send request
 			try {
+				// Send request
 				issues.add(rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody());
 				page++;
 			} catch (RestClientException e) {
@@ -98,15 +97,14 @@ public class SonarQubeDataGrabber {
 
 		URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
 
-		// Create REST-Template
 		RestTemplate rest = new RestTemplate();
-		// Build Header
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
-		// Send request
 		try {
+			// Send request
 			rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
