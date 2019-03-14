@@ -102,7 +102,8 @@ public class WitService {
 		if (refactoring.getValue().equals("ADD-ANNOTATION")) {
 			// If 0/2+ possilbe annotations returned
 			if (witObject.getEntities().getJavaAnnotations().size() != 1) {
-				throw new ReviewCommentUnclearException("Not sure which annotation you want to add!");
+				throw new ReviewCommentUnclearException(
+						"You proposed a 'add annotation' refactoring without telling me what annotation to add!");
 			}
 			// Read unique java annotation
 			WitEntity javaAnnot = witObject.getEntities().getJavaAnnotations().get(0);
@@ -129,7 +130,8 @@ public class WitService {
 		else if (refactoring.getValue().equals("RENAME-METHOD")) {
 			// If new method name is uncertain
 			if (witObject.getEntities().getRefactoringString().size() != 1) {
-				throw new ReviewCommentUnclearException("Not sure what the new method name is!");
+				throw new ReviewCommentUnclearException(
+						"You proposed a 'rename method' refactoring without telling me the new method name!");
 			}
 			// Annotations are not involved
 			if (witObject.getEntities().getJavaAnnotations().size() != 0) {
@@ -144,7 +146,8 @@ public class WitService {
 		else if (refactoring.getValue().equals("REMOVE-PARAMETER")) {
 			// If parameter name is uncertain
 			if (witObject.getEntities().getRefactoringString().size() != 1) {
-				throw new ReviewCommentUnclearException("Not sure which parameter to remove!");
+				throw new ReviewCommentUnclearException(
+						"You proposed a 'remove parameter' refactoring without telling me the name of the parameter you want to remove!");
 			}
 			// Annotations are not involved
 			if (witObject.getEntities().getJavaAnnotations().size() != 0) {
@@ -156,7 +159,7 @@ public class WitService {
 			issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 			issue.setRefactorString(refStr.getValue());
 		} else {
-			throw new ReviewCommentUnclearException("I don't know what you want me to do.");
+			throw new ReviewCommentUnclearException("I don't know what refactoring you want me to perform!");
 		}
 	}
 }

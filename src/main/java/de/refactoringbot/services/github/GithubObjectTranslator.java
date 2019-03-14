@@ -3,8 +3,6 @@ package de.refactoringbot.services.github;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -20,7 +18,6 @@ import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
-import de.refactoringbot.model.github.pullrequest.GithubUpdateRequest;
 import de.refactoringbot.model.github.pullrequestcomment.GitHubPullRequestComments;
 import de.refactoringbot.model.github.pullrequestcomment.PullRequestComment;
 import de.refactoringbot.model.github.pullrequestcomment.ReplyComment;
@@ -44,6 +41,7 @@ public class GithubObjectTranslator {
 	private final GithubDataGrabber grabber;
 	private final ModelMapper modelMapper;
 	private final GitService gitService;
+	private final String pullRequestBodyComment = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this pull request by creating line specific (review) comments inside the 'Files changed' tab of this pull request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
 
 	@Autowired
 	public GithubObjectTranslator(GithubDataGrabber grabber, ModelMapper modelMapper, GitService gitService) {
@@ -165,29 +163,6 @@ public class GithubObjectTranslator {
 	}
 
 	/**
-	 * This method creates an Object that can be used to update a Pull-Request on
-	 * GitHub.
-	 * 
-	 * @param refactoredRequest
-	 * @return sendRequest
-	 */
-	public GithubUpdateRequest makeUpdateRequest(BotPullRequest refactoredRequest, GitConfiguration gitConfig) {
-		// Create object
-		GithubUpdateRequest sendRequest = new GithubUpdateRequest();
-
-		// Create timestamp
-		SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
-		Date now = new Date();
-		String date = sdf.format(now);
-
-		// Fill object with data
-		sendRequest.setBody("Updated by " + gitConfig.getBotName() + " on " + date + ".");
-		sendRequest.setMaintainer_can_modify(true);
-
-		return sendRequest;
-	}
-
-	/**
 	 * This method creates an object that can be used to create a Pull-Request on
 	 * GitHub after a request comment refactoring.
 	 * 
@@ -199,15 +174,9 @@ public class GithubObjectTranslator {
 		// Create object
 		GithubCreateRequest createRequest = new GithubCreateRequest();
 
-		// Create timestamp
-		SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
-		Date now = new Date();
-		String date = sdf.format(now);
-
 		// Fill object with data
 		createRequest.setTitle("Bot Pull-Request Refactoring for PullRequest #" + refactoredRequest.getRequestNumber());
-		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + " for PullRequest "
-				+ refactoredRequest.getRequestLink() + ".");
+		createRequest.setBody(pullRequestBodyComment);
 		createRequest.setHead(gitConfig.getBotName() + ":" + botBranchName);
 		createRequest.setBase(refactoredRequest.getBranchName());
 		createRequest.setMaintainer_can_modify(true);
@@ -228,16 +197,9 @@ public class GithubObjectTranslator {
 		// Create object
 		GithubCreateRequest createRequest = new GithubCreateRequest();
 
-		// Create timestamp
-		SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
-		Date now = new Date();
-		String date = sdf.format(now);
-
 		// Fill object with data
-		// TODO: Dynamic branches
 		createRequest.setTitle("Bot Pull-Request Refactoring with '" + gitConfig.getAnalysisService() + "'");
-		createRequest.setBody("Created by " + gitConfig.getBotName() + " on " + date + " for the "
-				+ gitConfig.getAnalysisService() + "-Issue '" + issue.getCommentServiceID() + "'.");
+		createRequest.setBody(pullRequestBodyComment);
 		createRequest.setHead(gitConfig.getBotName() + ":" + newBranch);
 		createRequest.setBase("master");
 		createRequest.setMaintainer_can_modify(true);
@@ -249,29 +211,23 @@ public class GithubObjectTranslator {
 	 * This method creates an object that can be used reply to a comment on GitHub.
 	 * 
 	 * @param replyTo
+	 * @param newRequestURL
 	 * @return comment
 	 */
-	public ReplyComment createReplyComment(BotPullRequestComment replyTo, GitConfiguration gitConfig,
-			String newRequestURL) {
+	public ReplyComment createReplyComment(BotPullRequestComment replyTo, String newRequestURL) {
 		// Create objcet
 		ReplyComment comment = new ReplyComment();
 
 		// Fill with data
 		comment.setIn_reply_to(replyTo.getCommentID());
 
-		// Create timestamp
-		SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
-		Date now = new Date();
-		String date = sdf.format(now);
-
 		// Create response
 		if (newRequestURL != null) {
 			// If new PullRequest created
-			comment.setBody(
-					"Refactored by " + gitConfig.getBotName() + " on " + date + ". See request " + newRequestURL + ".");
+			comment.setBody("Refactoring was successful! See request " + newRequestURL + ".");
 		} else {
 			// If old request updated
-			comment.setBody("Refactored by " + gitConfig.getBotName() + " on " + date + ".");
+			comment.setBody("Refactoring was successful!");
 		}
 
 		return comment;
