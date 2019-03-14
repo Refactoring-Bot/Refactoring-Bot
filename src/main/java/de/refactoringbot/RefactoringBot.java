@@ -4,6 +4,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * This Class bootstraps Spring and automatically configures it.
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Bean;
  *
  */
 @SpringBootApplication
+@EnableScheduling
 public class RefactoringBot {
 
 	/**

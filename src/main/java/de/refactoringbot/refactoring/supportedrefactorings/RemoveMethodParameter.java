@@ -134,7 +134,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 		// If refactor-method not found
 		if (methodToRefactor == null) {
-			throw new BotRefactoringException("Could not find specified method! Automated refactoring failed.");
+			throw new BotRefactoringException(
+					"Could not find method declaration of specified parameter at given line!");
 		}
 
 		// Add all Subclasses and their Superclasses to AST-Tree
@@ -157,7 +158,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			if (checkIfParameterUsed(method, issue.getRefactorString())) {
 				throw new BotRefactoringException("Parameter '" + issue.getRefactorString()
 						+ "' is used inside the method '" + RefactoringHelper.getFullMethodSignature(method)
-						+ "' which is a super/sub class of the given method!");
+						+ "' which is inside a super/sub class of the class of the given method!");
 			}
 		}
 
@@ -233,7 +234,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 				// Check if method has parameter
 				if (!methodDeclaration.getParameterByName(parameterName).isPresent()) {
 					throw new BotRefactoringException("Method '" + methodDeclaration.getSignature()
-							+ "' does not have parameter '" + parameterName + "'!");
+							+ "' does not have parameter '" + parameterName + "'! Refactoring cannot be performed.");
 				}
 				try {
 					ResolvedMethodDeclaration resolvedMethod = methodDeclaration.resolve();

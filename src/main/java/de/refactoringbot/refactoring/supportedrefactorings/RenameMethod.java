@@ -129,7 +129,7 @@ public class RenameMethod implements RefactoringImpl {
 
 		// If refactor-method not found
 		if (methodToRefactor == null) {
-			throw new BotRefactoringException("Could not find specified method! Automated refactoring failed.");
+			throw new BotRefactoringException("Could not find specified method declaration at given line!");
 		}
 
 		// If new name equals old
@@ -235,7 +235,7 @@ public class RenameMethod implements RefactoringImpl {
 			}
 
 		}
-		throw new BotRefactoringException("Error reading methods that need their parameter removed!");
+		throw new BotRefactoringException("Error reading methods that need to be renamed!");
 	}
 
 	/**
