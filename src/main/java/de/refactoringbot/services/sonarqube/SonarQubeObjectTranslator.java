@@ -37,12 +37,9 @@ public class SonarQubeObjectTranslator {
 	 * @throws IOException
 	 */
 	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) throws IOException {
-		// Create empty list of bot issues
 		List<BotIssue> botIssues = new ArrayList<>();
 
-		// Iterate all SonarQube issues
 		for (SonarIssue issue : issues.getIssues()) {
-			// Create bot issue
 			BotIssue botIssue = new BotIssue();
 
 			// Create filepath
@@ -82,11 +79,9 @@ public class SonarQubeObjectTranslator {
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 
 			botIssue.setFilePath(translatedPath);
-
-			// Fill object
 			botIssue.setLine(issue.getLine());
 			botIssue.setCommentServiceID(issue.getKey());
-
+			
 			// Set creation date to determine the age of the issue
 			botIssue.setCreationDate(issue.getCreationDate());
 
@@ -94,12 +89,10 @@ public class SonarQubeObjectTranslator {
 			switch (issue.getRule()) {
 			case "squid:S1161":
 				botIssue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
-				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
 			case "squid:ModifiersOrderCheck":
 				botIssue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
-				// Add bot issue to list
 				botIssues.add(botIssue);
 				break;
 			case "squid:CommentedOutCodeLine":

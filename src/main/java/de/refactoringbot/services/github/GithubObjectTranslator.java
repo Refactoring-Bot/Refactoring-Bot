@@ -57,7 +57,7 @@ public class GithubObjectTranslator {
 	 * @return
 	 */
 	public GitConfiguration createConfiguration(GitConfigurationDTO configuration) {
-		// Create Configuration
+		
 		GitConfiguration config = new GitConfiguration();
 
 		modelMapper.map(configuration, config);
@@ -89,12 +89,11 @@ public class GithubObjectTranslator {
 	 */
 	public BotPullRequests translateRequests(GithubPullRequests githubRequests, GitConfiguration gitConfig)
 			throws URISyntaxException, GitHubAPIException, IOException {
-		// Create Requests
+
 		BotPullRequests translatedRequests = new BotPullRequests();
 
-		// Iterate all GitHub requests
 		for (GithubPullRequest githubRequest : githubRequests.getAllPullRequests()) {
-			// Create BotPullRequest
+
 			BotPullRequest pullRequest = new BotPullRequest();
 
 			// Fill request with data
@@ -111,22 +110,20 @@ public class GithubObjectTranslator {
 			pullRequest.setMergeBranchName(githubRequest.getBase().getRef());
 			pullRequest.setRepoName(githubRequest.getBase().getRepo().getFullName());
 
-			// Create URI for the comments of the request
 			URI commentUri = null;
 			try {
+				// Read comments URI
 				commentUri = new URI(githubRequest.getReviewCommentsUrl());
 			} catch (URISyntaxException e) {
 				logger.error(e.getMessage(), e);
 				throw new URISyntaxException("Could not build comment URI!", e.getMessage());
 			}
 
-			// Get comments from github
+			// Get and translate comments from github
 			GitHubPullRequestComments githubComments = grabber.getAllPullRequestComments(commentUri, gitConfig);
-			// Translate and add them to list
 			BotPullRequestComments comments = translatePullRequestComments(githubComments);
 			pullRequest.setAllComments(comments.getComments());
 
-			// Add request to translated request list
 			translatedRequests.addPullRequest(pullRequest);
 		}
 
@@ -140,12 +137,9 @@ public class GithubObjectTranslator {
 	 * @return translatedComments
 	 */
 	public BotPullRequestComments translatePullRequestComments(GitHubPullRequestComments githubComments) {
-		// Create Bot comments
 		BotPullRequestComments translatedComments = new BotPullRequestComments();
 
-		// Iterate github comments
 		for (PullRequestComment githubComment : githubComments.getComments()) {
-			// Create bot comment
 			BotPullRequestComment translatedComment = new BotPullRequestComment();
 
 			// Fill comment with data
@@ -155,7 +149,6 @@ public class GithubObjectTranslator {
 			translatedComment.setCommentBody(githubComment.getBody());
 			translatedComment.setPosition(gitService.getLineNumberOfLastLineInDiffHunk(githubComment.getDiffHunk()));
 
-			// Add comment to list
 			translatedComments.addComment(translatedComment);
 		}
 
@@ -171,7 +164,6 @@ public class GithubObjectTranslator {
 	 */
 	public GithubCreateRequest makeCreateRequest(BotPullRequest refactoredRequest, GitConfiguration gitConfig,
 			String botBranchName) {
-		// Create object
 		GithubCreateRequest createRequest = new GithubCreateRequest();
 
 		// Fill object with data
@@ -194,7 +186,6 @@ public class GithubObjectTranslator {
 	 */
 	public GithubCreateRequest makeCreateRequestWithAnalysisService(BotIssue issue, GitConfiguration gitConfig,
 			String newBranch) {
-		// Create object
 		GithubCreateRequest createRequest = new GithubCreateRequest();
 
 		// Fill object with data
@@ -215,13 +206,10 @@ public class GithubObjectTranslator {
 	 * @return comment
 	 */
 	public ReplyComment createReplyComment(BotPullRequestComment replyTo, String newRequestURL) {
-		// Create objcet
 		ReplyComment comment = new ReplyComment();
-
-		// Fill with data
+		
 		comment.setIn_reply_to(replyTo.getCommentID());
 
-		// Create response
 		if (newRequestURL != null) {
 			// If new PullRequest created
 			comment.setBody("Refactoring was successful! See request " + newRequestURL + ".");
@@ -239,16 +227,12 @@ public class GithubObjectTranslator {
 	 * 
 	 * @param replyTo
 	 * @param errorMessage
-	 * @return
+	 * @return replyComment
 	 */
 	public ReplyComment createFailureReply(BotPullRequestComment replyTo, String errorMessage) {
-		// Create objcet
 		ReplyComment comment = new ReplyComment();
 
-		// Fill with data
 		comment.setIn_reply_to(replyTo.getCommentID());
-
-		// Set error message
 		comment.setBody(errorMessage);
 
 		return comment;
