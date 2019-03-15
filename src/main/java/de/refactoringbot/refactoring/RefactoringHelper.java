@@ -20,7 +20,6 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
@@ -28,7 +27,6 @@ import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclar
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 
 import de.refactoringbot.model.exceptions.BotRefactoringException;
-import de.refactoringbot.model.javaparser.ParserRefactoring;
 
 /**
  * Utility methods for use in performing refactorings
@@ -271,9 +269,8 @@ public class RefactoringHelper {
 	 * @param currentClass
 	 * @return ancestors
 	 */
-	public static List<ResolvedReferenceType> getAllAncestorsAcceptIncompleteList(
+	private static List<ResolvedReferenceType> getAllAncestorsAcceptIncompleteList(
 			ResolvedReferenceTypeDeclaration currentClass) {
-		// TODO make private as soon as RenameMethod.java has been refactored
 		List<ResolvedReferenceType> ancestors = new ArrayList<>();
 
 		if (!(Object.class.getCanonicalName().equals(currentClass.getQualifiedName()))) {
@@ -291,223 +288,5 @@ public class RefactoringHelper {
 		}
 
 		return ancestors;
-	}
-
-	// ##############################################
-	// Deprecated
-	// ##############################################
-
-	/**
-	 * This method scans all Java files for methods that match the passed method
-	 * signature and adds them to the given refactoring
-	 * 
-	 * @param refactoring
-	 * @param allJavaFiles
-	 * @return
-	 * @throws FileNotFoundException
-	 * @throws BotRefactoringException
-	 */
-	@Deprecated
-	public static ParserRefactoring findAndAddMethods(ParserRefactoring refactoring, List<String> allJavaFiles,
-			String methodSignature) throws FileNotFoundException, BotRefactoringException {
-		// Iterate all Java-Files
-		for (String javaFile : allJavaFiles) {
-			// parse a file
-			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-
-			// Get all Classes
-			List<ClassOrInterfaceDeclaration> classes = compilationUnit.findAll(ClassOrInterfaceDeclaration.class);
-			// Iterate all Classes
-			for (ClassOrInterfaceDeclaration currentClass : classes) {
-				boolean isSubOrSuperClass = refactoring.getClasses()
-						.contains(currentClass.resolve().getQualifiedName());
-				if (isSubOrSuperClass) {
-					List<MethodDeclaration> methods = currentClass.getMethods();
-					for (MethodDeclaration method : methods) {
-						if (method.getSignature().asString().equals(methodSignature)) {
-							refactoring.addMethod(method);
-							refactoring.addMethodSignature(getQualifiedMethodSignatureAsString(method));
-							if (!refactoring.getJavaFiles().contains(javaFile)) {
-								refactoring.addJavaFile(javaFile);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return refactoring;
-	}
-
-	/**
-	 * This method scans all Java files for method calls that match the method
-	 * signatures in the ParserRefactoring and adds them as method calls to the
-	 * ParserRefactoring
-	 * 
-	 * @param refactoring
-	 * @param allJavaFiles
-	 * @return
-	 * @throws FileNotFoundException
-	 */
-	@Deprecated
-	public static ParserRefactoring findAndAddMethodCalls(ParserRefactoring refactoring, List<String> allJavaFiles)
-			throws FileNotFoundException {
-
-		for (String javaFile : allJavaFiles) {
-			// parse a file
-			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-
-			List<MethodCallExpr> methodCalls = compilationUnit.findAll(MethodCallExpr.class);
-
-			for (MethodCallExpr methodCall : methodCalls) {
-
-				ResolvedMethodDeclaration calledMethod = null;
-				try {
-					calledMethod = methodCall.resolve();
-				} catch (Exception e) {
-					logger.debug(e.getMessage());
-					continue;
-				}
-
-				if (refactoring.getMethodSignatures().contains(calledMethod.getQualifiedSignature())) {
-					refactoring.addMethodCall(methodCall);
-
-					if (!refactoring.getJavaFiles().contains(javaFile)) {
-						refactoring.addJavaFile(javaFile);
-					}
-				}
-			}
-
-		}
-
-		return refactoring;
-	}
-
-	/**
-	 * This method scans all Java files for classes that could be subclasses in the
-	 * AST and adds them to the ParserRefactoring
-	 * 
-	 * @param refactoring
-	 * @param allJavaFiles
-	 * @return ParserRefactoring
-	 * @throws FileNotFoundException
-	 * @throws BotRefactoringException
-	 */
-	@Deprecated
-	public static ParserRefactoring addSubClasses(ParserRefactoring refactoring, List<String> allJavaFiles)
-			throws FileNotFoundException {
-
-		// Search all Java-Files
-		for (String javaFile : allJavaFiles) {
-			// parse a file
-			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
-
-			// Get all Classes
-			List<ClassOrInterfaceDeclaration> classes = compilationUnit.findAll(ClassOrInterfaceDeclaration.class);
-
-			// Search all Classes
-			for (ClassOrInterfaceDeclaration currentClass : classes) {
-				List<String> classAncestors = new ArrayList<>();
-				boolean isSubClass = false;
-				boolean hasExternalDep = false;
-
-				// Get all Super-Classes
-				List<ResolvedReferenceType> ancestors = null;
-				try {
-					ancestors = currentClass.resolve().getAllAncestors();
-				} catch (InvalidPathException | UnsolvedSymbolException i) {
-					ancestors = getAllAncestorsAcceptIncompleteList(currentClass.resolve());
-					hasExternalDep = true;
-				} catch (Exception e) {
-					logger.debug(e.getMessage());
-					continue;
-				}
-
-				for (ResolvedReferenceType ancestor : ancestors) {
-					// Collect all Signatures of Super-Classes
-					if (!ancestor.getQualifiedName().equals("java.lang.Object")) {
-						classAncestors.add(ancestor.getQualifiedName());
-					}
-
-					// If Super-Class belongs to AST-Tree
-					if (refactoring.getClasses().contains(ancestor.getQualifiedName())
-							&& !refactoring.getClasses().contains(currentClass.resolve().getQualifiedName())) {
-						// Add class to AST-Tree
-						refactoring.getClasses().add(currentClass.resolve().getQualifiedName());
-						isSubClass = true;
-					}
-				}
-
-				// Add all Super-Classes of Class to AST-Tree
-				if (isSubClass) {
-					for (String classAncestor : classAncestors) {
-						if (!refactoring.getClasses().contains(classAncestor)) {
-							refactoring.getClasses().add(classAncestor);
-						}
-					}
-					// Add warning
-					if (hasExternalDep) {
-						refactoring.setWarning(
-								" Refactored classes might extend/implement external project! Check if overriden method was NOT renamed!");
-					}
-				}
-			}
-		}
-
-		return refactoring;
-	}
-
-	@Deprecated
-	public static boolean isMethodSignaturePresentInFile(String filePath, String methodSignature)
-			throws FileNotFoundException {
-		FileInputStream is = new FileInputStream(filePath);
-		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(is));
-		List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
-
-		for (MethodDeclaration fileMethod : fileMethods) {
-			if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * This method checks all given Java files for methods that equal the given
-	 * method signature. This is relevant, for example, to check whether a method
-	 * overwrites a method of a superclass after refactoring.
-	 * 
-	 * @param javaFiles
-	 * @param methodSignature
-	 * @throws BotRefactoringException
-	 *             if there is a duplicate
-	 * @throws FileNotFoundException
-	 */
-	@Deprecated
-	public static void checkForDuplicatedMethodSignatures(List<String> javaFiles, String methodSignature)
-			throws BotRefactoringException, FileNotFoundException {
-
-		// Iterate all Javafiles
-		for (String javaFile : javaFiles) {
-			// Create compilation unit
-			FileInputStream methodPath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(methodPath));
-
-			// Get all Methods and MethodCalls of File
-			List<MethodDeclaration> fileMethods = compilationUnit.findAll(MethodDeclaration.class);
-
-			// Check if class contains a method equal to the given method signature
-			for (MethodDeclaration fileMethod : fileMethods) {
-				if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
-					throw new BotRefactoringException(
-							"Removal of parameter would result in method signature already present in file '" + javaFile
-									+ "'.");
-				}
-			}
-		}
 	}
 }
