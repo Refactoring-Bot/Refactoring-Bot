@@ -71,15 +71,15 @@ public class GithubDataGrabber {
 
 		URI githubURI = apiUriBuilder.build().encode().toUri();
 
-		// Create REST-Template
 		RestTemplate rest = new RestTemplate();
-		// Baue Header
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
-		// Send request to the GitHub-API
+		
 		try {
+			// Send request to the GitHub-API
 			rest.exchange(githubURI, HttpMethod.GET, entity, GithubRepository.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
@@ -105,16 +105,15 @@ public class GithubDataGrabber {
 
 		URI githubURI = apiUriBuilder.build().encode().toUri();
 
-		// Create REST-Template
 		RestTemplate rest = new RestTemplate();
-		// Build Header
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
-		// Send request to the GitHub-API
+		
 		GithubUser githubUser = null;
 		try {
+			// Send request to the GitHub-API
 			githubUser = rest.exchange(githubURI, HttpMethod.GET, entity, GithubUser.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
@@ -145,7 +144,7 @@ public class GithubDataGrabber {
 	 */
 	public void checkBranch(GitConfiguration gitConfig, String branchName)
 			throws URISyntaxException, BotRefactoringException, GitHubAPIException {
-		// Read URI from configuration
+
 		URI configUri = createURIFromApiLink(gitConfig.getForkApiLink());
 
 		// Build URI
@@ -155,15 +154,15 @@ public class GithubDataGrabber {
 		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
 
 		URI pullsUri = apiUriBuilder.build().encode().toUri();
-		// Create REST-Template
+
 		RestTemplate rest = new RestTemplate();
-		// Create Header
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-		// Send Request to the GitHub-API
+		
 		try {
-			// If branch found -> error
+			// Send Request to the GitHub-API
 			rest.exchange(pullsUri, HttpMethod.GET, entity, String.class).getBody();
 			throw new BotRefactoringException(
 					"Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
@@ -187,7 +186,7 @@ public class GithubDataGrabber {
 	 */
 	public GithubPullRequests getAllPullRequests(GitConfiguration gitConfig)
 			throws URISyntaxException, GitHubAPIException, IOException {
-		// Read URI from configuration
+
 		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
@@ -197,25 +196,26 @@ public class GithubDataGrabber {
 		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
 
 		URI pullsUri = apiUriBuilder.build().encode().toUri();
-		// Create REST-Template
+
 		RestTemplate rest = new RestTemplate();
-		// Create Header
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-		// Send Request to the GitHub-API
+		
 		String json = null;
 		try {
+			// Send Request to the GitHub-API
 			json = rest.exchange(pullsUri, HttpMethod.GET, entity, String.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
 			throw new GitHubAPIException("Could not get Pull-Requests from Github!", e);
 		}
 
-		// Create request object
+
 		GithubPullRequests allRequests = new GithubPullRequests();
 
-		// Try to map json to object
+		
 		try {
 			List<GithubPullRequest> requestList = mapper.readValue(json,
 					mapper.getTypeFactory().constructCollectionType(List.class, GithubPullRequest.class));
@@ -243,25 +243,26 @@ public class GithubDataGrabber {
 		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
 
 		URI githubURI = apiUriBuilder.build().encode().toUri();
-		// Create REST-Template
+
 		RestTemplate rest = new RestTemplate();
-		// Create Header
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-		// Send request to the GitHub-API
+		
 		String json = null;
 		try {
+			// Send request to the GitHub-API
 			json = rest.exchange(githubURI, HttpMethod.GET, entity, String.class).getBody();
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not get pull request comments from Github!", r);
 		}
 
-		// Create comments object
 		GitHubPullRequestComments allComments = new GitHubPullRequestComments();
 
-		// Try to map json to object
+		
 		try {
+			// Try to map json to object
 			List<PullRequestComment> commentList = mapper.readValue(json,
 					mapper.getTypeFactory().constructCollectionType(List.class, PullRequestComment.class));
 			allComments.setComments(commentList);
@@ -282,7 +283,7 @@ public class GithubDataGrabber {
 	 */
 	public void updatePullRequest(GithubUpdateRequest send, GitConfiguration gitConfig, Integer requestNumber)
 			throws GitHubAPIException, URISyntaxException {
-		// Read URI from configuration
+
 		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
@@ -298,12 +299,11 @@ public class GithubDataGrabber {
 		MediaType mediaType = new MediaType("application", "merge-patch+json");
 		headers.setContentType(mediaType);
 
-		// Create REST-Template
 		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
 		RestTemplate rest = new RestTemplate(requestFactory);
 
-		// Send request to the GitHub-API
 		try {
+			// Send request to the GitHub-API
 			rest.exchange(pullsUri, HttpMethod.PATCH, new HttpEntity<>(send), String.class);
 		} catch (RestClientException e) {
 			throw new GitHubAPIException("Could not update pull request!", e);
@@ -321,7 +321,7 @@ public class GithubDataGrabber {
 	 */
 	public void responseToBotComment(ReplyComment comment, GitConfiguration gitConfig, Integer requestNumber)
 			throws URISyntaxException, GitHubAPIException {
-		// Read URI from configuration
+
 		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
@@ -334,8 +334,9 @@ public class GithubDataGrabber {
 
 		RestTemplate rest = new RestTemplate();
 
-		// Send request to Github-API
+		
 		try {
+			// Send request to Github-API
 			rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<>(comment), String.class);
 		} catch (RestClientException e) {
 			throw new GitHubAPIException("Could not reply to Github comment!", e);
@@ -353,7 +354,6 @@ public class GithubDataGrabber {
 	public GithubPullRequest createRequest(GithubCreateRequest request, GitConfiguration gitConfig)
 			throws URISyntaxException, GitHubAPIException {
 
-		// Read URI from configuration
 		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
@@ -366,8 +366,9 @@ public class GithubDataGrabber {
 
 		RestTemplate rest = new RestTemplate();
 
-		// Send request to the GitHub-API
+		
 		try {
+			// Send request to the GitHub-API
 			return rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<>(request), GithubPullRequest.class)
 					.getBody();
 		} catch (RestClientException r) {
@@ -385,7 +386,6 @@ public class GithubDataGrabber {
 	 */
 	public void createFork(GitConfiguration gitConfig) throws URISyntaxException, GitHubAPIException {
 
-		// Read URI from configuration
 		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
 		// Build URI
@@ -396,11 +396,10 @@ public class GithubDataGrabber {
 
 		URI forksUri = apiUriBuilder.build().encode().toUri();
 
-		// Create REST-Template
 		RestTemplate rest = new RestTemplate();
 
-		// Send request to the Github-API
 		try {
+			// Send request to the Github-API
 			rest.exchange(forksUri, HttpMethod.POST, null, GithubRepository.class).getBody();
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not create fork on Github!", r);
@@ -417,7 +416,7 @@ public class GithubDataGrabber {
 	public void deleteRepository(GitConfiguration gitConfig) throws URISyntaxException, GitHubAPIException {
 		String originalRepo = gitConfig.getRepoApiLink();
 		String forkRepo = gitConfig.getForkApiLink();
-		// never delete the original repository
+		// Never delete the original repository
 		if (originalRepo.equals(forkRepo)) {
 			return;
 		}
@@ -433,11 +432,10 @@ public class GithubDataGrabber {
 
 		URI repoUri = apiUriBuilder.build().encode().toUri();
 
-		// Create REST-Template
 		RestTemplate rest = new RestTemplate();
 
-		// Send request to the Github-API
 		try {
+			// Send request to the Github-API
 			rest.exchange(repoUri, HttpMethod.DELETE, null, String.class);
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not delete repository from Github!", r);
@@ -447,7 +445,7 @@ public class GithubDataGrabber {
 	/**
 	 * Attempts to instantiate a URI object using the specified API link
 	 * @param link
-	 * @return
+	 * @return uri
 	 * @throws URISyntaxException
 	 */
 	private URI createURIFromApiLink(String link) throws URISyntaxException {

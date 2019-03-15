@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class BotConfiguration {
 
 	private String botRefactoringDirectory = "";
+	private String witClientToken = "";
 
 	public String getBotRefactoringDirectory() {
 		return botRefactoringDirectory;
@@ -21,6 +22,14 @@ public class BotConfiguration {
 
 	public void setBotRefactoringDirectory(String botRefactoringDirectory) {
 		this.botRefactoringDirectory = botRefactoringDirectory;
+	}
+
+	public String getWitClientToken() {
+		return witClientToken;
+	}
+
+	public void setWitClientToken(String witClientToken) {
+		this.witClientToken = witClientToken;
 	}
 
 }

@@ -105,7 +105,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		}
 
 		if (targetMethod == null) {
-			throw new BotRefactoringException("Could not find specified method! Automated refactoring failed.");
+			throw new BotRefactoringException("Could not find a method declaration at the given line!");
 		}
 		validateMethodHasParameter(targetMethod, parameterToBeRemoved);
 		validateParameterUnused(targetMethod, parameterToBeRemoved);

@@ -40,15 +40,43 @@ public class GrammarService {
 	}
 
 	/**
+	 * This method checks if a comment is meant for the bot to understand. That is
+	 * the case, if someone (not the bot himself) tags the bot inside the comment
+	 * with '@Botname'.
+	 * 
+	 * @param comment
+	 * @param gitConfig
+	 * @return isBotMentionedInComment
+	 */
+	public boolean isBotMentionedInComment(String comment, GitConfiguration gitConfig) {
+		return comment.contains("@" + gitConfig.getBotName());
+	}
+
+	/**
+	 * This method checks whether the comment was created by the bot itself
+	 * 
+	 * @param commentUser
+	 * @param gitConfig
+	 * @return isCommentByBot
+	 */
+	public boolean isCommentByBot(String commentUser, GitConfiguration gitConfig) {
+		return commentUser.equals(gitConfig.getBotName());
+	}
+
+	/**
 	 * This method checks if a comment has a valid bot grammar and returns if the
 	 * comment is valid or not.
 	 * 
 	 * @param comment
 	 * @return valid
-	 * @throws Exception
 	 */
-	public Boolean checkComment(String comment) {
+	public Boolean checkComment(String comment, GitConfiguration gitConfig) {
 		try {
+			// Check if USERNAME-Keyword equals tagged Botname
+			if (comment.split(" ").length > 1 && !isBotMentionedInComment(comment.split(" ")[0], gitConfig)) {
+				return false;
+			}
+
 			// Create lexer and disable console logs
 			BotOperationsLexer lexer = new BotOperationsLexer(CharStreams.fromString(comment));
 			lexer.removeErrorListener(ConsoleErrorListener.INSTANCE);
@@ -66,6 +94,7 @@ public class GrammarService {
 			// Walk path tree
 			BotOperationsBaseListener listener = new BotOperationsBaseListener();
 			walker.walk(listener, tree);
+
 			return true;
 		} catch (Exception e) {
 			return false;

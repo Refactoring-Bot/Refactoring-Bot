@@ -1,16 +1,7 @@
 package de.refactoringbot.services.main;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import de.refactoringbot.model.botissue.BotIssue;
@@ -28,8 +19,6 @@ import de.refactoringbot.model.refactoredissue.RefactoredIssue;
  */
 @Service
 public class BotService {
-
-	private static final Logger logger = LoggerFactory.getLogger(BotService.class);
 
 	/**
 	 * This method returns the maximal amount of pull requests created by the bot.
@@ -123,30 +112,5 @@ public class BotService {
 
 		return refactoredIssue;
 	}
-
-	/**
-	 * This method finds the Root-Folder of a repository. That is the folder that
-	 * contains the src folder.
-	 * 
-	 * @param repoFolder
-	 * @return rootFolder
-	 * @throws IOException
-	 */
-	public String findSrcFolder(String repoFolder) throws IOException {
-		// Get root folder of project
-		File dir = new File(repoFolder);
-
-		// Get paths to all java files of the project
-		List<File> files = (List<File>) FileUtils.listFilesAndDirs(dir, TrueFileFilter.INSTANCE,
-				TrueFileFilter.INSTANCE);
-		for (File file : files) {
-			if (file.isDirectory() && file.getName().equals("src")) {
-				return file.getAbsolutePath();
-			}
-		}
-		
-		String noSrcFolderFoundErrorMsg = "No src-folder found inside this java-project!";
-		logger.error(noSrcFolderFoundErrorMsg);
-		throw new FileNotFoundException(noSrcFolderFoundErrorMsg);
-	}
+        
 }

@@ -98,7 +98,7 @@ public class RenameMethod implements RefactoringImpl {
 		}
 
 		if (targetMethod == null) {
-			throw new BotRefactoringException("Could not find specified method! Automated refactoring failed.");
+			throw new BotRefactoringException("Could not find specified method declaration at given line!");
 		}
 
 		String oldMethodName = targetMethod.getNameAsString();
