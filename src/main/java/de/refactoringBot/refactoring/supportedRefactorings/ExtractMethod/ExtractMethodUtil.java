@@ -6,20 +6,25 @@ import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.
 import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.StatementGraphNode.StatementGraphNodeType.IFNODE;
 import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.StatementGraphNode.StatementGraphNodeType.TRYNODE;
 
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.sun.source.tree.BreakTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ContinueTree;
 import com.sun.source.tree.LineMap;
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.util.JavacTask;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreeScanner;
 import com.sun.source.util.Trees;
 import com.sun.tools.javac.api.JavacTool;
+import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,13 +36,18 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import javassist.compiler.ast.MethodDecl;
+import javax.lang.model.element.TypeElement;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
+import javax.xml.transform.Source;
+import org.checkerframework.com.github.javaparser.ast.CompilationUnit;
 import org.checkerframework.dataflow.cfg.CFGBuilder;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.cfg.CustomCFGBuilder2;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.ConditionalBlock;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
@@ -49,10 +59,15 @@ import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MarkerNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.VariableDeclarationNode;
+import sun.jvm.hotspot.debugger.cdbg.Sym;
 
 public class ExtractMethodUtil {
     // helper var for line to block map generation
     private static Integer currentTryIndex = 0;
+
+    public static Symbol.ClassSymbol symbol = null;
+    public static Symbol.VarSymbol varSymbol = null;
+    public static Type type = null;
 
     // MARK: begin java parser
     public static ParseResult parseJava(String sourcePath) {
@@ -114,6 +129,28 @@ public class ExtractMethodUtil {
             }
         }
         return lineMapping;
+    }
+
+    public static void getDummyClass() {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        String path = classLoader.getResource("DummyClass.java").getPath();
+        ParseResult result = ExtractMethodUtil.parseJava(path);
+        CompilationUnitTree tree = result.parseResult.iterator().next();
+        Tree type = tree.getTypeDecls().get(0);
+        Field f = null; //NoSuchFieldException
+        JCTree.JCClassDecl classDecl = (JCTree.JCClassDecl) type;
+        JCTree.JCVariableDecl var = (JCTree.JCVariableDecl) classDecl.defs.get(1);
+        try {
+            f = type.getClass().getDeclaredField("sym");
+            f.setAccessible(true);
+            ExtractMethodUtil.symbol = (Symbol.ClassSymbol) f.get(type);
+            f = var.getClass().getDeclaredField("sym");
+            f.setAccessible(true);
+            ExtractMethodUtil.varSymbol = (Symbol.VarSymbol) f.get(var);
+            ExtractMethodUtil.type = new Type.JCNoType();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static Long addLineNumber(LineMap lineMap, Map<Long, LineMapBlock> lineMapping, Long currentLineNumber, Block block, Node node) {
@@ -874,6 +911,22 @@ public class ExtractMethodUtil {
         }
     }
 
+    /*
+    public static CFGContainer generateControlFlowGraph(CompilationUnitTree compilationUnitTree, SourcePositions sourcePositions, Long lineNumber) {
+        List<ControlFlowGraph> graphs = new ArrayList();
+        for (Tree _classTree : compilationUnitTree.getTypeDecls()) {
+            ClassTree classTree = (ClassTree) _classTree;
+            for (Tree _methodTree: classTree.getMembers()) {
+                if (_methodTree.getClass().equals(MethodDecl.class)) {
+                    MethodTree methodTree = (MethodTree) _methodTree;
+                    ControlFlowGraph graph = CFGBuilder.build(compilationUnitTree, methodTree, classTree, DummyTypeProcessor.processingEnv);
+                    graphs.add(graph);
+                }
+            }
+        }
+        return new CFGContainer(graphs.get(0), 0,0 );
+    }*/
+
     public static class ControlFlowGraphGenerator extends TreeScanner<CFGContainer, Void> {
         private final CompilationUnitTree compilationUnitTree;
         private final Long lineNumber;
@@ -897,7 +950,7 @@ public class ExtractMethodUtil {
 
             if (startLine <= this.lineNumber && endLine >= this.lineNumber) {
                 // generate cfg
-                return new CFGContainer(CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv), startLine, endLine);
+                return new CFGContainer(CustomCFGBuilder2.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv), startLine, endLine);
             } else {
                 return null;
             }

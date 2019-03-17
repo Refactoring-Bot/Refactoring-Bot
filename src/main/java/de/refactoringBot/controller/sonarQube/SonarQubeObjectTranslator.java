@@ -47,7 +47,7 @@ public class SonarQubeObjectTranslator {
 			String sonarIssuePath = Paths.get(component.substring(project.length() + 1, component.length())).toString();
 			
 			// Create full path for sonar issue
-			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 3) + sonarIssuePath;
+			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 11) + sonarIssuePath;
 			// Cut path outside the repository
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 			// Remove leading '/'
@@ -61,16 +61,16 @@ public class SonarQubeObjectTranslator {
 
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
-			case "squid:S1161":
-				botIssue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
-				// Add bot issue to list
-				botIssues.add(botIssue);
-				break;
-			case "squid:ModifiersOrderCheck":
-				botIssue.setRefactoringOperation(operations.REORDER_MODIFIER);
-				// Add bot issue to list
-				botIssues.add(botIssue);
-				break;
+//			case "squid:S1161":
+//				botIssue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
+//				// Add bot issue to list
+//				botIssues.add(botIssue);
+//				break;
+//			case "squid:ModifiersOrderCheck":
+//				botIssue.setRefactoringOperation(operations.REORDER_MODIFIER);
+//				// Add bot issue to list
+//				botIssues.add(botIssue);
+//				break;
 			case "squid:S138":
 				botIssue.setRefactoringOperation(operations.EXTRACT_METHOD);
 				// Add bot issue to list

@@ -4,6 +4,7 @@ import com.sun.source.tree.*;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
 import de.refactoringBot.refactoring.RefactoringImpl;
+import javax.lang.model.element.TypeElement;
 import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.DOTCFGVisualizer;
@@ -61,12 +62,14 @@ public class ExtractMethod implements RefactoringImpl {
 	public String refactorMethod(String sourcePath, Integer lineNumber) {
 		// parse Java
 		ExtractMethodUtil.ParseResult parseResult = ExtractMethodUtil.parseJava(sourcePath);
+		ExtractMethodUtil.getDummyClass();
 
 		for (CompilationUnitTree compilationUnitTree : parseResult.parseResult) {
 			// get classTree
 			ClassTree classTree = compilationUnitTree.accept(new ExtractMethodUtil.ClassVisitor(), null);
 			// get cfg
 			this.cfgContainer = compilationUnitTree.accept(new ExtractMethodUtil.ControlFlowGraphGenerator(compilationUnitTree, parseResult.sourcePositions, Long.valueOf(lineNumber), classTree), null);
+			//this.cfgContainer = ExtractMethodUtil.generateControlFlowGraph(compilationUnitTree, parseResult.sourcePositions, Long.valueOf(lineNumber));
 			if (this.cfgContainer.cfg != null) {
 				this.lineMap = compilationUnitTree.getLineMap();
 

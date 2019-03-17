@@ -37,8 +37,10 @@ public class SonarQubeDataGrabber {
 	 */
 	public SonarQubeIssues getIssues(String sonarQubeProjectKey) throws Exception {
 		// Build URI
-		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("sonarcloud.io")
-				.path("api/issues/search");
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance();
+		//apiUriBuilder.scheme("https").host("sonarcloud.io");
+		apiUriBuilder.scheme("http").host("localhost").port(9000);
+		apiUriBuilder.path("api/issues/search");
 
 		apiUriBuilder.queryParam("componentRoots", sonarQubeProjectKey);
 		apiUriBuilder.queryParam("statuses", "OPEN,REOPENED");
@@ -70,8 +72,10 @@ public class SonarQubeDataGrabber {
 	 */
 	public void checkSonarData(String analysisServiceProjectKey) throws Exception {
 		// Build URI
-		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("sonarcloud.io")
-				.path("api/components/show");
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance();
+		//apiUriBuilder.scheme("https").host("sonarcloud.io");
+		apiUriBuilder.scheme("http").host("localhost").port(9000);
+		apiUriBuilder.path("api/components/show");
 
 		apiUriBuilder.queryParam("component", analysisServiceProjectKey);
 
