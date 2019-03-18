@@ -47,7 +47,6 @@ import javax.xml.transform.Source;
 import org.checkerframework.com.github.javaparser.ast.CompilationUnit;
 import org.checkerframework.dataflow.cfg.CFGBuilder;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
-import org.checkerframework.dataflow.cfg.CustomCFGBuilder2;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.block.ConditionalBlock;
 import org.checkerframework.dataflow.cfg.block.ExceptionBlock;
@@ -59,7 +58,6 @@ import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MarkerNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.VariableDeclarationNode;
-import sun.jvm.hotspot.debugger.cdbg.Sym;
 
 public class ExtractMethodUtil {
     // helper var for line to block map generation
@@ -950,7 +948,7 @@ public class ExtractMethodUtil {
 
             if (startLine <= this.lineNumber && endLine >= this.lineNumber) {
                 // generate cfg
-                return new CFGContainer(CustomCFGBuilder2.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv), startLine, endLine);
+                return new CFGContainer(CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv), startLine, endLine);
             } else {
                 return null;
             }
