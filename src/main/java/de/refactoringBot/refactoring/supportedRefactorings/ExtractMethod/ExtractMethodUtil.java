@@ -7,6 +7,7 @@ import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.
 import static de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.StatementGraphNode.StatementGraphNodeType.TRYNODE;
 
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.utils.SourceZip;
 import com.sun.source.tree.BreakTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
@@ -58,6 +59,7 @@ import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MarkerNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.VariableDeclarationNode;
+import sun.jvm.hotspot.debugger.cdbg.Sym;
 
 public class ExtractMethodUtil {
     // helper var for line to block map generation
@@ -105,7 +107,7 @@ public class ExtractMethodUtil {
     public static Map<Long, LineMapBlock> getLineToBlockMapping(ControlFlowGraph cfg, LineMap lineMap) {
         Map<Long, LineMapBlock> lineMapping = new HashMap<>();
         Long currentLineNumber = 0L;
-        for (Block block: cfg.getDepthFirstOrderedBlocks()) {
+        for (Block block: ExtractMethodUtil.cleanUpOrderedBlocks(cfg.getDepthFirstOrderedBlocks())) {
             switch (block.getType()) {
                 case SPECIAL_BLOCK:
                     break;
@@ -248,7 +250,7 @@ public class ExtractMethodUtil {
     }
 
     public static StatementGraphNode createStatementGraph(ControlFlowGraph cfg, Map<Long, LineMapBlock> lineMapping) {
-        List<Block> orderedBlocks = cfg.getDepthFirstOrderedBlocks();
+        List<Block> orderedBlocks = ExtractMethodUtil.cleanUpOrderedBlocks(cfg.getDepthFirstOrderedBlocks());
         StatementGraphNode methodHead = new StatementGraphNode();
 
         long lastID = orderedBlocks.get(orderedBlocks.size() - 1).getId();
@@ -256,11 +258,26 @@ public class ExtractMethodUtil {
         return createStatementGraphNodeRecursive(orderedBlocks, 1, lastID, methodHead, blockMapping, lineMapping);
     }
 
+    private static List<Block> cleanUpOrderedBlocks(List<Block> orderedBlocks) {
+        List<Block> cleanedUp = new ArrayList<>();
+        for (int i = 0; i < orderedBlocks.size(); i++) {
+            Block block = orderedBlocks.get(i);
+            int index = orderedBlocks.lastIndexOf(block);
+            if (index == i) {
+                cleanedUp.add(block);
+            } else {
+                System.out.println("penis");
+            }
+        }
+        return cleanedUp;
+    }
+
     private static StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, SortedSet<Long>> blockMapping, Map<Long, LineMapBlock> lineMapping) {
         StatementGraphNode lastNode = parentNode;
         Map<Long, Block> orderedBlocksMap = ExtractMethodUtil.mapBlocksToID(orderedBlocks);
         while (orderedBlocks.get(index).getId() != exitID) {
             Block nextBlock = orderedBlocks.get(index);
+            System.out.println("adding block with index " + index + " id: " + nextBlock.getId());
             switch (nextBlock.getType()) {
                 case SPECIAL_BLOCK:
                     break;
@@ -380,7 +397,7 @@ public class ExtractMethodUtil {
     }
 
     public static void analyseTryCatch(ControlFlowGraph cfg, StatementGraphNode graph, LineMap lineMap) {
-        List<Block> orderedBlocks = cfg.getDepthFirstOrderedBlocks();
+        List<Block> orderedBlocks = ExtractMethodUtil.cleanUpOrderedBlocks(cfg.getDepthFirstOrderedBlocks());
         for (Block block : orderedBlocks) {
             switch (block.getType()) {
                 case REGULAR_BLOCK:
@@ -466,7 +483,7 @@ public class ExtractMethodUtil {
     // MARK: begin analyse data flow
     public static Set<LocalVariable> findLocalVariables(ControlFlowGraph cfg) {
         Set<LocalVariable> localVariables = new HashSet<>();
-        List<Block> blocks = cfg.getDepthFirstOrderedBlocks();
+        List<Block> blocks = ExtractMethodUtil.cleanUpOrderedBlocks(cfg.getDepthFirstOrderedBlocks());
         for (Block block : blocks) {
             switch (block.getType()) {
                 case EXCEPTION_BLOCK: {
@@ -551,7 +568,7 @@ public class ExtractMethodUtil {
             if (ExtractMethodUtil.nodeIsAssignmentNode(node)) {
                 newLine = lineNumber;
             } else {
-                Long in = (lastLine != null && lineNumber > lastLine) ? lastLine : previousLine;
+                Long in = (lastLine != null && lineNumber != null && lineNumber > lastLine) ? lastLine : previousLine;
                 // add in
                 variableMap.computeIfAbsent(lineNumber, k -> new LineMapVariable());
                 variableMap.get(lineNumber).in.computeIfAbsent(variable, k -> new HashSet<>());
@@ -692,6 +709,9 @@ public class ExtractMethodUtil {
             if (variableMap.get(lineNumber) != null) {
                 for (Map.Entry<LocalVariable, Set<Long>> variable : variableMap.get(lineNumber).out.entrySet()) {
                     for (Long outNumber : variable.getValue()) {
+                        if (outNumber == null) {
+                            outNumber = 0L;
+                        }
                         if (outNumber > candidate.endLine) {
                             outVariables.add(variable.getKey());
                         }
@@ -886,6 +906,9 @@ public class ExtractMethodUtil {
             Map<Long, Long> continueMap = new HashMap<>();
             JCTree.JCContinue continueTree_ = (JCTree.JCContinue) node;
             Long breakLine = this.lineMap.getLineNumber(continueTree_.pos);
+            if (continueTree_.target == null) {
+                return null;
+            }
             Long outerLine = this.lineMap.getLineNumber(continueTree_.target.pos);
             continueMap.put(breakLine, outerLine);
             return continueMap;
