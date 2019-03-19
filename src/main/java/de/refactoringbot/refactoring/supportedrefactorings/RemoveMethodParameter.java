@@ -62,8 +62,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		String issueFilePath = gitConfig.getRepoFolder() + File.separator + issue.getFilePath();
 		MethodDeclaration targetMethod = findAndValidateTargetMethod(issue, issueFilePath, parameterName);
 		ClassOrInterfaceDeclaration targetClass = RefactoringHelper.getMethodParentNodeAsClassOrInterface(targetMethod);
-		Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = RefactoringHelper.findQualifiedNamesOfRelatedClassesAndInterfaces(
-				issue.getAllJavaFiles(), targetClass);
+		Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = RefactoringHelper
+				.findQualifiedNamesOfRelatedClassesAndInterfaces(issue.getAllJavaFiles(), targetClass);
 
 		HashSet<String> javaFilesRelevantForRefactoring = findJavaFilesRelevantForRefactoring(issue, parameterName,
 				targetMethod, qualifiedNamesOfRelatedClassesAndInterfaces);
@@ -71,7 +71,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 				parameterName);
 
 		String targetMethodSignature = RefactoringHelper.getLocalMethodSignatureAsString(targetMethod);
-		return "Removed method parameter '" + parameterName + "' of method '" + targetMethodSignature + "'";
+		return "Removed parameter '" + parameterName + "' from method '" + targetMethodSignature + "'";
 	}
 
 	/**
@@ -138,8 +138,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			throws BotRefactoringException {
 		if (isParameterUsed(methodDeclaration, parameterName)) {
 			String qualifiedMethodName = RefactoringHelper.getQualifiedMethodSignatureAsString(methodDeclaration);
-			throw new BotRefactoringException(
-					"Parameter '" + parameterName + "' is used inside the method '" + qualifiedMethodName + "'!");
+			throw new BotRefactoringException("Parameter '" + parameterName + "' is used in method '"
+					+ qualifiedMethodName + "' and therefore cannot be removed automatically.");
 		}
 	}
 
@@ -176,8 +176,8 @@ public class RemoveMethodParameter implements RefactoringImpl {
 								.getLocalMethodSignatureAsString(methodDeclaration)
 								.equals(RefactoringHelper.getLocalMethodSignatureAsString(targetMethod));
 						if (localMethodSignatureIsEqual) {
-							validateParameterUnusedInRelatedMethod(methodDeclaration, parameterToBeRemoved);
-							validateClassOrInterfaceNotContainsPostRefactoringSignatureAlready(currentClassOrInterface,
+							validateParameterUnused(methodDeclaration, parameterToBeRemoved);
+							validatePostRefactoringSignatureNotAlreadyExists(currentClassOrInterface,
 									postRefactoringSignature);
 							javaFilesRelevantForRefactoring.add(currentFilePath);
 							allRefactoringRelevantMethodDeclarations.add(methodDeclaration);
@@ -219,24 +219,6 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	}
 
 	/**
-	 * Validates that the given parameter is not used inside the given method of a
-	 * related class (e.g. sub class)
-	 * 
-	 * @param methodDeclaration
-	 * @param parameterToBeRemoved
-	 * @throws BotRefactoringException
-	 */
-	private void validateParameterUnusedInRelatedMethod(MethodDeclaration methodDeclaration,
-			String parameterToBeRemoved) throws BotRefactoringException {
-		if (isParameterUsed(methodDeclaration, parameterToBeRemoved)) {
-			String qualifiedMethodSignature = RefactoringHelper.getQualifiedMethodSignatureAsString(methodDeclaration);
-			throw new BotRefactoringException(
-					"Parameter '" + parameterToBeRemoved + "' is used inside the method '" + qualifiedMethodSignature
-							+ "' which is related to the given method (i.e., inside sub or super class)!");
-		}
-	}
-
-	/**
 	 * @param method
 	 * @param paramName
 	 * @return true if given parameter name is present in given method, false
@@ -264,13 +246,12 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @param postRefactoringSignature
 	 * @throws BotRefactoringException
 	 */
-	private void validateClassOrInterfaceNotContainsPostRefactoringSignatureAlready(
-			ClassOrInterfaceDeclaration currentClassOrInterface, String postRefactoringSignature)
-			throws BotRefactoringException {
-		if (RefactoringHelper.isLocalMethodSignaturePresentInClassOrInterface(currentClassOrInterface,
+	private void validatePostRefactoringSignatureNotAlreadyExists(ClassOrInterfaceDeclaration currentClassOrInterface,
+			String postRefactoringSignature) throws BotRefactoringException {
+		if (RefactoringHelper.isLocalMethodSignatureInClassOrInterface(currentClassOrInterface,
 				postRefactoringSignature)) {
 			throw new BotRefactoringException(
-					"Removal of parameter would result in method signature already present in class or interface '"
+					"Removal of parameter would result in a method signature that is already present inside the class or interface '"
 							+ currentClassOrInterface.getNameAsString() + "'.");
 		}
 	}
@@ -448,7 +429,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		String qualifiedNameOfCandidate = candidate.resolve().getQualifiedName();
 		return qualifiedNamesOfRelatedClassesAndInterfaces.contains(qualifiedNameOfCandidate);
 	}
-	
+
 	private void configureJavaParserForProject(BotIssue issue) {
 		CombinedTypeSolver typeSolver = new CombinedTypeSolver();
 		for (String javaRoot : issue.getJavaRoots()) {

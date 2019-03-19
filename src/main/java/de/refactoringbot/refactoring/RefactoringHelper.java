@@ -40,16 +40,16 @@ public class RefactoringHelper {
 
 	/**
 	 * @param classOrInterface
-	 * @param methodSignature
+	 * @param localMethodSignature
 	 * @return true if local method signature is present in given class or
 	 *         interface, false otherwise
 	 */
-	public static boolean isLocalMethodSignaturePresentInClassOrInterface(ClassOrInterfaceDeclaration classOrInterface,
-			String methodSignature) {
+	public static boolean isLocalMethodSignatureInClassOrInterface(ClassOrInterfaceDeclaration classOrInterface,
+			String localMethodSignature) {
 		List<MethodDeclaration> fileMethods = classOrInterface.findAll(MethodDeclaration.class);
 
 		for (MethodDeclaration fileMethod : fileMethods) {
-			if (getLocalMethodSignatureAsString(fileMethod).equals(methodSignature)) {
+			if (getLocalMethodSignatureAsString(fileMethod).equals(localMethodSignature)) {
 				return true;
 			}
 		}
@@ -178,56 +178,7 @@ public class RefactoringHelper {
 	public static Set<String> findQualifiedNamesOfRelatedClassesAndInterfaces(List<String> allJavaFiles,
 			ClassOrInterfaceDeclaration targetClass) throws BotRefactoringException, FileNotFoundException {
 		Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass = findAllAncestors(targetClass);
-		return findQualifiedNamesOfRelatedClassesAndInterfaces(targetClass, ancestorsOfTargetClass, allJavaFiles);
-	}
 
-	/**
-	 * @param targetClass
-	 * @return list of resolved classes and interfaces which are ancestors of the
-	 *         given classes (not including java.lang.Object or external
-	 *         dependencies)
-	 * @throws BotRefactoringException
-	 */
-	private static Set<ResolvedReferenceTypeDeclaration> findAllAncestors(ClassOrInterfaceDeclaration targetClass)
-			throws BotRefactoringException {
-		List<ResolvedReferenceType> ancestors = new ArrayList<>();
-		Set<ResolvedReferenceTypeDeclaration> result = new HashSet<>();
-
-		try {
-			ancestors = targetClass.resolve().getAllAncestors();
-		} catch (UnsolvedSymbolException u) {
-			ancestors = RefactoringHelper.getAllAncestorsAcceptIncompleteList(targetClass.resolve());
-			logger.warn("Refactored classes might extend/implement classes or interfaces from external dependency! "
-					+ "Please validate the correctness of the refactoring.");
-			// TODO propagate warning
-		} catch (InvalidPathException i) {
-			throw new BotRefactoringException("Javaparser could not parse file: " + i.getMessage());
-		} catch (Exception e) {
-			throw new BotRefactoringException("Error while resolving superclasses occured!");
-		}
-
-		for (ResolvedReferenceType ancestor : ancestors) {
-			if (!ancestor.getQualifiedName().equals("java.lang.Object")) {
-				result.add(ancestor.getTypeDeclaration());
-			}
-		}
-
-		return result;
-	}
-
-	/**
-	 * @param targetClass
-	 * @param ancestorsOfTargetClass
-	 * @param allJavaFiles
-	 * @return list of qualified class or interface names which are reachable via
-	 *         the inheritance hierarchy of the given classes (ancestors,
-	 *         descendants, siblings, ...)
-	 * @throws FileNotFoundException
-	 * @throws BotRefactoringException
-	 */
-	private static Set<String> findQualifiedNamesOfRelatedClassesAndInterfaces(ClassOrInterfaceDeclaration targetClass,
-			Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass, List<String> allJavaFiles)
-			throws FileNotFoundException, BotRefactoringException {
 		Set<ResolvedReferenceTypeDeclaration> relatedClassesAndInterfaces = new HashSet<>();
 		relatedClassesAndInterfaces.add(targetClass.resolve());
 		relatedClassesAndInterfaces.addAll(ancestorsOfTargetClass);
@@ -258,6 +209,40 @@ public class RefactoringHelper {
 	}
 
 	/**
+	 * @param targetClass
+	 * @return list of resolved classes and interfaces which are ancestors of the
+	 *         given classes (not including java.lang.Object or external
+	 *         dependencies)
+	 * @throws BotRefactoringException
+	 */
+	private static Set<ResolvedReferenceTypeDeclaration> findAllAncestors(ClassOrInterfaceDeclaration targetClass)
+			throws BotRefactoringException {
+		List<ResolvedReferenceType> ancestors = new ArrayList<>();
+		Set<ResolvedReferenceTypeDeclaration> result = new HashSet<>();
+
+		try {
+			ancestors = targetClass.resolve().getAllAncestors();
+		} catch (UnsolvedSymbolException u) {
+			ancestors = RefactoringHelper.getAllResolvableAncestors(targetClass.resolve());
+			logger.warn("Refactored classes might extend/implement classes or interfaces from external dependency! "
+					+ "Please validate the correctness of the refactoring.");
+			// TODO propagate warning
+		} catch (InvalidPathException i) {
+			throw new BotRefactoringException("Javaparser could not parse file: " + i.getMessage());
+		} catch (Exception e) {
+			throw new BotRefactoringException("Error while resolving superclasses occured!");
+		}
+
+		for (ResolvedReferenceType ancestor : ancestors) {
+			if (!ancestor.getQualifiedName().equals("java.lang.Object")) {
+				result.add(ancestor.getTypeDeclaration());
+			}
+		}
+
+		return result;
+	}
+
+	/**
 	 * Get all direct and indirect ancestors of a given class if possible (if
 	 * ancestor is not a external dependency for example).
 	 * 
@@ -266,19 +251,19 @@ public class RefactoringHelper {
 	 * example, that external classes are extended (which would throw an
 	 * UnresolvedSymbolException).
 	 * 
-	 * @param currentClass
+	 * @param resolvedClass
 	 * @return ancestors
 	 */
-	private static List<ResolvedReferenceType> getAllAncestorsAcceptIncompleteList(
-			ResolvedReferenceTypeDeclaration currentClass) {
+	private static List<ResolvedReferenceType> getAllResolvableAncestors(
+			ResolvedReferenceTypeDeclaration resolvedClass) {
 		List<ResolvedReferenceType> ancestors = new ArrayList<>();
 
-		if (!(Object.class.getCanonicalName().equals(currentClass.getQualifiedName()))) {
+		if (!(Object.class.getCanonicalName().equals(resolvedClass.getQualifiedName()))) {
 			// Get all direct ancestors that can be resolved
-			for (ResolvedReferenceType ancestor : currentClass.getAncestors(true)) {
+			for (ResolvedReferenceType ancestor : resolvedClass.getAncestors(true)) {
 				ancestors.add(ancestor);
 				// Get indirect ancestors recursively
-				for (ResolvedReferenceType inheritedAncestor : getAllAncestorsAcceptIncompleteList(
+				for (ResolvedReferenceType inheritedAncestor : getAllResolvableAncestors(
 						ancestor.getTypeDeclaration())) {
 					if (!ancestors.contains(inheritedAncestor)) {
 						ancestors.add(inheritedAncestor);
