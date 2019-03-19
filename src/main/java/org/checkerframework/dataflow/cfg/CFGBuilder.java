@@ -2364,6 +2364,12 @@ public class CFGBuilder {
         protected Node conditionalExprPromotion(Node node, TypeMirror destType) {
             // For rules on converting operands of conditional expressions,
             // JLS 15.25
+            if (node == null) {
+                return null;
+            }
+            if (destType == null) {
+                destType = Type.noType;
+            }
             TypeMirror nodeType = node.getType();
 
             // If the operand is already the same type as the whole
@@ -4074,6 +4080,10 @@ public class CFGBuilder {
             // see JLS 15.10
 
             ArrayType type = (ArrayType) TreeUtils.typeOf(tree);
+            if (type == null) {
+                Type inType = new Type.JCPrimitiveType(TypeTag.INT, ExtractMethodUtil.symbol);
+                type = new Type.ArrayType(inType, ExtractMethodUtil.symbol);
+            }
             TypeMirror elemType = type.getComponentType();
 
             List<? extends ExpressionTree> dimensions = tree.getDimensions();
@@ -4287,7 +4297,9 @@ public class CFGBuilder {
             List<Pair<TypeMirror, Label>> catchLabels = new ArrayList<>();
             for (CatchTree c : catches) {
                 TypeMirror type = TreeUtils.typeOf(c.getParameter().getType());
-                assert type != null : "exception parameters must have a type";
+                if (type == null) {
+                    type = Type.noType;
+                }
                 catchLabels.add(Pair.of(type, new Label()));
             }
 

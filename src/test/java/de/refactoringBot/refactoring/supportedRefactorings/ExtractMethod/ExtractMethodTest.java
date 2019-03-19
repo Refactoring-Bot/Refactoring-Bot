@@ -41,7 +41,7 @@ public class ExtractMethodTest {
         this.multipleReturnsExamplePath = this.copyFileToTemp( "RefactorMultipleReturnsExample.java");
 
         // refactor long example
-        this.longExamplePath = this.copyFileToTemp("Metadata.java");
+        this.longExamplePath = this.copyFileToTemp("PlainSaslServer.java");
     }
 
 
@@ -89,7 +89,7 @@ public class ExtractMethodTest {
     @Test
     public void refactorLong() {
         ExtractMethod extractMethod = new ExtractMethod();
-        String commitMessage = extractMethod.refactorMethod(this.longExamplePath, 249);
+        String commitMessage = extractMethod.refactorMethod(this.longExamplePath, 72);
         Assert.assertEquals(commitMessage, "extracted method");
     }
 

@@ -432,7 +432,7 @@ public class ExtractMethodUtil {
                     LineRange catchRange = new LineRange(lineMap.getLineNumber(block.pos), lineMap.getLineNumber(block.endpos));
                     catchRanges.add(catchRange);
                 }
-                LineRange finalRange = new LineRange(lineMap.getLineNumber(finalBLock.pos), lineMap.getLineNumber(finalBLock.endpos));
+                LineRange finalRange = finalBLock == null ? catchRanges.get(catchRanges.size() - 1) : new LineRange(lineMap.getLineNumber(finalBLock.pos), lineMap.getLineNumber(finalBLock.endpos));
                 // alter statement graph wit new try catch structure
                 StatementGraphNode tryStartNode = ExtractMethodUtil.findNodeForLine(graph, tryRange.from);
                 tryStartNode.type = TRYNODE;
@@ -896,6 +896,9 @@ public class ExtractMethodUtil {
             Map<Long, Long> breakMap = new HashMap<>();
             JCTree.JCBreak breakTree_ = (JCTree.JCBreak) node;
             Long breakLine = this.lineMap.getLineNumber(breakTree_.pos);
+            if (breakTree_.target == null) {
+                return null;
+            }
             Long outerLine = this.lineMap.getLineNumber(breakTree_.target.pos);
             breakMap.put(breakLine, outerLine);
             return breakMap;
