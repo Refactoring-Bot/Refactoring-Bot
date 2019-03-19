@@ -83,13 +83,14 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * Finds a method in a compilation unit that starts at the specified line number
+	 * Finds a method declaration in a compilation unit that starts at the specified
+	 * line number
 	 * 
 	 * @param lineNumber
 	 * @param cu
 	 * @return MethodDeclaration or null if none found
 	 */
-	public static MethodDeclaration getMethodByLineNumberOfMethodName(int lineNumber, CompilationUnit cu) {
+	public static MethodDeclaration getMethodDeclarationByLine(int lineNumber, CompilationUnit cu) {
 		MethodDeclaration result = null;
 		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
 		for (MethodDeclaration method : methods) {
@@ -111,7 +112,8 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * Finds a field in a compilation unit that starts at the specified line number
+	 * Finds a field declaration in a compilation unit that starts at the specified
+	 * line number
 	 * 
 	 * @param lineNumber
 	 * @param cu
@@ -145,8 +147,7 @@ public class RefactoringHelper {
 	 * @throws IllegalStateException
 	 *             if no parent node is present
 	 */
-	public static ClassOrInterfaceDeclaration getClassOrInterfaceOfMethod(
-			MethodDeclaration methodDeclaration) {
+	public static ClassOrInterfaceDeclaration getClassOrInterfaceOfMethod(MethodDeclaration methodDeclaration) {
 		Optional<Node> parentNode = methodDeclaration.getParentNode();
 		if (parentNode.isPresent()) {
 			return ((ClassOrInterfaceDeclaration) parentNode.get());

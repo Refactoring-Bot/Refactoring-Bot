@@ -44,7 +44,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 		FileInputStream in = new FileInputStream(tempFile);
 		CompilationUnit cu = JavaParser.parse(in);
 		MethodDeclaration methodDeclarationAfterRefactoring = RefactoringHelper
-				.getMethodByLineNumberOfMethodName(lineOfMethod, cu);
+				.getMethodDeclarationByLine(lineOfMethod, cu);
 		assertAllModifiersInCorrectOrder(methodDeclarationAfterRefactoring.getModifiers());
 	}
 

@@ -39,7 +39,7 @@ public class ReorderModifier implements RefactoringImpl {
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
 
 		FieldDeclaration field = RefactoringHelper.getFieldDeclarationByLineNumber(issue.getLine(), compilationUnit);
-		MethodDeclaration method = RefactoringHelper.getMethodByLineNumberOfMethodName(issue.getLine(),
+		MethodDeclaration method = RefactoringHelper.getMethodDeclarationByLine(issue.getLine(),
 				compilationUnit);
 		boolean isModifierListUnchanged = false;
 		NodeList<Modifier> modifiersInCorrectOrder;

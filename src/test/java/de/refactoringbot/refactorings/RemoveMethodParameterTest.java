@@ -97,26 +97,26 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		CompilationUnit cuOriginalFileOfSubClass = JavaParser.parse(fileOfSubClass);
 		CompilationUnit cuOriginalFileOfSiblingClass = JavaParser.parse(fileOfSiblingClass);
 
-		MethodDeclaration originalMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
+		MethodDeclaration originalMethod = RefactoringHelper.getMethodDeclarationByLine(
 				lineNumberOfMethodWithParameterToBeRemoved, cuOriginalFileWithCodeSmell);
-		MethodDeclaration originalDummyMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
+		MethodDeclaration originalDummyMethod = RefactoringHelper.getMethodDeclarationByLine(
 				removeParameterTestClass.getLineNumberOfDummyMethod(0, 0, 0), cuOriginalFileWithCodeSmell);
-		MethodDeclaration originalCallerMethod = RefactoringHelper.getMethodByLineNumberOfMethodName(
+		MethodDeclaration originalCallerMethod = RefactoringHelper.getMethodDeclarationByLine(
 				removeParameterTestClass.getLineNumberOfCaller(), cuOriginalFileWithCodeSmell);
-		MethodDeclaration originalCallerMethodInnerClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
+		MethodDeclaration originalCallerMethodInnerClass = RefactoringHelper.getMethodDeclarationByLine(
 				removeParameterInnerTestClass.getLineNumberOfCallerInInnerClass(), cuOriginalFileWithCodeSmell);
-		MethodDeclaration originalCallerMethodInDifferentFile = RefactoringHelper.getMethodByLineNumberOfMethodName(
+		MethodDeclaration originalCallerMethodInDifferentFile = RefactoringHelper.getMethodDeclarationByLine(
 				removeParameterCallerTestClass.getLineOfCallerMethodInDifferentFile(), cuOriginalFileWithCallerMethod);
-		MethodDeclaration originalMethodInSuperClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
+		MethodDeclaration originalMethodInSuperClass = RefactoringHelper.getMethodDeclarationByLine(
 				removeParameterSuperClass.getLineOfMethodWithUnusedParameter(0, 0, 0), cuOriginalFileOfSuperClass);
-		MethodDeclaration originalMethodInSubClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
+		MethodDeclaration originalMethodInSubClass = RefactoringHelper.getMethodDeclarationByLine(
 				removeParameterSubClass.getLineOfMethodWithUnusedParameter(0, 0, 0), cuOriginalFileOfSubClass);
-		MethodDeclaration originalMethodInSiblingClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
+		MethodDeclaration originalMethodInSiblingClass = RefactoringHelper.getMethodDeclarationByLine(
 				removeParameterSiblingClass.getLineOfMethodWithUnusedParameter(0, 0, 0), cuOriginalFileOfSiblingClass);
-		MethodDeclaration originalCallerMethodInSiblingClass = RefactoringHelper.getMethodByLineNumberOfMethodName(
+		MethodDeclaration originalCallerMethodInSiblingClass = RefactoringHelper.getMethodDeclarationByLine(
 				removeParameterSiblingClass.getLineNumberOfCaller(), cuOriginalFileOfSiblingClass);
 		MethodDeclaration originalMethodWithTargetMethodSignatureInInnerClass = RefactoringHelper
-				.getMethodByLineNumberOfMethodName(
+				.getMethodDeclarationByLine(
 						removeParameterInnerTestClass.getLineOfMethodWithUnusedParameter(0, 0, 0),
 						cuOriginalFileWithCodeSmell);
 

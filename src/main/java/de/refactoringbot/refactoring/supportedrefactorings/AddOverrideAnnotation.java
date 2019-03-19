@@ -35,7 +35,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
 
 		MethodDeclaration methodDeclarationToModify = RefactoringHelper
-				.getMethodByLineNumberOfMethodName(issue.getLine(), compilationUnit);
+				.getMethodDeclarationByLine(issue.getLine(), compilationUnit);
 		if (methodDeclarationToModify == null) {
 			throw new BotRefactoringException("Could not find a method declaration at specified line!");
 		}
