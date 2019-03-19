@@ -31,7 +31,7 @@ public class RefactoringHelperTest {
 		int lineNumber = TestDataClassRefactoringHelper.getLineOfMethod(true);
 
 		// act
-		MethodDeclaration method = RefactoringHelper.getMethodDeclarationByLine(lineNumber, cu);
+		MethodDeclaration method = RefactoringHelper.getMethodDeclarationByLineNumber(lineNumber, cu);
 
 		// assert
 		assertThat(method).isNotNull();

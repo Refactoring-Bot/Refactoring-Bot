@@ -90,7 +90,7 @@ public class RefactoringHelper {
 	 * @param cu
 	 * @return MethodDeclaration or null if none found
 	 */
-	public static MethodDeclaration getMethodDeclarationByLine(int lineNumber, CompilationUnit cu) {
+	public static MethodDeclaration getMethodDeclarationByLineNumber(int lineNumber, CompilationUnit cu) {
 		MethodDeclaration result = null;
 		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
 		for (MethodDeclaration method : methods) {
