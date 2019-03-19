@@ -145,7 +145,7 @@ public class RefactoringHelper {
 	 * @throws IllegalStateException
 	 *             if no parent node is present
 	 */
-	public static ClassOrInterfaceDeclaration getMethodParentNodeAsClassOrInterface(
+	public static ClassOrInterfaceDeclaration getClassOrInterfaceOfMethod(
 			MethodDeclaration methodDeclaration) {
 		Optional<Node> parentNode = methodDeclaration.getParentNode();
 		if (parentNode.isPresent()) {

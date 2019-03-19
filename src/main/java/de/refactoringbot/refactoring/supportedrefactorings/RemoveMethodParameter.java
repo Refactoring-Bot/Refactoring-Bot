@@ -61,7 +61,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		String parameterName = issue.getRefactorString();
 		String issueFilePath = gitConfig.getRepoFolder() + File.separator + issue.getFilePath();
 		MethodDeclaration targetMethod = findAndValidateTargetMethod(issue, issueFilePath, parameterName);
-		ClassOrInterfaceDeclaration targetClass = RefactoringHelper.getMethodParentNodeAsClassOrInterface(targetMethod);
+		ClassOrInterfaceDeclaration targetClass = RefactoringHelper.getClassOrInterfaceOfMethod(targetMethod);
 		Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = RefactoringHelper
 				.findQualifiedNamesOfRelatedClassesAndInterfaces(issue.getAllJavaFiles(), targetClass);
 

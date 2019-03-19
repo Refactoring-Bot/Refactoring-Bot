@@ -55,7 +55,7 @@ public class RenameMethod implements RefactoringImpl {
 		String newMethodName = issue.getRefactorString();
 		String issueFilePath = gitConfig.getRepoFolder() + File.separator + issue.getFilePath();
 		MethodDeclaration targetMethod = findAndValidateTargetMethod(issue, issueFilePath, newMethodName);
-		ClassOrInterfaceDeclaration targetClass = RefactoringHelper.getMethodParentNodeAsClassOrInterface(targetMethod);
+		ClassOrInterfaceDeclaration targetClass = RefactoringHelper.getClassOrInterfaceOfMethod(targetMethod);
 		Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = RefactoringHelper
 				.findQualifiedNamesOfRelatedClassesAndInterfaces(issue.getAllJavaFiles(), targetClass);
 
