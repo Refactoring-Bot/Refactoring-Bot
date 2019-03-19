@@ -139,70 +139,66 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		CompilationUnit cuRefactoredFileOfSiblingClass = JavaParser.parse(fileOfSiblingClass);
 
 		// assert that target method has been renamed
-		MethodDeclaration renamedMethodDeclaration = RefactoringHelper
-				.getMethodDeclarationByLineNumber(lineNumberOfMethodToBeRenamed, cuRefactoredFileWithCodeSmell);
-		assertThat(renamedMethodDeclaration).isNotNull();
-		assertThat(renamedMethodDeclaration.getNameAsString()).isEqualTo(newMethodName);
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileWithCodeSmell, lineNumberOfMethodToBeRenamed,
+				newMethodName);
 
 		// assert that dummy method with same name is unchanged
 		int lineNumberOfDummyMethod = renameMethodTestClass.getLineOfMethodToBeRenamed();
-		MethodDeclaration dummyMethod = RefactoringHelper.getMethodDeclarationByLineNumber(lineNumberOfDummyMethod,
-				cuRefactoredFileWithCodeSmell);
-		assertThat(dummyMethod).isNotNull();
-		assertThat(dummyMethod.getNameAsString()).isEqualTo(originalDummyMethod.getNameAsString());
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileWithCodeSmell, lineNumberOfDummyMethod,
+				originalDummyMethod.getNameAsString());
 
 		// assert that inner class method with same name as target method is unchanged
 		int lineNumberOfMethodWithTargetMethodSignatureInInnerClass = renameMethodInnerTestClass
 				.getLineOfMethodToBeRenamed(true);
-		MethodDeclaration methodWithTargetMethodSignatureInInnerClass = RefactoringHelper
-				.getMethodDeclarationByLineNumber(lineNumberOfMethodWithTargetMethodSignatureInInnerClass,
-						cuRefactoredFileWithCodeSmell);
-		assertThat(methodWithTargetMethodSignatureInInnerClass).isNotNull();
-		assertThat(methodWithTargetMethodSignatureInInnerClass.getNameAsString())
-				.isEqualTo(originalMethodWithTargetMethodSignatureInInnerClass.getNameAsString());
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileWithCodeSmell,
+				lineNumberOfMethodWithTargetMethodSignatureInInnerClass,
+				originalMethodWithTargetMethodSignatureInInnerClass.getNameAsString());
 
 		// assert that caller method in same file has been refactored
 		int lineNumberOfCallerMethod = renameMethodTestClass.getLineOfMethodThatCallsMethodToBeRenamed();
-		MethodDeclaration methodWithTargetMethodCalls = RefactoringHelper
-				.getMethodDeclarationByLineNumber(lineNumberOfCallerMethod, cuRefactoredFileWithCodeSmell);
-		assertThat(methodWithTargetMethodCalls).isNotNull();
-		assertThat(countNumberOfMethodCalls(methodWithTargetMethodCalls, newMethodName)).isEqualTo(1);
+		assertThatNumberOfMethodCallsIsEqualToExpected(cuRefactoredFileWithCodeSmell, lineNumberOfCallerMethod,
+				newMethodName, 1);
 
 		// assert that caller method in different file has been refactored
 		int lineNumberOfCallerInDifferentFile = renameMethodCallerTestClass.getLineOfCallerMethodInDifferentFile();
-		MethodDeclaration methodInDifferentFileWithTargetMethodCalls = RefactoringHelper
-				.getMethodDeclarationByLineNumber(lineNumberOfCallerInDifferentFile, cuRefactoredFileWithCallerMethod);
-		assertThat(methodInDifferentFileWithTargetMethodCalls).isNotNull();
-		assertThat(countNumberOfMethodCalls(methodInDifferentFileWithTargetMethodCalls, newMethodName)).isEqualTo(1);
+		assertThatNumberOfMethodCallsIsEqualToExpected(cuRefactoredFileWithCallerMethod,
+				lineNumberOfCallerInDifferentFile, newMethodName, 1);
 
 		// assert that target's super class has been refactored
 		int lineNumberOfMethodInSuperClass = renameMethodSuperClass.getLineOfMethodToBeRenamed(true);
-		MethodDeclaration methodInSuperClass = RefactoringHelper
-				.getMethodDeclarationByLineNumber(lineNumberOfMethodInSuperClass, cuRefactoredFileOfSuperClass);
-		assertThat(methodInSuperClass).isNotNull();
-		assertThat(methodInSuperClass.getNameAsString()).isEqualTo(newMethodName);
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSuperClass, lineNumberOfMethodInSuperClass,
+				newMethodName);
 
 		// assert that target's sub class has been refactored
 		int lineNumberOfMethodInSubClass = renameMethodSubClass.getLineOfMethodToBeRenamed(true);
-		MethodDeclaration methodInSubClass = RefactoringHelper
-				.getMethodDeclarationByLineNumber(lineNumberOfMethodInSubClass, cuRefactoredFileOfSubClass);
-		assertThat(methodInSubClass).isNotNull();
-		assertThat(methodInSubClass.getNameAsString()).isEqualTo(newMethodName);
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSubClass, lineNumberOfMethodInSubClass, newMethodName);
 
 		// assert that target's sibling has been refactored
 		int lineNumberOfMethodInSiblingClass = renameMethodSiblingClass.getLineOfMethodToBeRenamed(true);
-		MethodDeclaration methodInSiblingClass = RefactoringHelper
-				.getMethodDeclarationByLineNumber(lineNumberOfMethodInSiblingClass, cuRefactoredFileOfSiblingClass);
-		assertThat(methodInSiblingClass).isNotNull();
-		assertThat(methodInSiblingClass.getNameAsString()).isEqualTo(newMethodName);
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSiblingClass, lineNumberOfMethodInSiblingClass,
+				newMethodName);
 
 		// assert that caller method in target's sibling class has been refactored
 		int lineNumberOfCallerMethodInSiblingClass = renameMethodSiblingClass.getLineNumberOfCallerInSiblingClass();
+		assertThatNumberOfMethodCallsIsEqualToExpected(cuRefactoredFileOfSiblingClass,
+				lineNumberOfCallerMethodInSiblingClass, newMethodName, 1);
+	}
+
+	private void assertThatMethodNameIsEqualToExpected(CompilationUnit cu, int lineNumberOfMethodUnderTest,
+			String expectedMethodName) {
+		MethodDeclaration methodUnderTest = RefactoringHelper
+				.getMethodDeclarationByLineNumber(lineNumberOfMethodUnderTest, cu);
+		assertThat(methodUnderTest).isNotNull();
+		assertThat(methodUnderTest.getNameAsString()).isEqualTo(expectedMethodName);
+	}
+
+	private void assertThatNumberOfMethodCallsIsEqualToExpected(CompilationUnit cu, int lineNumberOfMethodUnderTest,
+			String calledMethodName, int expectedNumberOfMethodCalls) {
 		MethodDeclaration methodInSiblingClassWithSiblingMethodCall = RefactoringHelper
-				.getMethodDeclarationByLineNumber(lineNumberOfCallerMethodInSiblingClass,
-						cuRefactoredFileOfSiblingClass);
+				.getMethodDeclarationByLineNumber(lineNumberOfMethodUnderTest, cu);
 		assertThat(methodInSiblingClassWithSiblingMethodCall).isNotNull();
-		assertThat(countNumberOfMethodCalls(methodInSiblingClassWithSiblingMethodCall, newMethodName)).isEqualTo(1);
+		assertThat(countNumberOfMethodCalls(methodInSiblingClassWithSiblingMethodCall, calledMethodName))
+				.isEqualTo(expectedNumberOfMethodCalls);
 	}
 
 	/**
