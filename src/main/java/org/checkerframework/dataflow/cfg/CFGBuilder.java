@@ -2053,6 +2053,9 @@ public class CFGBuilder {
          * @return a TypeMirror representing the binary numeric promoted type
          */
         protected TypeMirror binaryPromotedType(TypeMirror left, TypeMirror right) {
+            if (right == null || left == null) {
+                return Type.noType;
+            }
             if (TypesUtils.isBoxedPrimitive(left)) {
                 left = types.unboxedType(left);
             }
@@ -2856,7 +2859,7 @@ public class CFGBuilder {
                         TypeMirror leftType = TreeUtils.typeOf(tree.getVariable());
                         TypeMirror rightType = TreeUtils.typeOf(tree.getExpression());
 
-                        if (TypesUtils.isString(leftType) || TypesUtils.isString(rightType)) {
+                        if ((leftType != null && TypesUtils.isString(leftType)) || (rightType != null && TypesUtils.isString(rightType))) {
                             assert (kind == Tree.Kind.PLUS_ASSIGNMENT);
                             Node targetRHS = stringConversion(targetLHS);
                             value = stringConversion(value);

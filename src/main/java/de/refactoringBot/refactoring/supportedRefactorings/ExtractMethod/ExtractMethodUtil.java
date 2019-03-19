@@ -231,7 +231,7 @@ public class ExtractMethodUtil {
     }
 
     private static StatementGraphNode addNextBlock(StatementGraphNode lastNode, StatementGraphNode parentNode, Block block, Map<Long, SortedSet<Long>> blockMapping, Block successor) {
-        boolean exitNode = (successor.getType().equals(Block.BlockType.SPECIAL_BLOCK) && ((SpecialBlock) successor).getSpecialType().equals(SpecialBlock.SpecialBlockType.EXIT));
+        boolean exitNode = (successor == null) || (successor.getType().equals(Block.BlockType.SPECIAL_BLOCK) && ((SpecialBlock) successor).getSpecialType().equals(SpecialBlock.SpecialBlockType.EXIT));
         Set<Long> lineNumbers = blockMapping.get(block.getId());
         for (Long lineNumber : lineNumbers) {
             if (lastNode != null && lineNumber.equals(lastNode.linenumber)) {
@@ -527,7 +527,7 @@ public class ExtractMethodUtil {
     }
 
     private static void mapVariable(Map<Long, LineMapVariable> variableMap, Block block, LocalVariable variable, Long lastLine, LineMap lineMap, Set<Long> visitedBlocks) {
-        if (visitedBlocks.contains(block.getId())) {
+        if (block == null || visitedBlocks.contains(block.getId())) {
             return;
         }
         visitedBlocks.add(block.getId());
@@ -798,7 +798,7 @@ public class ExtractMethodUtil {
                     break;
             }
             for (Block successor : successors) {
-                if (successor.getType().equals(Block.BlockType.SPECIAL_BLOCK)) {
+                if (successor == null || successor.getType().equals(Block.BlockType.SPECIAL_BLOCK)) {
                     exitSuccessor++;
                 } else {
                     if (!ids.contains(successor.getId())) {
