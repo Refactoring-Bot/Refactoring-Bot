@@ -24,9 +24,14 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.supportedrefactorings.RenameMethod;
+import de.refactoringbot.resources.renamemethod.TestDataClassImplementingEmptyInterface;
+import de.refactoringbot.resources.renamemethod.TestDataClassImplementingEmptyInterface.TestDataInnerClassImplementingEmptyInterface;
 import de.refactoringbot.resources.renamemethod.TestDataClassRenameMethod;
 import de.refactoringbot.resources.renamemethod.TestDataClassRenameMethod.TestDataInnerClassRenameMethod;
+import de.refactoringbot.resources.renamemethod.TestDataClassRenameMethod.TestDataInnerClassWithInterfaceImpl;
 import de.refactoringbot.resources.renamemethod.TestDataClassWithCallOfTargetMethod;
+import de.refactoringbot.resources.renamemethod.TestDataEmptyInterface;
+import de.refactoringbot.resources.renamemethod.TestDataInterfaceRenameMethod;
 import de.refactoringbot.resources.renamemethod.TestDataSiblingClassRenameMethod;
 import de.refactoringbot.resources.renamemethod.TestDataSubClassRenameMethod;
 import de.refactoringbot.resources.renamemethod.TestDataSuperClassRenameMethod;
@@ -41,12 +46,18 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 	private TestDataSuperClassRenameMethod renameMethodSuperClass = new TestDataSuperClassRenameMethod();
 	private TestDataSubClassRenameMethod renameMethodSubClass = new TestDataSubClassRenameMethod();
 	private TestDataSiblingClassRenameMethod renameMethodSiblingClass = new TestDataSiblingClassRenameMethod();
+	private TestDataInnerClassWithInterfaceImpl renameMethodInnerClassWithInterfaceImpl = renameMethodTestClass.new TestDataInnerClassWithInterfaceImpl();
+	private TestDataClassImplementingEmptyInterface renameMethodTestClassWithEmptyInterfaceImpl = new TestDataClassImplementingEmptyInterface();
+	private TestDataInnerClassImplementingEmptyInterface renameMethodInnerClassWithEmptyInterfaceImpl = renameMethodTestClassWithEmptyInterfaceImpl.new TestDataInnerClassImplementingEmptyInterface();
 
 	private File fileOfTestClass;
 	private File fileOfSuperClass;
 	private File fileOfSubClass;
 	private File fileWithCallerMethod;
 	private File fileOfSiblingClass;
+	private File fileOfInterface;
+	private File fileOfEmptyInterface;
+	private File fileOfTestClassImplementingEmptyInterface;
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
@@ -58,6 +69,10 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		fileOfSubClass = createTempCopyOfTestResourcesFile(TestDataSubClassRenameMethod.class);
 		fileWithCallerMethod = createTempCopyOfTestResourcesFile(TestDataClassWithCallOfTargetMethod.class);
 		fileOfSiblingClass = createTempCopyOfTestResourcesFile(TestDataSiblingClassRenameMethod.class);
+		fileOfInterface = createTempCopyOfTestResourcesFile(TestDataInterfaceRenameMethod.class);
+		fileOfEmptyInterface = createTempCopyOfTestResourcesFile(TestDataEmptyInterface.class);
+		fileOfTestClassImplementingEmptyInterface = createTempCopyOfTestResourcesFile(
+				TestDataClassImplementingEmptyInterface.class);
 	}
 
 	@Test
@@ -186,7 +201,135 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 	}
 
 	@Test
-	public void testRenameMethodUnchangedMethodName() throws Exception {
+	public void testInterfaceRefactored() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClass);
+		filesToConsider.add(fileOfInterface);
+		int lineNumberOfMethodToBeRenamed = renameMethodTestClass.getLineOfInterfaceMethod();
+		String newMethodName = "newMethodName";
+
+		// act
+		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
+
+		// assert that method in interface has been refactored
+		CompilationUnit cuRefactoredFileOfInterface = JavaParser.parse(fileOfInterface);
+		List<MethodDeclaration> methodDeclarations = cuRefactoredFileOfInterface.findAll(MethodDeclaration.class);
+		assertThat(methodDeclarations).size().isEqualTo(1);
+		assertThat(methodDeclarations.get(0).getNameAsString()).isEqualTo(newMethodName);
+	}
+
+	@Test
+	public void testInterfaceMethodInSuperClassRefactored() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClass);
+		filesToConsider.add(fileOfInterface);
+		filesToConsider.add(fileOfSuperClass);
+		int lineNumberOfMethodToBeRenamed = renameMethodTestClass.getLineOfInterfaceMethod();
+		String newMethodName = "newMethodName";
+
+		// act
+		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
+
+		// assert that method in super class has been refactored
+		CompilationUnit cuRefactoredFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
+		int lineNumberOfMethodInSuperClass = renameMethodSuperClass.getLineOfInterfaceMethod();
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSuperClass, lineNumberOfMethodInSuperClass,
+				newMethodName);
+	}
+
+	@Test
+	public void testInnerClassWithInterfaceRefactoring() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClass);
+		filesToConsider.add(fileOfInterface);
+		filesToConsider.add(fileOfSuperClass);
+		int lineNumberOfMethodToBeRenamed = renameMethodInnerClassWithInterfaceImpl.getLineOfInterfaceMethod();
+		String newMethodName = "newMethodName";
+
+		// act
+		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
+
+		// assert
+		CompilationUnit cuRefactoredFileOfTestClass = JavaParser.parse(fileOfTestClass);
+
+		// assert that method in inner class has been refactored
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfTestClass, lineNumberOfMethodToBeRenamed,
+				newMethodName);
+
+		// assert that method in outer class has been refactored
+		int lineNumberOfMethodInOuterClass = renameMethodTestClass.getLineOfInterfaceMethod();
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfTestClass, lineNumberOfMethodInOuterClass,
+				newMethodName);
+
+		// assert that method in interface has been refactored
+		CompilationUnit cuRefactoredFileOfInterface = JavaParser.parse(fileOfInterface);
+		List<MethodDeclaration> methodDeclarations = cuRefactoredFileOfInterface.findAll(MethodDeclaration.class);
+		assertThat(methodDeclarations).size().isEqualTo(1);
+		assertThat(methodDeclarations.get(0).getNameAsString()).isEqualTo(newMethodName);
+
+		// assert that super class of outer class has been refactored
+		CompilationUnit cuRefactoredFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
+		int lineNumberOfMethodInSuperClass = renameMethodSuperClass.getLineOfInterfaceMethod();
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSuperClass, lineNumberOfMethodInSuperClass,
+				newMethodName);
+	}
+
+	@Test
+	public void testTwoClassesWithSameMethodSigAndEmptyInterface() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClassImplementingEmptyInterface);
+		filesToConsider.add(fileOfEmptyInterface);
+		int lineNumberOfMethodToBeRenamed = renameMethodTestClassWithEmptyInterfaceImpl.getLineOfMethodToBeRenamed();
+		String newMethodName = "newMethodName";
+
+		CompilationUnit cuOriginalFileOfTestClassImplementingEmptyInterface = JavaParser
+				.parse(fileOfTestClassImplementingEmptyInterface);
+		MethodDeclaration originalMethodInInnerClass = RefactoringHelper.getMethodDeclarationByLineNumber(
+				renameMethodTestClassWithEmptyInterfaceImpl.getLineOfMethodToBeRenamed(),
+				cuOriginalFileOfTestClassImplementingEmptyInterface);
+
+		// act
+		performRenameMethod(filesToConsider, fileOfTestClassImplementingEmptyInterface, lineNumberOfMethodToBeRenamed,
+				newMethodName);
+
+		// assert
+		CompilationUnit cuRefactoredFileOfTestClassImplementingEmptyInterface = JavaParser
+				.parse(fileOfTestClassImplementingEmptyInterface);
+
+		// assert that method in outer class has been refactored
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfTestClassImplementingEmptyInterface,
+				lineNumberOfMethodToBeRenamed, newMethodName);
+
+		// assert that inner class method remained unchanged
+		int lineNumberOfInnerClassMethod = renameMethodInnerClassWithEmptyInterfaceImpl.getLineOfMethodToBeRenamed();
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfTestClassImplementingEmptyInterface,
+				lineNumberOfInnerClassMethod, originalMethodInInnerClass.getNameAsString());
+	}
+
+	@Test
+	public void testRenamingOfMethodPlacedAfterInnerClass() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClass);
+		int lineNumberOfMethodToBeRenamed = renameMethodTestClass.getLineOfMethodPlacedInAndAfterInnerClass();
+		String newMethodName = "newMethodName";
+
+		// act
+		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
+
+		// assert that method in outer class (the method for which the actual renaming
+		// was intended) has been refactored
+		CompilationUnit cuRefactoredFileOfTestClass = JavaParser.parse(fileOfTestClass);
+		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfTestClass, lineNumberOfMethodToBeRenamed,
+				newMethodName);
+	}
+
+	@Test
+	public void testUnchangedMethodName() throws Exception {
 		exception.expect(BotRefactoringException.class);
 
 		// arrange
@@ -199,10 +342,26 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 	}
 
+	@Test
+	public void testSignatureAlreadyExists() throws Exception {
+		exception.expect(BotRefactoringException.class);
+
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClass);
+		int lineNumberOfMethodToBeRenamed = renameMethodTestClass.getLineOfMethodToBeRenamed();
+		String newMethodName = "getLineOfMethodThatCallsMethodToBeRenamed";
+
+		// act
+		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
+	}
+
 	/**
-	 * Tries to rename the method in the given file and line to the given new method name.
+	 * Tries to rename the method in the given file and line to the given new method
+	 * name.
 	 * 
-	 * @param filesToConsider All files that make up the repository for the specific test
+	 * @param filesToConsider
+	 *            All files that make up the repository for the specific test
 	 * @param targetFile
 	 * @param lineNumberOfMethodToBeRenamed
 	 * @param newMethodName
@@ -230,7 +389,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		String outputMessage = refactoring.performRefactoring(issue, gitConfig);
 		logger.info(outputMessage);
 	}
-	
+
 	/**
 	 * @param cu
 	 * @param lineNumberOfMethodUnderTest

@@ -1,6 +1,6 @@
 package de.refactoringbot.resources.renamemethod;
 
-public class TestDataClassRenameMethod extends TestDataSuperClassRenameMethod {
+public class TestDataClassRenameMethod extends TestDataSuperClassRenameMethod implements TestDataInterfaceRenameMethod {
 
 	/**
 	 * Method to be renamed
@@ -22,6 +22,11 @@ public class TestDataClassRenameMethod extends TestDataSuperClassRenameMethod {
 		return 21;
 	}
 
+	@Override
+	public int getLineOfInterfaceMethod() {
+		return 26;
+	}
+
 	/**
 	 * Refactoring should only change the first line in this method
 	 * 
@@ -30,23 +35,38 @@ public class TestDataClassRenameMethod extends TestDataSuperClassRenameMethod {
 	public int getLineOfMethodThatCallsMethodToBeRenamed() {
 		getLineOfMethodToBeRenamed(true);
 		getLineOfMethodToBeRenamed();
-		return 30;
+		return 35;
 	}
 
 	public class TestDataInnerClassRenameMethod {
 		public int getLineNumberOfCallerInInnerClass() {
 			new TestDataClassRenameMethod().getLineOfMethodToBeRenamed(true);
-			return 37;
+			return 42;
 		}
 
 		public int getLineNumberOfCallerThatShouldRemainUnchanged() {
 			getLineOfMethodToBeRenamed(true);
-			return 42;
+			return 47;
 		}
 
 		public int getLineOfMethodToBeRenamed(boolean dummyParm) {
-			return 47;
+			return 52;
 		}
+		
+		public int getLineOfMethodPlacedInAndAfterInnerClass() {
+			return 56;
+		}
+	}
+
+	public class TestDataInnerClassWithInterfaceImpl implements TestDataInterfaceRenameMethod {
+		@Override
+		public int getLineOfInterfaceMethod() {
+			return 63;
+		}
+	}
+	
+	public int getLineOfMethodPlacedInAndAfterInnerClass() {
+		return 68;
 	}
 
 }

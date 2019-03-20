@@ -6,4 +6,7 @@ public class TestDataSuperClassRenameMethod {
 		return 5;
 	}
 
+	public int getLineOfInterfaceMethod() {
+		return 9;
+	}
 }
