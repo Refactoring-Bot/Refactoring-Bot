@@ -591,8 +591,9 @@ public class CFGBuilder {
             // declared types, so they do not overlap on any non-null value.
 
             while (!(thrown instanceof DeclaredType)) {
-                assert thrown instanceof TypeVariable
-                        : "thrown type must be a variable or a declared type";
+                if (!(thrown instanceof TypeVariable)) {
+                    return false;
+                }
                 thrown = ((TypeVariable) thrown).getUpperBound();
             }
             DeclaredType declaredThrown = (DeclaredType) thrown;
@@ -612,8 +613,9 @@ public class CFGBuilder {
                         canApply = true;
                     }
                 } else {
-                    assert caught instanceof UnionType
-                            : "caught type must be a union or a declared type";
+                    if (!(caught instanceof UnionType)) {
+                        return false;
+                    }
                     UnionType caughtUnion = (UnionType) caught;
                     for (TypeMirror alternative : caughtUnion.getAlternatives()) {
                         assert alternative instanceof DeclaredType
@@ -877,7 +879,6 @@ public class CFGBuilder {
 
                 if (cur.getType() == BlockType.CONDITIONAL_BLOCK) {
                     ConditionalBlockImpl cb = (ConditionalBlockImpl) cur;
-                    assert cb.getPredecessors().size() == 1;
                     if (cb.getThenSuccessor() == cb.getElseSuccessor()) {
                         BlockImpl pred = cb.getPredecessors().iterator().next();
                         PredecessorHolder predecessorHolder = getPredecessorHolder(pred, cb);
@@ -2077,7 +2078,7 @@ public class CFGBuilder {
             // For binary numeric promotion, see JLS 5.6.2
             node = unbox(node);
 
-            if (!types.isSameType(node.getType(), exprType)) {
+            if (node != null && !types.isSameType(node.getType(), exprType)) {
                 Node widened = new WideningConversionNode(node.getTree(), node, exprType);
                 addToConvertedLookupMap(widened);
                 insertNodeAfter(widened, node);
@@ -3073,7 +3074,7 @@ public class CFGBuilder {
                         TypeMirror leftType = TreeUtils.typeOf(leftTree);
                         TypeMirror rightType = TreeUtils.typeOf(rightTree);
 
-                        if (TypesUtils.isString(leftType) || TypesUtils.isString(rightType)) {
+                        if ((leftType != null && TypesUtils.isString(leftType)) || (rightType != null && TypesUtils.isString(rightType))) {
                             assert (kind == Tree.Kind.PLUS);
                             Node left = stringConversion(scan(leftTree, p));
                             Node right = stringConversion(scan(rightTree, p));
@@ -3122,12 +3123,12 @@ public class CFGBuilder {
                     {
                         // see JLS 15.20.1
                         TypeMirror leftType = TreeUtils.typeOf(leftTree);
-                        if (TypesUtils.isBoxedPrimitive(leftType)) {
+                        if (leftType != null && TypesUtils.isBoxedPrimitive(leftType)) {
                             leftType = types.unboxedType(leftType);
                         }
 
                         TypeMirror rightType = TreeUtils.typeOf(rightTree);
-                        if (TypesUtils.isBoxedPrimitive(rightType)) {
+                        if (rightType != null && TypesUtils.isBoxedPrimitive(rightType)) {
                             rightType = types.unboxedType(rightType);
                         }
 
@@ -4267,6 +4268,9 @@ public class CFGBuilder {
         @Override
         public Node visitThrow(ThrowTree tree, Void p) {
             Node expression = scan(tree.getExpression(), p);
+            if (expression == null) {
+                return null;
+            }
             TypeMirror exception = expression.getType();
             ThrowNode throwsNode = new ThrowNode(tree, expression, env.getTypeUtils());
             NodeWithExceptionsHolder exNode = extendWithNodeWithException(throwsNode, exception);

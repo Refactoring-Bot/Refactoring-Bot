@@ -255,7 +255,7 @@ public class ExtractMethodUtil {
 
         long lastID = orderedBlocks.get(orderedBlocks.size() - 1).getId();
         Map<Long, SortedSet<Long>> blockMapping = ExtractMethodUtil.reverseLineToBlockMapping(lineMapping);
-        return createStatementGraphNodeRecursive(orderedBlocks, 1, lastID, methodHead, blockMapping, lineMapping);
+        return createStatementGraphNodeRecursive(orderedBlocks, 1, lastID, methodHead, blockMapping, lineMapping, new HashSet<>());
     }
 
     private static List<Block> cleanUpOrderedBlocks(List<Block> orderedBlocks) {
@@ -265,18 +265,20 @@ public class ExtractMethodUtil {
             int index = orderedBlocks.lastIndexOf(block);
             if (index == i) {
                 cleanedUp.add(block);
-            } else {
-                System.out.println("penis");
             }
         }
         return cleanedUp;
     }
 
-    private static StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, SortedSet<Long>> blockMapping, Map<Long, LineMapBlock> lineMapping) {
+    private static StatementGraphNode createStatementGraphNodeRecursive(List<Block> orderedBlocks, int index, long exitID, StatementGraphNode parentNode, Map<Long, SortedSet<Long>> blockMapping, Map<Long, LineMapBlock> lineMapping, Set<Integer> visitedIds) {
         StatementGraphNode lastNode = parentNode;
+        if (visitedIds.contains(index)) {
+            return parentNode;
+        }
         Map<Long, Block> orderedBlocksMap = ExtractMethodUtil.mapBlocksToID(orderedBlocks);
         while (orderedBlocks.get(index).getId() != exitID) {
             Block nextBlock = orderedBlocks.get(index);
+            visitedIds.add(index);
             System.out.println("adding block with index " + index + " id: " + nextBlock.getId());
             switch (nextBlock.getType()) {
                 case SPECIAL_BLOCK:
@@ -291,7 +293,7 @@ public class ExtractMethodUtil {
                     long newExitID = (conditionalBlock.getThenSuccessor().getId() == nextID) ? conditionalBlock.getElseSuccessor().getId() : nextID;
                     lastNode.type = StatementGraphNode.StatementGraphNodeType.IFNODE;
                     lastNode.isNestingNode = true;
-                    ExtractMethodUtil.createStatementGraphNodeRecursive(orderedBlocks, ++index, newExitID, lastNode, blockMapping, lineMapping);
+                    ExtractMethodUtil.createStatementGraphNodeRecursive(orderedBlocks, ++index, newExitID, lastNode, blockMapping, lineMapping, visitedIds);
                     index = orderedBlocks.indexOf(orderedBlocksMap.get(newExitID));
                     // travel else successor
                     if (realSuccessor != null && newExitID != realSuccessor) {
@@ -301,7 +303,7 @@ public class ExtractMethodUtil {
                         elseNode.cfgBlocks = lastNode.cfgBlocks;
                         elseNode.type = StatementGraphNode.StatementGraphNodeType.ELSENODE;
                         elseNode.isNestingNode = true;
-                        parentNode.children.add(ExtractMethodUtil.createStatementGraphNodeRecursive(orderedBlocks, index, realSuccessor, elseNode, blockMapping, lineMapping));
+                        parentNode.children.add(ExtractMethodUtil.createStatementGraphNodeRecursive(orderedBlocks, index, realSuccessor, elseNode, blockMapping, lineMapping, visitedIds));
                         index = orderedBlocks.indexOf(orderedBlocksMap.get(realSuccessor));
                     }
                     // lower index by one because we increment in the end of the loop and for conditional blocks this is already the next index
@@ -440,14 +442,19 @@ public class ExtractMethodUtil {
                 List<StatementGraphNode> catchStartNodes = new ArrayList<>();
                 for (LineRange catchRange : catchRanges) {
                     StatementGraphNode catchStartNode = ExtractMethodUtil.findNodeForLine(graph, catchRange.from);
+                    if (catchStartNode == null) {
+                        continue;
+                    }
                     catchStartNode.type = CATCHNODE;
                     catchStartNode.isNestingNode = true;
                     catchStartNodes.add(catchStartNode);
                 }
                 Long endLineNumber = (finalBLock != null) ? finalRange.to : catchRanges.get(catchRanges.size() - 1).to;
                 StatementGraphNode finallyStartNode = ExtractMethodUtil.findNodeForLine(graph, finalRange.from);
-                finallyStartNode.type = FINALLYNODE;
-                finallyStartNode.isNestingNode = true;
+                if (finallyStartNode != null) {
+                    finallyStartNode.type = FINALLYNODE;
+                    finallyStartNode.isNestingNode = true;
+                }
 
                 for (Long lineNumber = tryRange.from; lineNumber <= endLineNumber; lineNumber++) {
                     if (lineNumber > tryRange.from && lineNumber < catchRanges.get(0).from) {
