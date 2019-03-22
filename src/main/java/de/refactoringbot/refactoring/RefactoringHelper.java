@@ -178,28 +178,11 @@ public class RefactoringHelper {
 	 */
 	public static Set<String> findQualifiedNamesOfRelatedClassesAndInterfaces(List<String> allJavaFiles,
 			ClassOrInterfaceDeclaration targetClass) throws BotRefactoringException, FileNotFoundException {
-		Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass = findAllAncestors(targetClass);
-
 		Set<ResolvedReferenceTypeDeclaration> relatedClassesAndInterfaces = new HashSet<>();
 		relatedClassesAndInterfaces.add(targetClass.resolve());
-		relatedClassesAndInterfaces.addAll(ancestorsOfTargetClass);
 
-		for (String file : allJavaFiles) {
-			List<ClassOrInterfaceDeclaration> classesOrInterfaces = RefactoringHelper
-					.getAllClassesAndInterfacesFromFile(file);
-
-			for (ClassOrInterfaceDeclaration classOrInterface : classesOrInterfaces) {
-				if (relatedClassesAndInterfaces.contains(classOrInterface.resolve())) {
-					continue;
-				}
-				Set<ResolvedReferenceTypeDeclaration> ancestorsOfCurrentClassOrInterface = findAllAncestors(
-						classOrInterface);
-				if (!Collections.disjoint(relatedClassesAndInterfaces, ancestorsOfCurrentClassOrInterface)) {
-					// descendant found
-					relatedClassesAndInterfaces.add(classOrInterface.resolve());
-				}
-			}
-		}
+		addQualifiedNamesToRelatedClassesAndInterfacesRecursively(relatedClassesAndInterfaces, allJavaFiles,
+				targetClass);
 
 		Set<String> result = new HashSet<>();
 		for (ResolvedReferenceTypeDeclaration declaration : relatedClassesAndInterfaces) {
@@ -207,6 +190,32 @@ public class RefactoringHelper {
 		}
 
 		return result;
+	}
+
+	private static void addQualifiedNamesToRelatedClassesAndInterfacesRecursively(
+			Set<ResolvedReferenceTypeDeclaration> relatedClassesAndInterfaces, List<String> allJavaFiles,
+			ClassOrInterfaceDeclaration targetClass) throws FileNotFoundException, BotRefactoringException {
+		Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass = findAllAncestors(targetClass);
+		relatedClassesAndInterfaces.addAll(ancestorsOfTargetClass);
+
+		for (String file : allJavaFiles) {
+			List<ClassOrInterfaceDeclaration> classesOrInterfaces = RefactoringHelper
+					.getAllClassesAndInterfacesFromFile(file);
+
+			for (ClassOrInterfaceDeclaration currentClassOrInterface : classesOrInterfaces) {
+				if (relatedClassesAndInterfaces.contains(currentClassOrInterface.resolve())) {
+					continue;
+				}
+				Set<ResolvedReferenceTypeDeclaration> ancestorsOfCurrentClassOrInterface = findAllAncestors(
+						currentClassOrInterface);
+				if (!Collections.disjoint(relatedClassesAndInterfaces, ancestorsOfCurrentClassOrInterface)) {
+					// descendant found
+					relatedClassesAndInterfaces.add(currentClassOrInterface.resolve());
+					addQualifiedNamesToRelatedClassesAndInterfacesRecursively(relatedClassesAndInterfaces, allJavaFiles,
+							currentClassOrInterface);
+				}
+			}
+		}
 	}
 
 	/**
