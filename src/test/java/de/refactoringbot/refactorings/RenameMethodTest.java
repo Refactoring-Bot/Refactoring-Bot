@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -89,6 +90,11 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		MethodDeclaration originalMethodWithTargetMethodSignatureInInnerClass = RefactoringHelper
 				.getMethodDeclarationByLineNumber(renameMethodInnerTestClass.getLineOfMethodToBeRenamed(true),
 						cuOriginalFileOfTestClass);
+		
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(originalDummyMethod).isNotNull();
+		softAssertions.assertThat(originalMethodWithTargetMethodSignatureInInnerClass).isNotNull();
+		softAssertions.assertAll();
 
 		// act
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
@@ -291,6 +297,8 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		MethodDeclaration originalMethodInInnerClass = RefactoringHelper.getMethodDeclarationByLineNumber(
 				renameMethodTestClassWithEmptyInterfaceImpl.getLineOfMethodToBeRenamed(),
 				cuOriginalFileOfTestClassImplementingEmptyInterface);
+
+		assertThat(originalMethodInInnerClass).isNotNull();
 
 		// act
 		performRenameMethod(filesToConsider, fileOfTestClassImplementingEmptyInterface, lineNumberOfMethodToBeRenamed,
