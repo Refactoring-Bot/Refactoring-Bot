@@ -30,9 +30,14 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.RefactoringHelper;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
+import de.refactoringbot.resources.removeparameter.TestDataClassImplementingEmptyInterface;
+import de.refactoringbot.resources.removeparameter.TestDataClassImplementingEmptyInterface.TestDataInnerClassImplementingEmptyInterface;
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter.TestDataInnerClassRemoveParameter;
+import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter.TestDataInnerClassWithInterfaceImpl;
 import de.refactoringbot.resources.removeparameter.TestDataClassWithCallOfTargetMethod;
+import de.refactoringbot.resources.removeparameter.TestDataEmptyInterface;
+import de.refactoringbot.resources.removeparameter.TestDataInterfaceRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataSiblingClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataSubClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataSuperClassRemoveParameter;
@@ -47,6 +52,9 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 	private static final String CALL_OF_TARGET_METHOD_CLASS_NAME = "TestDataClassWithCallOfTargetMethod";
 	private static final String TARGET_INNER_CLASS_NAME = "TestDataInnerClassRemoveParameter";
 	private static final String TARGET_CLASS_NAME = "TestDataClassRemoveParameter";
+	private static final String TARGET_INNER_CLASS_WITH_INTERFACE_NAME = "TestDataInnerClassWithInterfaceImpl";
+	private static final String CLASS_IMPLEMENTING_EMPTY_INTERFACE = "TestDataClassImplementingEmptyInterface";
+	private static final String INNER_CLASS_IMPLEMENTING_EMPTY_INTERFACE = "TestDataInnerClassImplementingEmptyInterface";
 
 	private TestDataClassRemoveParameter removeParameterTestClass = new TestDataClassRemoveParameter();
 	private TestDataInnerClassRemoveParameter removeParameterInnerTestClass = removeParameterTestClass.new TestDataInnerClassRemoveParameter();
@@ -54,12 +62,18 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 	private TestDataSuperClassRemoveParameter removeParameterSuperClass = new TestDataSuperClassRemoveParameter();
 	private TestDataSubClassRemoveParameter removeParameterSubClass = new TestDataSubClassRemoveParameter();
 	private TestDataSiblingClassRemoveParameter removeParameterSiblingClass = new TestDataSiblingClassRemoveParameter();
+	private TestDataInnerClassWithInterfaceImpl removeParameterInnerClassWithInterfaceImpl = removeParameterTestClass.new TestDataInnerClassWithInterfaceImpl();
+	private TestDataClassImplementingEmptyInterface removeParameterTestClassWithEmptyInterfaceImpl = new TestDataClassImplementingEmptyInterface();
+	private TestDataInnerClassImplementingEmptyInterface removeParameterInnerTestClassWithEmptyInterfaceImpl = removeParameterTestClassWithEmptyInterfaceImpl.new TestDataInnerClassImplementingEmptyInterface();
 
 	private File fileOfTestClass;
 	private File fileOfSuperClass;
 	private File fileOfSubClass;
 	private File fileWithCallerMethod;
 	private File fileOfSiblingClass;
+	private File fileOfInterface;
+	private File fileOfEmptyInterface;
+	private File fileOfTestClassImplementingEmptyInterface;
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
@@ -71,6 +85,10 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		fileOfSubClass = createTempCopyOfTestResourcesFile(TestDataSubClassRemoveParameter.class);
 		fileWithCallerMethod = createTempCopyOfTestResourcesFile(TestDataClassWithCallOfTargetMethod.class);
 		fileOfSiblingClass = createTempCopyOfTestResourcesFile(TestDataSiblingClassRemoveParameter.class);
+		fileOfInterface = createTempCopyOfTestResourcesFile(TestDataInterfaceRemoveParameter.class);
+		fileOfEmptyInterface = createTempCopyOfTestResourcesFile(TestDataEmptyInterface.class);
+		fileOfTestClassImplementingEmptyInterface = createTempCopyOfTestResourcesFile(
+				TestDataClassImplementingEmptyInterface.class);
 	}
 
 	@Test
@@ -277,14 +295,14 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		CompilationUnit cuRefactoredFileOfTestClass = JavaParser.parse(fileOfTestClass);
 		MethodDeclaration refactoredMethod = getMethodByName(TARGET_CLASS_NAME, originalMethod.getNameAsString(),
 				cuRefactoredFileOfTestClass);
-		
+
 		// assert that target's sibling has been refactored
 		String methodInSiblingClassName = originalMethodInSiblingClass.getNameAsString();
 		MethodDeclaration methodInSiblingClass = getMethodByName(SIBLING_CLASS_NAME, methodInSiblingClassName,
 				cuRefactoredFileOfSiblingClass);
 		assertThat(methodInSiblingClass).isNotNull();
 		assertThat(methodInSiblingClass.getParameterByName(parameterName).isPresent()).isFalse();
-		
+
 		// assert that caller method in target's sibling class has been refactored
 		String callerMethodInSiblingClassName = originalCallerMethodInSiblingClass.getNameAsString();
 		MethodDeclaration methodInSiblingClassWithSiblingMethodCall = getMethodByName(SIBLING_CLASS_NAME,
@@ -292,6 +310,189 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		assertThat(methodInSiblingClassWithSiblingMethodCall).isNotNull();
 		assertAllMethodCallsArgumentSizeEqualToRefactoredMethodParameterCount(methodInSiblingClassWithSiblingMethodCall,
 				refactoredMethod);
+	}
+
+	@Test
+	public void testInterfaceRefactored() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClass);
+		filesToConsider.add(fileOfInterface);
+		int lineNumberOfMethodWithParameterToBeRemoved = removeParameterTestClass.getLineOfMethodWithUnusedParameter(0,
+				0, 0);
+		String parameterName = "b";
+
+		// act
+		performRemoveParameter(filesToConsider, fileOfTestClass, lineNumberOfMethodWithParameterToBeRemoved,
+				parameterName);
+
+		// assert that method in interface has been refactored
+		CompilationUnit cuRefactoredFileOfInterface = JavaParser.parse(fileOfInterface);
+		List<MethodDeclaration> methodDeclarations = cuRefactoredFileOfInterface.findAll(MethodDeclaration.class);
+		assertThat(methodDeclarations).size().isEqualTo(1);
+		assertThat(methodDeclarations.get(0).getParameterByName(parameterName).isPresent()).isFalse();
+	}
+
+	@Test
+	public void testInterfaceMethodInSuperClassRefactored() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClass);
+		filesToConsider.add(fileOfSuperClass);
+		filesToConsider.add(fileOfInterface);
+		int lineNumberOfMethodWithParameterToBeRemoved = removeParameterTestClass.getLineOfMethodWithUnusedParameter(0,
+				0, 0);
+		String parameterName = "b";
+
+		CompilationUnit cuOriginalFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
+		MethodDeclaration originalMethodInSuperClass = RefactoringHelper.getMethodDeclarationByLineNumber(
+				removeParameterSuperClass.getLineOfMethodWithUnusedParameter(0, 0, 0), cuOriginalFileOfSuperClass);
+		assertThat(originalMethodInSuperClass).isNotNull();
+
+		// act
+		performRemoveParameter(filesToConsider, fileOfTestClass, lineNumberOfMethodWithParameterToBeRemoved,
+				parameterName);
+
+		// assert that method in super class has been refactored
+		CompilationUnit cuRefactoredFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
+		String methodInSuperClassName = originalMethodInSuperClass.getNameAsString();
+		MethodDeclaration methodInSuperClass = getMethodByName(SUPER_CLASS_NAME, methodInSuperClassName,
+				cuRefactoredFileOfSuperClass);
+		assertThat(methodInSuperClass).isNotNull();
+		assertThat(methodInSuperClass.getParameterByName(parameterName).isPresent()).isFalse();
+	}
+
+	@Test
+	public void testInnerClassWithInterfaceRefactoring() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClass);
+		filesToConsider.add(fileOfInterface);
+		filesToConsider.add(fileOfSuperClass);
+		int lineNumberOfMethodWithParameterToBeRemoved = removeParameterInnerClassWithInterfaceImpl
+				.getLineOfMethodWithUnusedParameter(0, 0, 0);
+		String parameterName = "b";
+
+		CompilationUnit cuOriginalFileOfTestClass = JavaParser.parse(fileOfTestClass);
+		CompilationUnit cuOriginalFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
+		MethodDeclaration originalInnerClassMethod = RefactoringHelper.getMethodDeclarationByLineNumber(
+				removeParameterInnerClassWithInterfaceImpl.getLineOfMethodWithUnusedParameter(0, 0, 0),
+				cuOriginalFileOfTestClass);
+		MethodDeclaration originalOuterClassMethod = RefactoringHelper.getMethodDeclarationByLineNumber(
+				removeParameterTestClass.getLineOfMethodWithUnusedParameter(0, 0, 0), cuOriginalFileOfTestClass);
+		MethodDeclaration originalMethodInSuperClass = RefactoringHelper.getMethodDeclarationByLineNumber(
+				removeParameterSuperClass.getLineOfMethodWithUnusedParameter(0, 0, 0), cuOriginalFileOfSuperClass);
+
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(originalInnerClassMethod).isNotNull();
+		softAssertions.assertThat(originalOuterClassMethod).isNotNull();
+		softAssertions.assertThat(originalMethodInSuperClass).isNotNull();
+		softAssertions.assertAll();
+
+		// act
+		performRemoveParameter(filesToConsider, fileOfTestClass, lineNumberOfMethodWithParameterToBeRemoved,
+				parameterName);
+
+		// assert
+		CompilationUnit cuRefactoredFileOfTestClass = JavaParser.parse(fileOfTestClass);
+
+		// assert that method in inner class has been refactored
+		MethodDeclaration refactoredInnerClassMethod = getMethodByName(TARGET_INNER_CLASS_WITH_INTERFACE_NAME,
+				originalInnerClassMethod.getNameAsString(), cuRefactoredFileOfTestClass);
+		assertThat(refactoredInnerClassMethod).isNotNull();
+		assertThat(refactoredInnerClassMethod.getParameterByName(parameterName).isPresent()).isFalse();
+
+		// assert that method in outer class has been refactored
+		MethodDeclaration refactoredOuterClassMethod = getMethodByName(TARGET_CLASS_NAME,
+				originalOuterClassMethod.getNameAsString(), cuRefactoredFileOfTestClass);
+		assertThat(refactoredOuterClassMethod).isNotNull();
+		assertThat(refactoredOuterClassMethod.getParameterByName(parameterName).isPresent()).isFalse();
+
+		// assert that method in interface has been refactored
+		CompilationUnit cuRefactoredFileOfInterface = JavaParser.parse(fileOfInterface);
+		List<MethodDeclaration> methodDeclarations = cuRefactoredFileOfInterface.findAll(MethodDeclaration.class);
+		assertThat(methodDeclarations).size().isEqualTo(1);
+		assertThat(methodDeclarations.get(0).getParameterByName(parameterName).isPresent()).isFalse();
+
+		// assert that super class of outer class has been refactored
+		CompilationUnit cuRefactoredFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
+		String methodInSuperClassName = originalMethodInSuperClass.getNameAsString();
+		MethodDeclaration methodInSuperClass = getMethodByName(SUPER_CLASS_NAME, methodInSuperClassName,
+				cuRefactoredFileOfSuperClass);
+		assertThat(methodInSuperClass).isNotNull();
+		assertThat(methodInSuperClass.getParameterByName(parameterName).isPresent()).isFalse();
+	}
+
+	@Test
+	public void testTwoClassesWithSameMethodSigAndEmptyInterface() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClassImplementingEmptyInterface);
+		filesToConsider.add(fileOfEmptyInterface);
+		int lineNumberOfMethodWithParameterToBeRemoved = removeParameterTestClassWithEmptyInterfaceImpl
+				.getLineOfMethodWithUnusedParameter(0, 0, 0);
+		String parameterName = "b";
+
+		CompilationUnit cuOriginalFileOfTestClassImplementingEmptyInterface = JavaParser
+				.parse(fileOfTestClassImplementingEmptyInterface);
+		MethodDeclaration originalInnerClassMethod = RefactoringHelper.getMethodDeclarationByLineNumber(
+				removeParameterInnerTestClassWithEmptyInterfaceImpl.getLineOfMethodWithUnusedParameter(0, 0, 0),
+				cuOriginalFileOfTestClassImplementingEmptyInterface);
+		MethodDeclaration originalOuterClassMethod = RefactoringHelper.getMethodDeclarationByLineNumber(
+				removeParameterTestClassWithEmptyInterfaceImpl.getLineOfMethodWithUnusedParameter(0, 0, 0),
+				cuOriginalFileOfTestClassImplementingEmptyInterface);
+
+		SoftAssertions softAssertions = new SoftAssertions();
+		softAssertions.assertThat(originalInnerClassMethod).isNotNull();
+		softAssertions.assertThat(originalOuterClassMethod).isNotNull();
+		softAssertions.assertAll();
+
+		// act
+		performRemoveParameter(filesToConsider, fileOfTestClassImplementingEmptyInterface,
+				lineNumberOfMethodWithParameterToBeRemoved, parameterName);
+
+		// assert
+		CompilationUnit cuRefactoredFileOfTestClassImplementingEmptyInterface = JavaParser
+				.parse(fileOfTestClassImplementingEmptyInterface);
+
+		// assert that method in outer class has been refactored
+		MethodDeclaration refactoredOuterClassMethod = getMethodByName(CLASS_IMPLEMENTING_EMPTY_INTERFACE,
+				originalOuterClassMethod.getNameAsString(), cuRefactoredFileOfTestClassImplementingEmptyInterface);
+		assertThat(refactoredOuterClassMethod).isNotNull();
+		assertThat(refactoredOuterClassMethod.getParameterByName(parameterName).isPresent()).isFalse();
+
+		// assert that inner class method remained unchanged
+		MethodDeclaration refactoredInnerClassMethod = getMethodByName(INNER_CLASS_IMPLEMENTING_EMPTY_INTERFACE,
+				originalInnerClassMethod.getNameAsString(), cuRefactoredFileOfTestClassImplementingEmptyInterface);
+		assertThat(refactoredInnerClassMethod).isNotNull();
+		assertThat(refactoredInnerClassMethod.getParameterByName(parameterName).isPresent()).isTrue();
+	}
+
+	@Test
+	public void testRefactoringOfMethodPlacedAfterInnerClass() throws Exception {
+		// arrange
+		List<File> filesToConsider = new ArrayList<File>();
+		filesToConsider.add(fileOfTestClass);
+		int lineNumberOfMethodWithParameterToBeRemoved = removeParameterTestClass
+				.getLineOfMethodPlacedInAndAfterInnerClass(0, 0, 0);
+		String parameterName = "b";
+
+		CompilationUnit cuOriginalFileOfTestClass = JavaParser.parse(fileOfTestClass);
+		MethodDeclaration originalMethod = RefactoringHelper.getMethodDeclarationByLineNumber(
+				lineNumberOfMethodWithParameterToBeRemoved, cuOriginalFileOfTestClass);
+		assertThat(originalMethod).isNotNull();
+
+		// act
+		performRemoveParameter(filesToConsider, fileOfTestClass, lineNumberOfMethodWithParameterToBeRemoved,
+				parameterName);
+
+		// assert that method in outer class (the method for which the actual renaming
+		// was intended) has been refactored
+		CompilationUnit cuRefactoredFileOfTestClass = JavaParser.parse(fileOfTestClass);
+		MethodDeclaration refactoredMethod = RefactoringHelper.getMethodDeclarationByLineNumber(
+				lineNumberOfMethodWithParameterToBeRemoved, cuRefactoredFileOfTestClass);
+		assertThat(refactoredMethod).isNotNull();
+		assertThat(refactoredMethod.getParameterByName(parameterName).isPresent()).isFalse();
 	}
 
 	@Test
