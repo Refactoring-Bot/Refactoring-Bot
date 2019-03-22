@@ -135,8 +135,7 @@ public class RenameMethod implements RefactoringImpl {
 			// search for files containing relevant method declarations
 			for (ClassOrInterfaceDeclaration currentClassOrInterface : classesAndInterfacesInCurrentFile) {
 				if (isRelatedToTargetClass(currentClassOrInterface, qualifiedNamesOfRelatedClassesAndInterfaces)) {
-					List<MethodDeclaration> methodDeclarationsInCurrentClass = currentClassOrInterface
-							.findAll(MethodDeclaration.class);
+					List<MethodDeclaration> methodDeclarationsInCurrentClass = currentClassOrInterface.getMethods();
 					for (MethodDeclaration methodDeclaration : methodDeclarationsInCurrentClass) {
 						boolean localMethodSignatureIsEqual = RefactoringHelper
 								.getLocalMethodSignatureAsString(methodDeclaration)
@@ -192,11 +191,9 @@ public class RenameMethod implements RefactoringImpl {
 	 * @param postRefactoringSignature
 	 * @throws BotRefactoringException
 	 */
-	private void validatePostRefactoringSignatureNotAlreadyExists(
-			ClassOrInterfaceDeclaration classOrInterface, String postRefactoringSignature)
-			throws BotRefactoringException {
-		if (RefactoringHelper.isLocalMethodSignatureInClassOrInterface(classOrInterface,
-				postRefactoringSignature)) {
+	private void validatePostRefactoringSignatureNotAlreadyExists(ClassOrInterfaceDeclaration classOrInterface,
+			String postRefactoringSignature) throws BotRefactoringException {
+		if (RefactoringHelper.isLocalMethodSignatureInClassOrInterface(classOrInterface, postRefactoringSignature)) {
 			throw new BotRefactoringException(
 					"Renaming of method would result in a method signature that is already present inside the class or interface '"
 							+ classOrInterface.getNameAsString() + "'.");

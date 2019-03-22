@@ -169,8 +169,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 			// search for files containing relevant method declarations
 			for (ClassOrInterfaceDeclaration currentClassOrInterface : classesAndInterfacesInCurrentFile) {
 				if (isRelatedToTargetClass(currentClassOrInterface, qualifiedNamesOfRelatedClassesAndInterfaces)) {
-					List<MethodDeclaration> methodDeclarationsInCurrentClass = currentClassOrInterface
-							.findAll(MethodDeclaration.class);
+					List<MethodDeclaration> methodDeclarationsInCurrentClass = currentClassOrInterface.getMethods();
 					for (MethodDeclaration methodDeclaration : methodDeclarationsInCurrentClass) {
 						boolean localMethodSignatureIsEqual = RefactoringHelper
 								.getLocalMethodSignatureAsString(methodDeclaration)
