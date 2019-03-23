@@ -35,7 +35,7 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 	
         @Test
 	public void testRemoveMultipleLineComments() throws Exception {
-		testRemoveComment(20,"}");
+		testRemoveComment(20,"// Another normal comment");
 	}
         
 	@Test
@@ -52,7 +52,6 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 		// arrange
 		File tempFile = getTempCopyOfTestResourcesFile();
 		BotIssue issue = new BotIssue();
-                issue.setCreationDate("2018-01-01");
 		GitConfiguration gitConfig = new GitConfiguration();
 		RemoveCommentedOutCode refactoring = new RemoveCommentedOutCode();
 

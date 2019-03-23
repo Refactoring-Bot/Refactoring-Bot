@@ -87,9 +87,6 @@ public class SonarQubeObjectTranslator {
 			botIssue.setLine(issue.getLine());
 			botIssue.setCommentServiceID(issue.getKey());
 
-			// Set creation date to determine the age of the issue
-			botIssue.setCreationDate(issue.getCreationDate());
-
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
 			case "squid:S1161":
