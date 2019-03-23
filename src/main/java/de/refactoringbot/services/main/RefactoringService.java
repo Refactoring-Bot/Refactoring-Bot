@@ -49,7 +49,7 @@ public class RefactoringService {
 	@Autowired
 	ApiGrabber grabber;
 	@Autowired
-	SonarQubeDataGrabber sonarCubeGrabber;
+	SonarQubeDataGrabber sonarQubeGrabber;
 	@Autowired
 	GitService dataGetter;
 	@Autowired
@@ -324,7 +324,7 @@ public class RefactoringService {
 			// If analysis service refactoring
 		} else {
 			// Create new branch for refactoring
-			String newBranch = "sonarCube_Refactoring_" + botIssue.getCommentServiceID();
+			String newBranch = "sonarQube_Refactoring_" + botIssue.getCommentServiceID();
 			// Check if branch already exists (throws exception if it does)
 			grabber.checkBranch(config, newBranch);
 			dataGetter.createBranch(config, "master", newBranch, "upstream");
@@ -440,7 +440,8 @@ public class RefactoringService {
 		// Reply to user if refactoring comments
 		if (isCommentRefactoring) {
 			try {
-				grabber.replyToUserForFailedRefactoring(request, comment, config, botIssue.getErrorMessage());
+				grabber.replyToUserForFailedRefactoring(request, comment, config,
+						constructCommentReplyMessage(botIssue.getErrorMessage()));
 			} catch (Exception u) {
 				logger.error(u.getMessage(), u);
 			}
@@ -448,6 +449,17 @@ public class RefactoringService {
 
 		// Save failed refactoring and return it
 		return issueRepo.save(failedIssue);
+	}
+
+	/**
+	 * This method creates a reply message with the help from the error message of a
+	 * BotRefactoringException.
+	 * 
+	 * @param exceptionMessage
+	 * @return replyMessage
+	 */
+	private String constructCommentReplyMessage(String exceptionMessage) {
+		return exceptionMessage + " Please rephrase your instruction in a new comment.";
 	}
 
 	/**

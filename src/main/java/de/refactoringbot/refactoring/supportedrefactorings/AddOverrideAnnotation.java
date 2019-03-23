@@ -34,10 +34,10 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
-		MethodDeclaration methodDeclarationToModify = RefactoringHelper.getMethodByLineNumberOfMethodName(issue.getLine(),
-				compilationUnit);
+		MethodDeclaration methodDeclarationToModify = RefactoringHelper
+				.getMethodByLineNumberOfMethodName(issue.getLine(), compilationUnit);
 		if (methodDeclarationToModify == null) {
-			throw new BotRefactoringException("Could not find method at specified line! Automated refactoring failed.");
+			throw new BotRefactoringException("Could not find a method declaration at specified line!");
 		}
 		if (isOverrideAnnotationExisting(methodDeclarationToModify)) {
 			throw new BotRefactoringException("Method is already annotated with 'Override'!");
