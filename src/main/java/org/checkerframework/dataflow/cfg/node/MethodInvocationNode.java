@@ -42,6 +42,9 @@ public class MethodInvocationNode extends Node {
         int i = 0;
         for (Node arg : arguments) {
             AssignmentContext ctx = new MethodParameterContext(target.getMethod(), i++);
+            if (arg == null) {
+                continue;
+            }
             arg.setAssignmentContext(ctx);
         }
     }

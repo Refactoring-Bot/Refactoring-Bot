@@ -113,7 +113,7 @@ public class ExtractMethod implements RefactoringImpl {
 				}*/
 
 				System.out.println(bestCandidate);
-
+				
 				// this.printGraphToFile(this.debugDir, this.cfgContainer.cfg);
 
 				return "extracted method";

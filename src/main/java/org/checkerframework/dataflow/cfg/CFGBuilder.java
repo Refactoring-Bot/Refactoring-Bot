@@ -4734,6 +4734,9 @@ public class CFGBuilder {
          */
         private AssignmentNode createIncrementOrDecrementAssign(
                 Tree target, Node expr, boolean isIncrement) {
+            if (expr == null) {
+                return null;
+            }
             ExpressionTree exprTree = (ExpressionTree) expr.getTree();
             TypeMirror exprType = expr.getType();
             TypeMirror oneType = types.getPrimitiveType(TypeKind.INT);

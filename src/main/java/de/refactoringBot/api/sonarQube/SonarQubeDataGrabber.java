@@ -44,6 +44,8 @@ public class SonarQubeDataGrabber {
 
 		apiUriBuilder.queryParam("componentRoots", sonarQubeProjectKey);
 		apiUriBuilder.queryParam("statuses", "OPEN,REOPENED");
+		apiUriBuilder.queryParam("ps", 500);
+		apiUriBuilder.queryParam("p",1);
 
 		URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
 

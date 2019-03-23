@@ -457,7 +457,7 @@ public class ExtractMethodUtil {
                 }
 
                 for (Long lineNumber = tryRange.from; lineNumber <= endLineNumber; lineNumber++) {
-                    if (lineNumber > tryRange.from && lineNumber < catchRanges.get(0).from) {
+                    if (lineNumber > tryRange.from && catchRanges.size() > 0 && lineNumber < catchRanges.get(0).from) {
                         StatementGraphNode inTryNode = ExtractMethodUtil.findNodeForLine(graph, lineNumber);
                         if (inTryNode != null){
                             ExtractMethodUtil.findParentNode(graph, inTryNode).children.remove(inTryNode);
@@ -595,6 +595,9 @@ public class ExtractMethodUtil {
     }
 
     private static boolean nodeContainsVariable(Node node, LocalVariable variable) {
+        if (node == null) {
+            return false;
+        }
         if (node.getClass().equals(LocalVariableNode.class)) {
             LocalVariableNode varNode = (LocalVariableNode) node;
             return varNode.getName().equals(variable.name);
