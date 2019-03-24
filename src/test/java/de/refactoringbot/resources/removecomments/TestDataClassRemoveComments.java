@@ -16,8 +16,8 @@ public class TestDataClassRemoveComments {
         return a + b;
     }
     
-    // Normal comment here
     // Sonarcloud line here;
+    // Normal comment here
     // Another normal comment
 
 }

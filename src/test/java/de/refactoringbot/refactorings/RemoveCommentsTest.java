@@ -18,7 +18,6 @@ import de.refactoringbot.resources.removecomments.TestDataClassRemoveComments;
 public class RemoveCommentsTest extends AbstractRefactoringTests {
 
 	private static final Logger logger = LoggerFactory.getLogger(RemoveCommentsTest.class);
-	private TestDataClassRemoveComments removeCommentsTestClass = new TestDataClassRemoveComments();
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
@@ -29,13 +28,15 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 	}
         
         @Test
-	public void testRemoveLineComment() throws Exception {
+	public void testRemoveLineComments() throws Exception {
+            // This should also remove the line below (since it is also commented out code)
 		testRemoveComment(6,"int c = a + b;");
 	}
 	
         @Test
-	public void testRemoveMultipleLineComments() throws Exception {
-		testRemoveComment(20,"// Another normal comment");
+	public void testRemoveLineCommentOnlyCommentedCode() throws Exception {
+            // This should only remove the SonarQube line, since the ones below don't contain code
+		testRemoveComment(19,"// Normal comment here");
 	}
         
 	@Test

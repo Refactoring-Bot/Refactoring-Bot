@@ -90,13 +90,13 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
      * Since sonarqube only provides one line per comment block, this method is
      * used to determine if other comments also contain code
      *
-     * @param line The content of the comment
+     * @param content The comment text to be examined
      * @return Whether or not the comment contains code
      */
     private boolean isCommentedOutCode(String content) {
 
-        // Method call
-        if (content.matches("[a-zA-Z]+\\.[a-zA-Z] +\\(.*\\)")) {
+        // Method call pattern
+        if (content.matches(".+\\..+\\(.*\\)")) {
             return true;
             // if or while statement
         } else if (content.matches("(if\\s*\\(.*)| (while\\s*\\(.*)")) {
