@@ -69,6 +69,9 @@ public class ApiGrabber {
 			GithubPullRequests githubRequests = githubGrabber.getAllPullRequests(gitConfig);
 			botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
 			break;
+		case gitlab:
+			// TODO
+			break;
 		}
 		return botRequests;
 	}
@@ -89,6 +92,9 @@ public class ApiGrabber {
 		case github:
 			githubGrabber.responseToBotComment(githubTranslator.createReplyComment(comment, null), gitConfig,
 					request.getRequestNumber());
+			break;
+		case gitlab:
+			// TODO
 			break;
 		}
 	}
@@ -113,6 +119,9 @@ public class ApiGrabber {
 					githubTranslator.createReplyComment(comment, newGithubRequest.getHtmlUrl()), gitConfig,
 					request.getRequestNumber());
 			break;
+		case gitlab:
+			// TODO
+			break;
 		}
 	}
 
@@ -131,6 +140,9 @@ public class ApiGrabber {
 			githubGrabber.responseToBotComment(githubTranslator.createFailureReply(comment, errorMessage), gitConfig,
 					request.getRequestNumber());
 			break;
+		case gitlab:
+			// TODO
+			break;
 		}
 	}
 
@@ -145,6 +157,9 @@ public class ApiGrabber {
 		switch (gitConfig.getRepoService()) {
 		case github:
 			githubGrabber.checkBranch(gitConfig, branchName);
+			break;
+		case gitlab:
+			// TODO
 			break;
 		}
 	}
@@ -171,6 +186,9 @@ public class ApiGrabber {
 			// Create git configuration and a fork
 			GitConfiguration gitConfig = githubTranslator.createConfiguration(configuration);
 			return gitConfig;
+		case gitlab:
+			// TODO
+			return null;
 		default:
 			throw new Exception("Filehoster " + "'" + configuration.getRepoService() + "' is not supported!");
 		}
@@ -189,6 +207,9 @@ public class ApiGrabber {
 		case github:
 			githubGrabber.deleteRepository(gitConfig);
 			break;
+		case gitlab:
+			// TODO
+			break;
 		}
 	}
 
@@ -203,6 +224,9 @@ public class ApiGrabber {
 		switch (gitConfig.getRepoService()) {
 		case github:
 			githubGrabber.createFork(gitConfig);
+			break;
+		case gitlab:
+			// TODO
 			break;
 		}
 	}
@@ -249,6 +273,9 @@ public class ApiGrabber {
 					newBranch);
 			// Create PR on filehoster
 			githubGrabber.createRequest(createRequest, gitConfig);
+			break;
+		case gitlab:
+			// TODO
 			break;
 		}
 	}
