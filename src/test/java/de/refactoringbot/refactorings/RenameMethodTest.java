@@ -76,6 +76,11 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				TestDataClassImplementingEmptyInterface.class);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in the target class
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testTargetClassRefactored() throws Exception {
 		// arrange
@@ -90,7 +95,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		MethodDeclaration originalMethodWithTargetMethodSignatureInInnerClass = RefactoringHelper
 				.getMethodDeclarationByLineNumber(renameMethodInnerTestClass.getLineOfMethodToBeRenamed(true),
 						cuOriginalFileOfTestClass);
-		
+
 		SoftAssertions softAssertions = new SoftAssertions();
 		softAssertions.assertThat(originalDummyMethod).isNotNull();
 		softAssertions.assertThat(originalMethodWithTargetMethodSignatureInInnerClass).isNotNull();
@@ -124,6 +129,12 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				newMethodName, 1);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in a different class
+	 * which contains a method calling the refactored target method
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testCallerClassRefactored() throws Exception {
 		// arrange
@@ -143,6 +154,12 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				lineNumberOfCallerInDifferentFile, newMethodName, 1);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in the super class of
+	 * the target class (ancestor)
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testSuperClassRefactored() throws Exception {
 		// arrange
@@ -162,6 +179,12 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				newMethodName);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in the sub class of the
+	 * target class (descendant)
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testSubClassRefactored() throws Exception {
 		// arrange
@@ -180,6 +203,12 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSubClass, lineNumberOfMethodInSubClass, newMethodName);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in the sibling class of
+	 * the target class
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testSiblingClassRefactored() throws Exception {
 		// arrange
@@ -206,6 +235,12 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				lineNumberOfCallerMethodInSiblingClass, newMethodName, 1);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in an interface
+	 * implemented by the target class
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testInterfaceRefactored() throws Exception {
 		// arrange
@@ -225,6 +260,12 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		assertThat(methodDeclarations.get(0).getNameAsString()).isEqualTo(newMethodName);
 	}
 
+	/**
+	 * The target class extends a super class and implements an interface. Test that
+	 * the super class was correctly refactored
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testInterfaceMethodInSuperClassRefactored() throws Exception {
 		// arrange
@@ -245,6 +286,14 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				newMethodName);
 	}
 
+	/**
+	 * Test that a refactoring of an inner class (implementing the same interface as
+	 * the outer class) results in a correct refactoring of both, the inner and the
+	 * outer class. Also test whether the implemented interface and super class of
+	 * the outer class was successfully refactored
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testInnerClassWithInterfaceRefactoring() throws Exception {
 		// arrange
@@ -283,6 +332,13 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				newMethodName);
 	}
 
+	/**
+	 * Two classes sharing the same interface should only lead to a refactoring in
+	 * both classes, if the common interface declares the target method signature.
+	 * This is not given in this test case
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testTwoClassesWithSameMethodSigAndEmptyInterface() throws Exception {
 		// arrange
@@ -318,6 +374,12 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				lineNumberOfInnerClassMethod, originalMethodInInnerClass.getNameAsString());
 	}
 
+	/**
+	 * Test that the refactoring algorithm finds the correct method in case that
+	 * there is an inner class before the target method declaration
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testRenamingOfMethodPlacedAfterInnerClass() throws Exception {
 		// arrange
@@ -336,6 +398,10 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				newMethodName);
 	}
 
+	/**
+	 * @throws Exception
+	 *             expected in this case because method name is unchanged
+	 */
 	@Test
 	public void testUnchangedMethodName() throws Exception {
 		exception.expect(BotRefactoringException.class);
@@ -350,6 +416,11 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 	}
 
+	/**
+	 * @throws Exception
+	 *             expected in this case because there is already a signature that
+	 *             would result from the refactoring
+	 */
 	@Test
 	public void testSignatureAlreadyExists() throws Exception {
 		exception.expect(BotRefactoringException.class);

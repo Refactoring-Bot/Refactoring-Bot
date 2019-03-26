@@ -91,6 +91,11 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 				TestDataClassImplementingEmptyInterface.class);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in the target class
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testTargetClassRefactored() throws Exception {
 		// arrange
@@ -165,6 +170,12 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 				refactoredMethod);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in a different class
+	 * which contains a method calling the refactored target method
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testCallerClassRefactored() throws Exception {
 		// arrange
@@ -205,6 +216,12 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 				methodInDifferentFileWithTargetMethodCalls, refactoredMethod);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in the super class of
+	 * the target class (ancestor)
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testSuperClassRefactored() throws Exception {
 		// arrange
@@ -233,6 +250,12 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		assertThat(methodInSuperClass.getParameterByName(parameterName).isPresent()).isFalse();
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in the sub class of the
+	 * target class (descendant)
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testSubClassRefactored() throws Exception {
 		// arrange
@@ -261,6 +284,12 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		assertThat(methodInSubClass.getParameterByName(parameterName).isPresent()).isFalse();
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in the sibling class of
+	 * the target class
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testSiblingClassRefactored() throws Exception {
 		// arrange
@@ -312,6 +341,12 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 				refactoredMethod);
 	}
 
+	/**
+	 * Test whether the refactoring was performed correctly in an interface
+	 * implemented by the target class
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testInterfaceRefactored() throws Exception {
 		// arrange
@@ -333,6 +368,12 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		assertThat(methodDeclarations.get(0).getParameterByName(parameterName).isPresent()).isFalse();
 	}
 
+	/**
+	 * The target class extends a super class and implements an interface. Test that
+	 * the super class was correctly refactored
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testInterfaceMethodInSuperClassRefactored() throws Exception {
 		// arrange
@@ -362,6 +403,14 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		assertThat(methodInSuperClass.getParameterByName(parameterName).isPresent()).isFalse();
 	}
 
+	/**
+	 * Test that a refactoring of an inner class (implementing the same interface as
+	 * the outer class) results in a correct refactoring of both, the inner and the
+	 * outer class. Also test whether the implemented interface and super class of
+	 * the outer class was successfully refactored
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testInnerClassWithInterfaceRefactoring() throws Exception {
 		// arrange
@@ -423,6 +472,13 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		assertThat(methodInSuperClass.getParameterByName(parameterName).isPresent()).isFalse();
 	}
 
+	/**
+	 * Two classes sharing the same interface should only lead to a refactoring in
+	 * both classes, if the common interface declares the target method signature.
+	 * This is not given in this test case
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testTwoClassesWithSameMethodSigAndEmptyInterface() throws Exception {
 		// arrange
@@ -468,6 +524,12 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		assertThat(refactoredInnerClassMethod.getParameterByName(parameterName).isPresent()).isTrue();
 	}
 
+	/**
+	 * Test that the refactoring algorithm finds the correct method in case that
+	 * there is an inner class before the target method declaration
+	 * 
+	 * @throws Exception
+	 */
 	@Test
 	public void testRefactoringOfMethodPlacedAfterInnerClass() throws Exception {
 		// arrange
@@ -495,6 +557,11 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		assertThat(refactoredMethod.getParameterByName(parameterName).isPresent()).isFalse();
 	}
 
+	/**
+	 * @throws Exception
+	 *             expected in this case because the parameter is used in the method
+	 *             body
+	 */
 	@Test
 	public void testRemoveUsedParameter() throws Exception {
 		exception.expect(BotRefactoringException.class);
@@ -511,6 +578,11 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 				parameterName);
 	}
 
+	/**
+	 * @throws Exception
+	 *             expected in this case because the parameter to be removed does
+	 *             not exist in the target method's signature
+	 */
 	@Test
 	public void testRemoveNotExistingParameter() throws Exception {
 		exception.expect(BotRefactoringException.class);
