@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import de.refactoringbot.api.github.GithubDataGrabber;
+import de.refactoringbot.api.gitlab.GitlabDataGrabber;
 import de.refactoringbot.api.sonarqube.SonarQubeDataGrabber;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
@@ -24,6 +25,7 @@ import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
 import de.refactoringbot.services.github.GithubObjectTranslator;
+import de.refactoringbot.services.gitlab.GitlabObjectTranslator;
 import de.refactoringbot.services.main.BotService;
 import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
 
@@ -40,9 +42,13 @@ public class ApiGrabber {
 	@Autowired
 	GithubDataGrabber githubGrabber;
 	@Autowired
+	GitlabDataGrabber gitlabGrabber;
+	@Autowired
 	SonarQubeDataGrabber sonarQubeGrabber;
 	@Autowired
 	GithubObjectTranslator githubTranslator;
+	@Autowired
+	GitlabObjectTranslator gitlabTranslator;
 	@Autowired
 	SonarQubeObjectTranslator sonarQubeTranslator;
 	@Autowired
@@ -172,6 +178,7 @@ public class ApiGrabber {
 	 * @throws Exception
 	 */
 	public GitConfiguration createConfigurationForRepo(GitConfigurationDTO configuration) throws Exception {
+		GitConfiguration gitConfig = null;
 		// Check analysis service data
 		checkAnalysisService(configuration);
 
@@ -184,11 +191,17 @@ public class ApiGrabber {
 					configuration.getBotEmail());
 
 			// Create git configuration and a fork
-			GitConfiguration gitConfig = githubTranslator.createConfiguration(configuration);
+			gitConfig = githubTranslator.createConfiguration(configuration);
 			return gitConfig;
 		case gitlab:
-			// TODO
-			return null;
+			gitlabGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
+					configuration.getBotToken());
+			gitlabGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
+					configuration.getBotEmail());
+
+			// Create git configuration and a fork
+			gitConfig = gitlabTranslator.createConfiguration(configuration);
+			return gitConfig;
 		default:
 			throw new Exception("Filehoster " + "'" + configuration.getRepoService() + "' is not supported!");
 		}
@@ -208,7 +221,7 @@ public class ApiGrabber {
 			githubGrabber.deleteRepository(gitConfig);
 			break;
 		case gitlab:
-			// TODO
+			gitlabGrabber.deleteRepository(gitConfig);
 			break;
 		}
 	}
@@ -226,7 +239,7 @@ public class ApiGrabber {
 			githubGrabber.createFork(gitConfig);
 			break;
 		case gitlab:
-			// TODO
+			gitlabGrabber.createFork(gitConfig);
 			break;
 		}
 	}
