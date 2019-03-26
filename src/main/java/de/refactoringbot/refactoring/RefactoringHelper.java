@@ -170,19 +170,21 @@ public class RefactoringHelper {
 	/**
 	 * @param allJavaFiles
 	 * @param targetClass
+	 * @param targetMethod
 	 * @return list of qualified class or interface names which are reachable via
 	 *         the inheritance hierarchy of the given class (ancestors, descendants,
-	 *         siblings, ...)
+	 *         siblings, ...) and contain the given target method
 	 * @throws BotRefactoringException
 	 * @throws FileNotFoundException
 	 */
-	public static Set<String> findQualifiedNamesOfRelatedClassesAndInterfaces(List<String> allJavaFiles,
-			ClassOrInterfaceDeclaration targetClass) throws BotRefactoringException, FileNotFoundException {
+	public static Set<String> findRelatedClassesAndInterfaces(List<String> allJavaFiles,
+			ClassOrInterfaceDeclaration targetClass, MethodDeclaration targetMethod)
+			throws BotRefactoringException, FileNotFoundException {
 		Set<ResolvedReferenceTypeDeclaration> relatedClassesAndInterfaces = new HashSet<>();
 		relatedClassesAndInterfaces.add(targetClass.resolve());
 
 		addQualifiedNamesToRelatedClassesAndInterfacesRecursively(relatedClassesAndInterfaces, allJavaFiles,
-				targetClass);
+				targetClass, targetMethod);
 
 		Set<String> result = new HashSet<>();
 		for (ResolvedReferenceTypeDeclaration declaration : relatedClassesAndInterfaces) {
@@ -194,8 +196,9 @@ public class RefactoringHelper {
 
 	private static void addQualifiedNamesToRelatedClassesAndInterfacesRecursively(
 			Set<ResolvedReferenceTypeDeclaration> relatedClassesAndInterfaces, List<String> allJavaFiles,
-			ClassOrInterfaceDeclaration targetClass) throws FileNotFoundException, BotRefactoringException {
-		Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass = findAllAncestors(targetClass);
+			ClassOrInterfaceDeclaration targetClass, MethodDeclaration targetMethod)
+			throws FileNotFoundException, BotRefactoringException {
+		Set<ResolvedReferenceTypeDeclaration> ancestorsOfTargetClass = findAllAncestors(targetClass, targetMethod);
 		relatedClassesAndInterfaces.addAll(ancestorsOfTargetClass);
 
 		for (String file : allJavaFiles) {
@@ -207,12 +210,12 @@ public class RefactoringHelper {
 					continue;
 				}
 				Set<ResolvedReferenceTypeDeclaration> ancestorsOfCurrentClassOrInterface = findAllAncestors(
-						currentClassOrInterface);
+						currentClassOrInterface, targetMethod);
 				if (!Collections.disjoint(relatedClassesAndInterfaces, ancestorsOfCurrentClassOrInterface)) {
 					// descendant found
 					relatedClassesAndInterfaces.add(currentClassOrInterface.resolve());
 					addQualifiedNamesToRelatedClassesAndInterfacesRecursively(relatedClassesAndInterfaces, allJavaFiles,
-							currentClassOrInterface);
+							currentClassOrInterface, targetMethod);
 				}
 			}
 		}
@@ -220,13 +223,14 @@ public class RefactoringHelper {
 
 	/**
 	 * @param targetClass
+	 * @param targetMethod
 	 * @return list of resolved classes and interfaces which are ancestors of the
 	 *         given classes (not including java.lang.Object or external
-	 *         dependencies)
+	 *         dependencies) and contain the given target method
 	 * @throws BotRefactoringException
 	 */
-	private static Set<ResolvedReferenceTypeDeclaration> findAllAncestors(ClassOrInterfaceDeclaration targetClass)
-			throws BotRefactoringException {
+	private static Set<ResolvedReferenceTypeDeclaration> findAllAncestors(ClassOrInterfaceDeclaration targetClass,
+			MethodDeclaration targetMethod) throws BotRefactoringException {
 		List<ResolvedReferenceType> ancestors = new ArrayList<>();
 		Set<ResolvedReferenceTypeDeclaration> result = new HashSet<>();
 
@@ -245,7 +249,11 @@ public class RefactoringHelper {
 
 		for (ResolvedReferenceType ancestor : ancestors) {
 			if (!ancestor.getQualifiedName().equals("java.lang.Object")) {
-				result.add(ancestor.getTypeDeclaration());
+				for (ResolvedMethodDeclaration method : ancestor.getAllMethods()) {
+					if (method.getSignature().equals(targetMethod.resolve().getSignature())) {
+						result.add(ancestor.getTypeDeclaration());
+					}
+				}
 			}
 		}
 

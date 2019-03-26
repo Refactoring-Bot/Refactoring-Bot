@@ -57,7 +57,7 @@ public class RenameMethod implements RefactoringImpl {
 		MethodDeclaration targetMethod = findAndValidateTargetMethod(issue, issueFilePath, newMethodName);
 		ClassOrInterfaceDeclaration targetClass = RefactoringHelper.getClassOrInterfaceOfMethod(targetMethod);
 		Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = RefactoringHelper
-				.findQualifiedNamesOfRelatedClassesAndInterfaces(issue.getAllJavaFiles(), targetClass);
+				.findRelatedClassesAndInterfaces(issue.getAllJavaFiles(), targetClass, targetMethod);
 
 		HashSet<String> javaFilesRelevantForRefactoring = findJavaFilesRelevantForRefactoring(issue, newMethodName,
 				targetMethod, qualifiedNamesOfRelatedClassesAndInterfaces);
