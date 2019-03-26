@@ -15,6 +15,7 @@ import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.refactoring.RefactoringImpl;
 import de.refactoringbot.model.botissue.BotIssue;
+import de.refactoringbot.model.exceptions.BotRefactoringException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -42,10 +43,11 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
      * @param gitConfig
      * @return commitMessage
      * @throws FileNotFoundException
+     * @throws de.refactoringbot.model.exceptions.BotRefactoringException
      */
     @Override
     public String performRefactoring(BotIssue issue, GitConfiguration gitConfig)
-            throws FileNotFoundException, IOException {
+            throws FileNotFoundException, IOException, BotRefactoringException {
         
         // Prepare data
         String path = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
@@ -57,12 +59,16 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
         CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
         List<Comment> comments = compilationUnit.getAllContainedComments();
+        
+        int startLine = line;
+        int endLine = -1;
 
         for (Comment comment : comments) {      
             if ((line >= comment.getBegin().get().line) && (line <= comment.getEnd().get().line)) {
                 if (comment.isLineComment()) {
                     // If it's the SonarQube line, we remove it without checking, otherwise check for commented out code
                     if (line.equals(issue.getLine()) || isCommentedOutCode(comment.getContent())){
+                        endLine = comment.getEnd().get().line;
                         comment.remove();
                         // Increase the line variable to find more commented out code lines below
                         line++;
@@ -71,10 +77,17 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
                     }
                 } else {
                     // The comment is a multi-line comment, so we remove the entire thing right away
+                    startLine = comment.getBegin().get().line;
+                    endLine = comment.getEnd().get().line;
                     comment.remove();
                     break;
                 }
             }
+        }
+        
+        if (endLine == -1) {
+            throw new BotRefactoringException("Commented out code line could not be found" + System.getProperty("line.separator")
+                    + "Are you sure that the source code and SonarQube analysis are on the same branch and version?");
         }
         
         // Printing the output file with JavaParser
@@ -83,7 +96,8 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
         out.close();
 
         // Return commit message
-        return "Removed commented out code at line " + line;
+        return ("Removed " + (endLine - startLine + 1) + " line(s) of commented out code (line " 
+                + startLine + "-" + endLine + ")");
     }
 
     /**
