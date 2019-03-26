@@ -59,8 +59,8 @@ public class RenameMethod implements RefactoringImpl {
 		Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = RefactoringHelper
 				.findRelatedClassesAndInterfaces(issue.getAllJavaFiles(), targetClass, targetMethod);
 
-		HashSet<String> javaFilesRelevantForRefactoring = findJavaFilesRelevantForRefactoring(issue, newMethodName,
-				targetMethod, qualifiedNamesOfRelatedClassesAndInterfaces);
+		HashSet<String> javaFilesRelevantForRefactoring = findRelevantJavaFiles(issue, newMethodName, targetMethod,
+				qualifiedNamesOfRelatedClassesAndInterfaces);
 		renameRelatedMethodDeclarationsAndMethodCalls(javaFilesRelevantForRefactoring, newMethodName);
 
 		String oldMethodName = targetMethod.getNameAsString();
@@ -122,8 +122,8 @@ public class RenameMethod implements RefactoringImpl {
 	 * @throws FileNotFoundException
 	 * @throws BotRefactoringException
 	 */
-	private HashSet<String> findJavaFilesRelevantForRefactoring(BotIssue issue, String newMethodName,
-			MethodDeclaration targetMethod, Set<String> qualifiedNamesOfRelatedClassesAndInterfaces)
+	private HashSet<String> findRelevantJavaFiles(BotIssue issue, String newMethodName, MethodDeclaration targetMethod,
+			Set<String> qualifiedNamesOfRelatedClassesAndInterfaces)
 			throws FileNotFoundException, BotRefactoringException {
 		HashSet<String> javaFilesRelevantForRefactoring = new HashSet<>();
 		String postRefactoringSignature = getPostRefactoringSignature(targetMethod, newMethodName);

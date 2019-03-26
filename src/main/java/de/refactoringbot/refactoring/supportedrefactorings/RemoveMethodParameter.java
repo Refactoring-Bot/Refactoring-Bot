@@ -65,7 +65,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		Set<String> qualifiedNamesOfRelatedClassesAndInterfaces = RefactoringHelper
 				.findRelatedClassesAndInterfaces(issue.getAllJavaFiles(), targetClass, targetMethod);
 
-		HashSet<String> javaFilesRelevantForRefactoring = findJavaFilesRelevantForRefactoring(issue, parameterName,
+		HashSet<String> javaFilesRelevantForRefactoring = findRelevantJavaFiles(issue, parameterName,
 				targetMethod, qualifiedNamesOfRelatedClassesAndInterfaces);
 		removeParameterFromRelatedMethodDeclarationsAndMethodCalls(javaFilesRelevantForRefactoring, targetMethod,
 				parameterName);
@@ -156,7 +156,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * @throws FileNotFoundException
 	 * @throws BotRefactoringException
 	 */
-	private HashSet<String> findJavaFilesRelevantForRefactoring(BotIssue issue, String parameterToBeRemoved,
+	private HashSet<String> findRelevantJavaFiles(BotIssue issue, String parameterToBeRemoved,
 			MethodDeclaration targetMethod, Set<String> qualifiedNamesOfRelatedClassesAndInterfaces)
 			throws FileNotFoundException, BotRefactoringException {
 		HashSet<String> javaFilesRelevantForRefactoring = new HashSet<>();
