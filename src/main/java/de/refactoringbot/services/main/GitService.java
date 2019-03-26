@@ -190,8 +190,14 @@ public class GitService {
 			// Perform 'git commit -m'
 			git.commit().setMessage(commitMessage).setCommitter(gitConfig.getBotName(), gitConfig.getBotEmail()).call();
 			// Push with bot credenials
-			git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
-					.call();
+			if (gitConfig.getRepoService().toString().equals("github")) {
+				git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
+						.call();
+			} else {
+				git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotToken()))
+						.call();
+			}
+
 		} catch (TransportException t) {
 			logger.error(t.getMessage(), t);
 			throw new GitWorkflowException("Wrong bot token!");
@@ -261,7 +267,8 @@ public class GitService {
 	}
 
 	/**
-	 * Calculates the absolute new line number of the last line in the given diffHunkLines
+	 * Calculates the absolute new line number of the last line in the given
+	 * diffHunkLines
 	 * 
 	 * @param diffHunkStartPosition
 	 * @param diffHunkLines

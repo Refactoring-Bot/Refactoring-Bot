@@ -24,6 +24,7 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
+import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
 import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
@@ -387,10 +388,11 @@ public class RefactoringService {
 	 * 
 	 * @param config
 	 * @return allRequests
+	 * @throws GitLabAPIException 
 	 * @throws Exception
 	 */
 	public BotPullRequests getPullRequests(GitConfiguration config)
-			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException {
+			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException, GitLabAPIException {
 		// Fetch target-Repository-Data
 		dataGetter.fetchRemote(config);
 

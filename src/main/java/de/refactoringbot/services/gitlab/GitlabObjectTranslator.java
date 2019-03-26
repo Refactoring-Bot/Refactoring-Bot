@@ -1,5 +1,9 @@
 package de.refactoringbot.services.gitlab;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,9 +11,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import de.refactoringbot.api.gitlab.GitlabDataGrabber;
+import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
-import de.refactoringbot.services.main.GitService;
+import de.refactoringbot.model.exceptions.GitLabAPIException;
+import de.refactoringbot.model.gitlab.pullrequest.GitLabCreateRequest;
+import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequest;
+import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequests;
+import de.refactoringbot.model.gitlab.pullrequestcomment.GitLabPullRequestComment;
+import de.refactoringbot.model.gitlab.pullrequestcomment.GitLabPullRequestComments;
+import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
+import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
+import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
+import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComments;
 
 /**
  * This class translates all kinds of objects from GitLab to Bot-Objects
@@ -19,21 +33,19 @@ import de.refactoringbot.services.main.GitService;
  */
 @Service
 public class GitlabObjectTranslator {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(GitlabObjectTranslator.class);
-	
+
 	private final GitlabDataGrabber grabber;
 	private final ModelMapper modelMapper;
-	private final GitService gitService;
 	private final String pullRequestBodyComment = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this pull request by creating line specific (review) comments inside the 'Files changed' tab of this pull request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
 
 	@Autowired
-	public GitlabObjectTranslator(GitlabDataGrabber grabber, ModelMapper modelMapper, GitService gitService) {
+	public GitlabObjectTranslator(GitlabDataGrabber grabber, ModelMapper modelMapper) {
 		this.grabber = grabber;
 		this.modelMapper = modelMapper;
-		this.gitService = gitService;
 	}
-	
+
 	/**
 	 * This method creates a GitConfiguration from GitHub data.
 	 * 
@@ -41,24 +53,147 @@ public class GitlabObjectTranslator {
 	 * @return
 	 */
 	public GitConfiguration createConfiguration(GitConfigurationDTO configuration) {
-		
+
 		GitConfiguration config = new GitConfiguration();
 
 		modelMapper.map(configuration, config);
 		// Fill object
-		config.setRepoApiLink(
-				"https://gitlab.com/api/v4/projects/" + configuration.getRepoOwner() + "%2F" + configuration.getRepoName());
-		config.setRepoGitLink(
-				"https://gitlab.com/" + configuration.getRepoOwner() + "/" + configuration.getRepoName().toLowerCase() + ".git");
-		config.setForkApiLink(
-				"https://gitlab.com/api/v4/projects/" + configuration.getBotName() + "%2F" + configuration.getRepoName());
-		config.setForkGitLink(
-				"https://gitlab.com/" + configuration.getBotName() + "/" + configuration.getRepoName().toLowerCase() + ".git");
+		config.setRepoApiLink("https://gitlab.com/api/v4/projects/" + configuration.getRepoOwner() + "%2F"
+				+ configuration.getRepoName());
+		config.setRepoGitLink("https://gitlab.com/" + configuration.getRepoOwner() + "/"
+				+ configuration.getRepoName().toLowerCase() + ".git");
+		config.setForkApiLink("https://gitlab.com/api/v4/projects/" + configuration.getBotName() + "%2F"
+				+ configuration.getRepoName());
+		config.setForkGitLink("https://gitlab.com/" + configuration.getBotName() + "/"
+				+ configuration.getRepoName().toLowerCase() + ".git");
 
 		if (configuration.getAnalysisService() != null) {
 			config.setAnalysisService(configuration.getAnalysisService());
 		}
 
 		return config;
+	}
+
+	/**
+	 * This method translates GitLab Pull-Requests to BotPullRequests
+	 * 
+	 * @param gitlabRequests
+	 * 			@param gitConfig @return botRequests @throws
+	 *            URISyntaxException @throws GitLabAPIException @throws
+	 *            IOException @throws
+	 */
+	public BotPullRequests translateRequests(GitLabPullRequests gitlabRequests, GitConfiguration gitConfig)
+			throws URISyntaxException, GitLabAPIException, IOException {
+		BotPullRequests translatedRequests = new BotPullRequests();
+
+		for (GitLabPullRequest gitlabRequest : gitlabRequests.getAllPullRequests()) {
+
+			BotPullRequest pullRequest = new BotPullRequest();
+
+			// Fill request with data
+			pullRequest.setRequestName(gitlabRequest.getTitle());
+			pullRequest.setRequestDescription(gitlabRequest.getDescription());
+			pullRequest.setRequestNumber(gitlabRequest.getIid());
+			pullRequest.setRequestLink(gitlabRequest.getWebUrl());
+			pullRequest.setRequestStatus(gitlabRequest.getState());
+			pullRequest.setCreatorName(gitlabRequest.getAuthor().getUsername());
+			pullRequest.setDateCreated(gitlabRequest.getCreatedAt());
+			pullRequest.setDateUpdated(gitlabRequest.getUpdatedAt());
+			pullRequest.setBranchName(gitlabRequest.getSourceBranch());
+			pullRequest.setMergeBranchName(gitlabRequest.getTargetBranch());
+
+			URI commentUri = null;
+			try {
+				// Read comments URI
+				commentUri = new URI("https://gitlab.com/api/v4/projects/" + gitlabRequest.getProjectId()
+						+ "/merge_requests/" + gitlabRequest.getIid() + "/notes");
+			} catch (URISyntaxException e) {
+				logger.error(e.getMessage(), e);
+				throw new URISyntaxException("Could not build comment URI!", e.getMessage());
+			}
+
+			// Get and translate comments from github
+			GitLabPullRequestComments gitlabComments = grabber.getAllPullRequestComments(commentUri, gitConfig);
+			BotPullRequestComments comments = translatePullRequestComments(gitlabComments);
+			pullRequest.setAllComments(comments.getComments());
+
+			translatedRequests.addPullRequest(pullRequest);
+		}
+
+		// Fill request with data
+		return translatedRequests;
+	}
+
+	/**
+	 * This method translates GitLab comments to bot comments.
+	 * 
+	 * @param gitlabComments
+	 * @return translatedComments
+	 */
+	private BotPullRequestComments translatePullRequestComments(GitLabPullRequestComments gitlabComments) {
+		BotPullRequestComments translatedComments = new BotPullRequestComments();
+
+		for (GitLabPullRequestComment gitlabComment : gitlabComments.getComments()) {
+			BotPullRequestComment translatedComment = new BotPullRequestComment();
+
+			// Fill comment with data
+			translatedComment.setCommentID(gitlabComment.getId());
+			translatedComment.setFilepath(gitlabComment.getPosition().getNewPath());
+			translatedComment.setUsername(gitlabComment.getAuthor().getUsername());
+			translatedComment.setCommentBody(gitlabComment.getBody());
+			translatedComment.setPosition(gitlabComment.getPosition().getNewLine());
+
+			translatedComments.addComment(translatedComment);
+		}
+
+		return translatedComments;
+	}
+
+	/**
+	 * This method creates an object that can be used to create a Pull-Request on
+	 * GitLab after a comment refactoring.
+	 * 
+	 * @param request
+	 * @param gitConfig
+	 * @param botBranchName
+	 * @return createRequest
+	 */
+	public GitLabCreateRequest makeCreateRequest(BotPullRequest refactoredRequest, GitConfiguration gitConfig,
+			String botBranchName) {
+		GitLabCreateRequest createRequest = new GitLabCreateRequest();
+
+		// Fill object with data
+		createRequest
+				.setTitle("Bot Merge-Request Refactoring for Merge-Request #" + refactoredRequest.getRequestNumber());
+		createRequest.setDescription(pullRequestBodyComment);
+		createRequest.setSource_branch(botBranchName);
+		createRequest.setTarget_branch(refactoredRequest.getBranchName());
+		createRequest.setAllow_collaboration(true);
+
+		return createRequest;
+	}
+
+	/**
+	 * This method creates an object that can be used to create a Pull-Request on
+	 * GitLab after a SonarQube refactoring.
+	 * 
+	 * @param issue
+	 * @param gitConfig
+	 * @param newBranch
+	 * @return createRequest
+	 */
+	public GitLabCreateRequest makeCreateRequestWithAnalysisService(BotIssue issue, GitConfiguration gitConfig,
+			String newBranch) {
+		GitLabCreateRequest createRequest = new GitLabCreateRequest();
+
+		// Fill object with data
+		createRequest
+				.setTitle("Bot Merge-Request Refactoring with '" + gitConfig.getAnalysisService() + "'");
+		createRequest.setDescription(pullRequestBodyComment);
+		createRequest.setSource_branch(gitConfig.getBotName() + ":" + newBranch);
+		createRequest.setTarget_branch("master");
+		createRequest.setAllow_collaboration(true);
+
+		return createRequest;
 	}
 }

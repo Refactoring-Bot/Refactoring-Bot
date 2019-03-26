@@ -17,9 +17,13 @@ import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
+import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
+import de.refactoringbot.model.gitlab.pullrequest.GitLabCreateRequest;
+import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequest;
+import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequests;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -63,9 +67,10 @@ public class ApiGrabber {
 	 * @throws URISyntaxException
 	 * @throws GitHubAPIException
 	 * @throws IOException
+	 * @throws GitLabAPIException
 	 */
 	public BotPullRequests getRequestsWithComments(GitConfiguration gitConfig)
-			throws URISyntaxException, GitHubAPIException, IOException {
+			throws URISyntaxException, GitHubAPIException, IOException, GitLabAPIException {
 
 		BotPullRequests botRequests = null;
 
@@ -76,7 +81,8 @@ public class ApiGrabber {
 			botRequests = githubTranslator.translateRequests(githubRequests, gitConfig);
 			break;
 		case gitlab:
-			// TODO
+			GitLabPullRequests gitlabRequests = gitlabGrabber.getAllPullRequests(gitConfig);
+			botRequests = gitlabTranslator.translateRequests(gitlabRequests, gitConfig);
 			break;
 		}
 		return botRequests;
@@ -100,7 +106,7 @@ public class ApiGrabber {
 					request.getRequestNumber());
 			break;
 		case gitlab:
-			// TODO
+			// TODO Reply success inside Bot-PR
 			break;
 		}
 	}
@@ -126,7 +132,12 @@ public class ApiGrabber {
 					request.getRequestNumber());
 			break;
 		case gitlab:
-			// TODO
+			// Create PR Object
+			GitLabCreateRequest gitlabCreateRequest = gitlabTranslator.makeCreateRequest(request, gitConfig,
+					botBranchName);
+			// Create PR on filehoster
+			GitLabPullRequest newGitLabRequest = gitlabGrabber.createRequest(gitlabCreateRequest, gitConfig);
+			// TODO: Reply to User
 			break;
 		}
 	}
@@ -147,7 +158,7 @@ public class ApiGrabber {
 					request.getRequestNumber());
 			break;
 		case gitlab:
-			// TODO
+			// TODO Reply failure
 			break;
 		}
 	}
@@ -165,7 +176,7 @@ public class ApiGrabber {
 			githubGrabber.checkBranch(gitConfig, branchName);
 			break;
 		case gitlab:
-			// TODO
+			gitlabGrabber.checkBranch(gitConfig, branchName);
 			break;
 		}
 	}
@@ -288,7 +299,11 @@ public class ApiGrabber {
 			githubGrabber.createRequest(createRequest, gitConfig);
 			break;
 		case gitlab:
-			// TODO
+			// Create PR Object
+			GitLabCreateRequest gitlabCreateRequest = gitlabTranslator.makeCreateRequestWithAnalysisService(issue,
+					gitConfig, newBranch);
+			// Create PR on filehoster
+			gitlabGrabber.createRequest(gitlabCreateRequest, gitConfig);
 			break;
 		}
 	}
