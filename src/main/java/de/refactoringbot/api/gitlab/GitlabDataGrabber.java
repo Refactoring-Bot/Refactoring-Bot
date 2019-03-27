@@ -28,8 +28,8 @@ import de.refactoringbot.model.exceptions.ValidationException;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabCreateRequest;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequest;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequests;
-import de.refactoringbot.model.gitlab.pullrequestcomment.GitLabPullRequestComment;
-import de.refactoringbot.model.gitlab.pullrequestcomment.GitLabPullRequestComments;
+import de.refactoringbot.model.gitlab.pullrequestdiscussion.GitLabDiscussion;
+import de.refactoringbot.model.gitlab.pullrequestdiscussion.GitLabDiscussions;
 import de.refactoringbot.model.gitlab.repository.GitLabRepository;
 import de.refactoringbot.model.gitlab.user.GitLabUser;
 
@@ -273,7 +273,7 @@ public class GitlabDataGrabber {
 	 * @throws GitHubAPIException
 	 * @throws IOException
 	 */
-	public GitLabPullRequestComments getAllPullRequestComments(URI commentUri, GitConfiguration gitConfig)
+	public GitLabDiscussions getAllPullRequestDiscussions(URI commentUri, GitConfiguration gitConfig)
 			throws GitLabAPIException, IOException {
 		RestTemplate rest = new RestTemplate();
 		HttpHeaders headers = new HttpHeaders();
@@ -289,14 +289,16 @@ public class GitlabDataGrabber {
 			throw new GitLabAPIException("Could not get pull request comments from GitLab!", r);
 		}
 
-		GitLabPullRequestComments allComments = new GitLabPullRequestComments();
+		GitLabDiscussions allDiscussions = new GitLabDiscussions();
+		
+		logger.info(commentUri.toString());
 
 		try {
 			// Try to map json to object
-			List<GitLabPullRequestComment> commentList = mapper.readValue(json,
-					mapper.getTypeFactory().constructCollectionType(List.class, GitLabPullRequestComment.class));
-			allComments.setComments(commentList);
-			return allComments;
+			List<GitLabDiscussion> discussionList = mapper.readValue(json,
+					mapper.getTypeFactory().constructCollectionType(List.class, GitLabDiscussion.class));
+			allDiscussions.setDiscussions(discussionList);
+			return allDiscussions;
 		} catch (IOException e) {
 			logger.error(e.getMessage(), e);
 			throw new IOException("Could not create object from GitLab-Comment json!", e);
@@ -320,16 +322,16 @@ public class GitlabDataGrabber {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(uri.getScheme())
 				.host(uri.getHost()).path(uri.getPath());
-		
+
 		apiUriBuilder.queryParam("title", createRequest.getTitle());
 		apiUriBuilder.queryParam("description", createRequest.getDescription());
 		apiUriBuilder.queryParam("source_branch", createRequest.getSource_branch());
 		apiUriBuilder.queryParam("target_branch", createRequest.getTarget_branch());
 		apiUriBuilder.queryParam("allow_collaboration", createRequest.isAllow_collaboration());
 		apiUriBuilder.queryParam("target_project_id", createRequest.getTarget_project_id());
-		
+
 		uri = apiUriBuilder.build().encode().toUri();
-		
+
 		RestTemplate rest = new RestTemplate();
 
 		HttpHeaders headers = new HttpHeaders();
@@ -342,6 +344,47 @@ public class GitlabDataGrabber {
 			return rest.exchange(uri, HttpMethod.POST, entity, GitLabPullRequest.class).getBody();
 		} catch (RestClientException r) {
 			throw new GitLabAPIException("Could not create pull request on GitLab!", r);
+		}
+	}
+
+	/**
+	 * This method responds to the user inside the GitLabDiscussion.
+	 * 
+	 * @param gitConfig
+	 * @param pullRequestIid
+	 * @param discussionId
+	 * @param noteId
+	 * @param message
+	 * @throws GitLabAPIException 
+	 * @throws URISyntaxException 
+	 */
+	public void respondToUser(GitConfiguration gitConfig, Integer pullRequestIid, String discussionId, Integer noteId,
+			String message) throws GitLabAPIException, URISyntaxException {
+		// Build URI
+		URI uri = createURIFromApiLink(gitConfig.getRepoApiLink() + "/merge_requests/" + pullRequestIid
+				+ "/discussions/" + discussionId + "/notes");
+
+		// Build URI
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(uri.getScheme())
+				.host(uri.getHost()).path(uri.getPath());
+
+		apiUriBuilder.queryParam("note_id", noteId);
+		apiUriBuilder.queryParam("body", message);
+
+		uri = apiUriBuilder.build().encode().toUri();
+
+		RestTemplate rest = new RestTemplate();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		headers.set(TOKEN_HEADER, gitConfig.getBotToken());
+		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+
+		try {
+			// Send request to the GitLab-API
+			rest.exchange(uri, HttpMethod.POST, entity, String.class).getBody();
+		} catch (RestClientException r) {
+			throw new GitLabAPIException("Could not reply to user on GitLab!", r);
 		}
 	}
 

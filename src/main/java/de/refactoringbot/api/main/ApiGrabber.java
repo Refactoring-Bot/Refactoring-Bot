@@ -108,7 +108,8 @@ public class ApiGrabber {
 					request.getRequestNumber());
 			break;
 		case gitlab:
-			// TODO Reply success inside Bot-PR
+			gitlabGrabber.respondToUser(gitConfig, request.getRequestNumber(), comment.getDiscussionID(),
+					comment.getCommentID(), gitlabTranslator.getReplyComment(null));
 			break;
 		}
 	}
@@ -139,7 +140,8 @@ public class ApiGrabber {
 					botBranchName);
 			// Create PR on filehoster
 			GitLabPullRequest newGitLabRequest = gitlabGrabber.createRequest(gitlabCreateRequest, gitConfig);
-			// TODO: Reply to User
+			gitlabGrabber.respondToUser(gitConfig, request.getRequestNumber(), comment.getDiscussionID(),
+					comment.getCommentID(), gitlabTranslator.getReplyComment(newGitLabRequest.getWebUrl()));
 			break;
 		}
 	}
@@ -160,7 +162,8 @@ public class ApiGrabber {
 					request.getRequestNumber());
 			break;
 		case gitlab:
-			// TODO Reply failure
+			gitlabGrabber.respondToUser(gitConfig, request.getRequestNumber(), comment.getDiscussionID(),
+					comment.getCommentID(), errorMessage);
 			break;
 		}
 	}
@@ -198,22 +201,24 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (configuration.getRepoService()) {
 		case github:
-			GithubRepository githubRepo = githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
-					configuration.getBotToken());
+			GithubRepository githubRepo = githubGrabber.checkRepository(configuration.getRepoName(),
+					configuration.getRepoOwner(), configuration.getBotToken());
 			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
 					configuration.getBotEmail());
 
 			// Create git configuration and a fork
-			gitConfig = githubTranslator.createConfiguration(configuration, githubRepo.getUrl(), githubRepo.getHtmlUrl());
+			gitConfig = githubTranslator.createConfiguration(configuration, githubRepo.getUrl(),
+					githubRepo.getHtmlUrl());
 			return gitConfig;
 		case gitlab:
-			GitLabRepository gitlabRepo = gitlabGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
-					configuration.getBotToken());
+			GitLabRepository gitlabRepo = gitlabGrabber.checkRepository(configuration.getRepoName(),
+					configuration.getRepoOwner(), configuration.getBotToken());
 			gitlabGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
 					configuration.getBotEmail());
 
 			// Create git configuration and a fork
-			gitConfig = gitlabTranslator.createConfiguration(configuration, gitlabRepo.getLinks().getSelf(), gitlabRepo.getHttpUrlToRepo());
+			gitConfig = gitlabTranslator.createConfiguration(configuration, gitlabRepo.getLinks().getSelf(),
+					gitlabRepo.getHttpUrlToRepo());
 			return gitConfig;
 		default:
 			throw new Exception("Filehoster " + "'" + configuration.getRepoService() + "' is not supported!");
@@ -250,11 +255,13 @@ public class ApiGrabber {
 		switch (gitConfig.getRepoService()) {
 		case github:
 			GithubRepository githubFork = githubGrabber.createFork(gitConfig);
-			gitConfig = githubTranslator.addForkDetailsToConfiguration(gitConfig, githubFork.getUrl(), githubFork.getHtmlUrl());
+			gitConfig = githubTranslator.addForkDetailsToConfiguration(gitConfig, githubFork.getUrl(),
+					githubFork.getHtmlUrl());
 			return gitConfig;
 		case gitlab:
 			GitLabRepository gitlabFork = gitlabGrabber.createFork(gitConfig);
-			gitConfig = gitlabTranslator.addForkDetailsToConfiguration(gitConfig, gitlabFork.getLinks().getSelf(), gitlabFork.getHttpUrlToRepo());
+			gitConfig = gitlabTranslator.addForkDetailsToConfiguration(gitConfig, gitlabFork.getLinks().getSelf(),
+					gitlabFork.getHttpUrlToRepo());
 			return gitConfig;
 		default:
 			throw new Exception("Filehoster not supported!");

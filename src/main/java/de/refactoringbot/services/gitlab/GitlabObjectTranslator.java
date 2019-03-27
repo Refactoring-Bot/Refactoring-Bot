@@ -19,8 +19,9 @@ import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabCreateRequest;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequest;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequests;
-import de.refactoringbot.model.gitlab.pullrequestcomment.GitLabPullRequestComment;
-import de.refactoringbot.model.gitlab.pullrequestcomment.GitLabPullRequestComments;
+import de.refactoringbot.model.gitlab.pullrequestdiscussion.GitLabDiscussion;
+import de.refactoringbot.model.gitlab.pullrequestdiscussion.GitLabDiscussions;
+import de.refactoringbot.model.gitlab.pullrequestdiscussion.Note;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -115,19 +116,19 @@ public class GitlabObjectTranslator {
 			pullRequest.setBranchName(gitlabRequest.getSourceBranch());
 			pullRequest.setMergeBranchName(gitlabRequest.getTargetBranch());
 
-			URI commentUri = null;
+			URI discussionsUri = null;
 			try {
 				// Read comments URI
-				commentUri = new URI("https://gitlab.com/api/v4/projects/" + gitlabRequest.getProjectId()
-						+ "/merge_requests/" + gitlabRequest.getIid() + "/notes");
+				discussionsUri = new URI("https://gitlab.com/api/v4/projects/" + gitlabRequest.getProjectId()
+						+ "/merge_requests/" + gitlabRequest.getIid() + "/discussions");
 			} catch (URISyntaxException e) {
 				logger.error(e.getMessage(), e);
-				throw new URISyntaxException("Could not build comment URI!", e.getMessage());
+				throw new URISyntaxException("Could not build discussions URI!", e.getMessage());
 			}
 
 			// Get and translate comments from github
-			GitLabPullRequestComments gitlabComments = grabber.getAllPullRequestComments(commentUri, gitConfig);
-			BotPullRequestComments comments = translatePullRequestComments(gitlabComments);
+			GitLabDiscussions gitlabDiscussions = grabber.getAllPullRequestDiscussions(discussionsUri, gitConfig);
+			BotPullRequestComments comments = translatePullRequestComments(gitlabDiscussions);
 			pullRequest.setAllComments(comments.getComments());
 
 			translatedRequests.addPullRequest(pullRequest);
@@ -140,23 +141,30 @@ public class GitlabObjectTranslator {
 	/**
 	 * This method translates GitLab comments to bot comments.
 	 * 
-	 * @param gitlabComments
+	 * @param gitlabDiscussions
 	 * @return translatedComments
 	 */
-	private BotPullRequestComments translatePullRequestComments(GitLabPullRequestComments gitlabComments) {
+	private BotPullRequestComments translatePullRequestComments(GitLabDiscussions gitlabDiscussions) {
 		BotPullRequestComments translatedComments = new BotPullRequestComments();
 
-		for (GitLabPullRequestComment gitlabComment : gitlabComments.getComments()) {
-			BotPullRequestComment translatedComment = new BotPullRequestComment();
+		for (GitLabDiscussion gitlabDiscussion : gitlabDiscussions.getDiscussions()) {
+			for (Note gitlabNote: gitlabDiscussion.getNotes()) {
+				// Work only on line comments
+				if (gitlabNote.getPosition() != null) {
+					BotPullRequestComment translatedComment = new BotPullRequestComment();
+					
+					// Fill comment with data
+					translatedComment.setDiscussionID(gitlabDiscussion.getId());
+					translatedComment.setCommentID(gitlabNote.getId());
+					translatedComment.setFilepath(gitlabNote.getPosition().getNewPath());
+					translatedComment.setUsername(gitlabNote.getAuthor().getUsername());
+					translatedComment.setCommentBody(gitlabNote.getBody());
+					translatedComment.setPosition(gitlabNote.getPosition().getNewLine());
+					
 
-			// Fill comment with data
-			translatedComment.setCommentID(gitlabComment.getId());
-			translatedComment.setFilepath(gitlabComment.getPosition().getNewPath());
-			translatedComment.setUsername(gitlabComment.getAuthor().getUsername());
-			translatedComment.setCommentBody(gitlabComment.getBody());
-			translatedComment.setPosition(gitlabComment.getPosition().getNewLine());
-
-			translatedComments.addComment(translatedComment);
+					translatedComments.addComment(translatedComment);
+				}
+			}
 		}
 
 		return translatedComments;
@@ -208,6 +216,22 @@ public class GitlabObjectTranslator {
 		createRequest.setAllow_collaboration(true);
 
 		return createRequest;
+	}
+	
+	/**
+	 * This method returns a reply comment as a String that can be created on GitLab.
+	 * 
+	 * @param newRequestURL
+	 * @return comment
+	 */
+	public String getReplyComment(String newRequestURL) {
+		if (newRequestURL != null) {
+			// If new PullRequest created
+			return "Refactoring was successful! See request " + newRequestURL + ".";
+		} else {
+			// If old request updated
+			return "Refactoring was successful!";
+		}
 	}
 
 	/**
