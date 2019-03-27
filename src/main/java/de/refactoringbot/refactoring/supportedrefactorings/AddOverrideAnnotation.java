@@ -29,7 +29,6 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
 		String path = issue.getFilePath();
-		String methodName = null;
 
 		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
@@ -51,7 +50,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		out.close();
 
 		// Return commit message
-		return "Added override annotation to method " + methodName;
+		return "Added override annotation to method " + methodDeclarationToModify.getNameAsString();
 	}
 
 	/**
