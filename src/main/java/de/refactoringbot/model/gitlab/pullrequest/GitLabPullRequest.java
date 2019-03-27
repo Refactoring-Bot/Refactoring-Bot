@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.gitlab.user.GitLabUser;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "id",
@@ -89,11 +91,11 @@ public class GitLabPullRequest {
     @JsonProperty("downvotes")
     private Integer downvotes;
     @JsonProperty("author")
-    private Author author;
+    private GitLabUser author;
     @JsonProperty("user")
     private User user;
     @JsonProperty("assignee")
-    private Assignee assignee;
+    private GitLabUser assignee;
     @JsonProperty("source_project_id")
     private Integer sourceProjectId;
     @JsonProperty("target_project_id")
@@ -137,7 +139,7 @@ public class GitLabPullRequest {
     @JsonProperty("changes_count")
     private String changesCount;
     @JsonProperty("merged_by")
-    private MergedBy mergedBy;
+    private GitLabUser mergedBy;
     @JsonProperty("merged_at")
     private String mergedAt;
     @JsonProperty("closed_by")
@@ -284,12 +286,12 @@ public class GitLabPullRequest {
     }
 
     @JsonProperty("author")
-    public Author getAuthor() {
+    public GitLabUser getAuthor() {
         return author;
     }
 
     @JsonProperty("author")
-    public void setAuthor(Author author) {
+    public void setAuthor(GitLabUser author) {
         this.author = author;
     }
 
@@ -304,12 +306,12 @@ public class GitLabPullRequest {
     }
 
     @JsonProperty("assignee")
-    public Assignee getAssignee() {
+    public GitLabUser getAssignee() {
         return assignee;
     }
 
     @JsonProperty("assignee")
-    public void setAssignee(Assignee assignee) {
+    public void setAssignee(GitLabUser assignee) {
         this.assignee = assignee;
     }
 
@@ -524,12 +526,12 @@ public class GitLabPullRequest {
     }
 
     @JsonProperty("merged_by")
-    public MergedBy getMergedBy() {
+    public GitLabUser getMergedBy() {
         return mergedBy;
     }
 
     @JsonProperty("merged_by")
-    public void setMergedBy(MergedBy mergedBy) {
+    public void setMergedBy(GitLabUser mergedBy) {
         this.mergedBy = mergedBy;
     }
 

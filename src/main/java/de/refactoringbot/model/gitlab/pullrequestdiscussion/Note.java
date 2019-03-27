@@ -10,6 +10,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.gitlab.user.GitLabUser;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "id",
@@ -37,7 +39,7 @@ public class Note {
     @JsonProperty("attachment")
     private Object attachment;
     @JsonProperty("author")
-    private Author author;
+    private GitLabUser author;
     @JsonProperty("created_at")
     private String createdAt;
     @JsonProperty("updated_at")
@@ -98,12 +100,12 @@ public class Note {
     }
 
     @JsonProperty("author")
-    public Author getAuthor() {
+    public GitLabUser getAuthor() {
         return author;
     }
 
     @JsonProperty("author")
-    public void setAuthor(Author author) {
+    public void setAuthor(GitLabUser author) {
         this.author = author;
     }
 

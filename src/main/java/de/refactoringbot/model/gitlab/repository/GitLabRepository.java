@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import de.refactoringbot.model.gitlab.user.GitLabUser;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "id",
@@ -83,7 +85,7 @@ public class GitLabRepository {
     @JsonProperty("tag_list")
     private List<String> tagList = null;
     @JsonProperty("owner")
-    private Owner owner;
+    private GitLabUser owner;
     @JsonProperty("name")
     private String name;
     @JsonProperty("name_with_namespace")
@@ -254,12 +256,12 @@ public class GitLabRepository {
     }
 
     @JsonProperty("owner")
-    public Owner getOwner() {
+    public GitLabUser getOwner() {
         return owner;
     }
 
     @JsonProperty("owner")
-    public void setOwner(Owner owner) {
+    public void setOwner(GitLabUser owner) {
         this.owner = owner;
     }
 
