@@ -40,7 +40,7 @@ public class GitlabObjectTranslator {
 
 	private final GitlabDataGrabber grabber;
 	private final ModelMapper modelMapper;
-	private final String pullRequestBodyComment = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this pull request by creating line specific (review) comments inside the 'Changes' tab of this merge request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
+	private final String pullRequestBodyComment = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this merge request by creating line specific (review) comments inside the 'Changes' tab of this merge request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
 
 	@Autowired
 	public GitlabObjectTranslator(GitlabDataGrabber grabber, ModelMapper modelMapper) {
