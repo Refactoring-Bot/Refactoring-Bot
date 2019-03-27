@@ -6,6 +6,7 @@ public class GitLabCreateRequest {
 	private String target_branch;
 	private String title;
 	private String description;
+	private String target_project_id;
 	private boolean allow_collaboration;
 	
 	public String getSource_branch() {
@@ -46,6 +47,14 @@ public class GitLabCreateRequest {
 	
 	public void setAllow_collaboration(boolean allow_collaboration) {
 		this.allow_collaboration = allow_collaboration;
+	}
+
+	public String getTarget_project_id() {
+		return target_project_id;
+	}
+
+	public void setTarget_project_id(String target_project_id) {
+		this.target_project_id = target_project_id;
 	}
 	
 }

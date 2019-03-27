@@ -56,26 +56,35 @@ public class GithubObjectTranslator {
 	 * @param configuration
 	 * @return
 	 */
-	public GitConfiguration createConfiguration(GitConfigurationDTO configuration) {
+	public GitConfiguration createConfiguration(GitConfigurationDTO configuration, String apiUrl, String gitUrl) {
 		
 		GitConfiguration config = new GitConfiguration();
 
 		modelMapper.map(configuration, config);
 		// Fill object
-		config.setRepoApiLink(
-				"https://api.github.com/repos/" + configuration.getRepoOwner() + "/" + configuration.getRepoName());
-		config.setRepoGitLink(
-				"https://github.com/" + configuration.getRepoOwner() + "/" + configuration.getRepoName() + ".git");
-		config.setForkApiLink(
-				"https://api.github.com/repos/" + configuration.getBotName() + "/" + configuration.getRepoName());
-		config.setForkGitLink(
-				"https://github.com/" + configuration.getBotName() + "/" + configuration.getRepoName() + ".git");
+		config.setRepoApiLink(apiUrl);
+		config.setRepoGitLink(gitUrl + ".git");
 
 		if (configuration.getAnalysisService() != null) {
 			config.setAnalysisService(configuration.getAnalysisService());
 		}
 
 		return config;
+	}
+	
+	/**
+	 * This method adds the details of a fork to the GitConfiguration after the fork
+	 * was created.
+	 * 
+	 * @param gitConfig
+	 * @param apiUrl
+	 * @param gitUrl
+	 * @return gitConfig
+	 */
+	public GitConfiguration addForkDetailsToConfiguration(GitConfiguration gitConfig, String apiUrl, String gitUrl) {
+		gitConfig.setForkApiLink(apiUrl);
+		gitConfig.setForkGitLink(gitUrl + ".git");
+		return gitConfig;
 	}
 
 	/**

@@ -21,9 +21,11 @@ import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
+import de.refactoringbot.model.github.repository.GithubRepository;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabCreateRequest;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequest;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequests;
+import de.refactoringbot.model.gitlab.repository.GitLabRepository;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -196,22 +198,22 @@ public class ApiGrabber {
 		// Pick filehoster
 		switch (configuration.getRepoService()) {
 		case github:
-			githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
+			GithubRepository githubRepo = githubGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
 					configuration.getBotToken());
 			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
 					configuration.getBotEmail());
 
 			// Create git configuration and a fork
-			gitConfig = githubTranslator.createConfiguration(configuration);
+			gitConfig = githubTranslator.createConfiguration(configuration, githubRepo.getUrl(), githubRepo.getHtmlUrl());
 			return gitConfig;
 		case gitlab:
-			gitlabGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
+			GitLabRepository gitlabRepo = gitlabGrabber.checkRepository(configuration.getRepoName(), configuration.getRepoOwner(),
 					configuration.getBotToken());
 			gitlabGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
 					configuration.getBotEmail());
 
 			// Create git configuration and a fork
-			gitConfig = gitlabTranslator.createConfiguration(configuration);
+			gitConfig = gitlabTranslator.createConfiguration(configuration, gitlabRepo.getLinks().getSelf(), gitlabRepo.getHttpUrlToRepo());
 			return gitConfig;
 		default:
 			throw new Exception("Filehoster " + "'" + configuration.getRepoService() + "' is not supported!");
@@ -243,15 +245,19 @@ public class ApiGrabber {
 	 * @param gitConfig
 	 * @throws Exception
 	 */
-	public void createFork(GitConfiguration gitConfig) throws Exception {
+	public GitConfiguration createFork(GitConfiguration gitConfig) throws Exception {
 		// Pick filehoster
 		switch (gitConfig.getRepoService()) {
 		case github:
-			githubGrabber.createFork(gitConfig);
-			break;
+			GithubRepository githubFork = githubGrabber.createFork(gitConfig);
+			gitConfig = githubTranslator.addForkDetailsToConfiguration(gitConfig, githubFork.getUrl(), githubFork.getHtmlUrl());
+			return gitConfig;
 		case gitlab:
-			gitlabGrabber.createFork(gitConfig);
-			break;
+			GitLabRepository gitlabFork = gitlabGrabber.createFork(gitConfig);
+			gitConfig = gitlabTranslator.addForkDetailsToConfiguration(gitConfig, gitlabFork.getLinks().getSelf(), gitlabFork.getHttpUrlToRepo());
+			return gitConfig;
+		default:
+			throw new Exception("Filehoster not supported!");
 		}
 	}
 

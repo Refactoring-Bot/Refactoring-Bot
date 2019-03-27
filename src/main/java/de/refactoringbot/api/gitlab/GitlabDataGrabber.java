@@ -13,8 +13,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -66,7 +64,7 @@ public class GitlabDataGrabber {
 	 * @throws MalformedURLException
 	 * @throws GitHubAPIException
 	 */
-	public void checkRepository(String repoName, String repoOwner, String botToken)
+	public GitLabRepository checkRepository(String repoName, String repoOwner, String botToken)
 			throws GitLabAPIException, MalformedURLException {
 		// Build URI
 		URI gitlabURI = URI.create("https://gitlab.com/api/v4/projects/" + repoOwner + "%2F" + repoName);
@@ -80,7 +78,7 @@ public class GitlabDataGrabber {
 
 		try {
 			// Send request to the GitLab-API
-			rest.exchange(gitlabURI, HttpMethod.GET, entity, GitLabRepository.class).getBody();
+			return rest.exchange(gitlabURI, HttpMethod.GET, entity, GitLabRepository.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
 			throw new GitLabAPIException("Repository does not exist on Github or invalid Bot-Token!", e);
@@ -129,7 +127,7 @@ public class GitlabDataGrabber {
 			throw new ValidationException("Invalid Bot-Email!");
 		}
 	}
-	
+
 	/**
 	 * This method checks if a branch with a specific name exists on the fork. If
 	 * such a branch exists, the method throws an exception.
@@ -142,7 +140,7 @@ public class GitlabDataGrabber {
 	 */
 	public void checkBranch(GitConfiguration gitConfig, String branchName)
 			throws URISyntaxException, BotRefactoringException, GitLabAPIException {
-        // Build URI
+		// Build URI
 		URI uri = createURIFromApiLink(gitConfig.getForkApiLink() + "/repository/branches/" + branchName);
 
 		RestTemplate rest = new RestTemplate();
@@ -150,7 +148,7 @@ public class GitlabDataGrabber {
 		headers.set("User-Agent", USER_AGENT);
 		headers.set(TOKEN_HEADER, gitConfig.getBotToken());
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-		
+
 		try {
 			// Send Request to the GitLab-API
 			rest.exchange(uri, HttpMethod.GET, entity, String.class).getBody();
@@ -174,7 +172,7 @@ public class GitlabDataGrabber {
 	 * @throws URISyntaxException
 	 * @throws GitHubAPIException
 	 */
-	public void createFork(GitConfiguration gitConfig) throws URISyntaxException, GitLabAPIException {
+	public GitLabRepository createFork(GitConfiguration gitConfig) throws URISyntaxException, GitLabAPIException {
 
 		// Build URI
 		URI forkUri = createURIFromApiLink(gitConfig.getRepoApiLink() + "/fork");
@@ -187,7 +185,7 @@ public class GitlabDataGrabber {
 
 		try {
 			// Send request to the GitLab-API
-			rest.exchange(forkUri, HttpMethod.POST, entity, GitLabRepository.class).getBody();
+			return rest.exchange(forkUri, HttpMethod.POST, entity, GitLabRepository.class).getBody();
 		} catch (RestClientException r) {
 			throw new GitLabAPIException("Could not create fork on GitLab!", r);
 		}
@@ -275,7 +273,8 @@ public class GitlabDataGrabber {
 	 * @throws GitHubAPIException
 	 * @throws IOException
 	 */
-	public GitLabPullRequestComments getAllPullRequestComments(URI commentUri, GitConfiguration gitConfig) throws GitLabAPIException, IOException {
+	public GitLabPullRequestComments getAllPullRequestComments(URI commentUri, GitConfiguration gitConfig)
+			throws GitLabAPIException, IOException {
 		RestTemplate rest = new RestTemplate();
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
@@ -303,7 +302,7 @@ public class GitlabDataGrabber {
 			throw new IOException("Could not create object from GitLab-Comment json!", e);
 		}
 	}
-	
+
 	/**
 	 * This method creates a pull request on GitLab.
 	 * 
@@ -313,25 +312,34 @@ public class GitlabDataGrabber {
 	 * @throws URISyntaxException
 	 * @throws GitLabAPIException
 	 */
-	public GitLabPullRequest createRequest(GitLabCreateRequest createRequest,
-			GitConfiguration gitConfig) throws URISyntaxException, GitLabAPIException{
+	public GitLabPullRequest createRequest(GitLabCreateRequest createRequest, GitConfiguration gitConfig)
+			throws URISyntaxException, GitLabAPIException {
 		// Build URI
-		URI uri = createURIFromApiLink(gitConfig.getRepoApiLink() + "/merge_requests");
+		URI uri = createURIFromApiLink(gitConfig.getForkApiLink() + "/merge_requests");
+
+		// Build URI
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(uri.getScheme())
+				.host(uri.getHost()).path(uri.getPath());
+		
+		apiUriBuilder.queryParam("title", createRequest.getTitle());
+		apiUriBuilder.queryParam("description", createRequest.getDescription());
+		apiUriBuilder.queryParam("source_branch", createRequest.getSource_branch());
+		apiUriBuilder.queryParam("target_branch", createRequest.getTarget_branch());
+		apiUriBuilder.queryParam("allow_collaboration", createRequest.isAllow_collaboration());
+		apiUriBuilder.queryParam("target_project_id", createRequest.getTarget_project_id());
+		
+		uri = apiUriBuilder.build().encode().toUri();
 		
 		RestTemplate rest = new RestTemplate();
-//		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
-//		headers.add("User-Agent", USER_AGENT);
-//		headers.add(TOKEN_HEADER, gitConfig.getBotToken());
-//		HttpEntity<GitLabCreateRequest> entity = new HttpEntity<>(createRequest, headers);
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		headers.set(TOKEN_HEADER, gitConfig.getBotToken());
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-		
+
 		try {
 			// Send request to the GitLab-API
-			return rest.exchange(uri, HttpMethod.POST, entity, GitLabPullRequest.class)
-					.getBody();
+			return rest.exchange(uri, HttpMethod.POST, entity, GitLabPullRequest.class).getBody();
 		} catch (RestClientException r) {
 			throw new GitLabAPIException("Could not create pull request on GitLab!", r);
 		}

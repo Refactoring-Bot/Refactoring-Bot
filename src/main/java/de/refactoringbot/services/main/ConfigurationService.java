@@ -162,8 +162,7 @@ public class ConfigurationService {
 		File dir = new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId());
 		dir.mkdir();
 		// Create the fork on the filehoster bot account
-		grabber.createFork(config);
-		logger.info("GITLAB FORK WAS CREATED");
+		config = grabber.createFork(config);
 		// Clone fork + add remote of origin repository
 		gitService.initLocalWorkspace(config);
 

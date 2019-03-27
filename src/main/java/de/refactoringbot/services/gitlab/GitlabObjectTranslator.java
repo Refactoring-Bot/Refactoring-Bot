@@ -1,6 +1,7 @@
 package de.refactoringbot.services.gitlab;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -50,22 +51,19 @@ public class GitlabObjectTranslator {
 	 * This method creates a GitConfiguration from GitHub data.
 	 * 
 	 * @param configuration
+	 * @param integer
 	 * @return
+	 * @throws GitLabAPIException
+	 * @throws MalformedURLException
 	 */
-	public GitConfiguration createConfiguration(GitConfigurationDTO configuration) {
+	public GitConfiguration createConfiguration(GitConfigurationDTO configuration, String apiUrl, String gitUrl) {
 
 		GitConfiguration config = new GitConfiguration();
 
 		modelMapper.map(configuration, config);
 		// Fill object
-		config.setRepoApiLink("https://gitlab.com/api/v4/projects/" + configuration.getRepoOwner() + "%2F"
-				+ configuration.getRepoName());
-		config.setRepoGitLink("https://gitlab.com/" + configuration.getRepoOwner() + "/"
-				+ configuration.getRepoName().toLowerCase() + ".git");
-		config.setForkApiLink("https://gitlab.com/api/v4/projects/" + configuration.getBotName() + "%2F"
-				+ configuration.getRepoName());
-		config.setForkGitLink("https://gitlab.com/" + configuration.getBotName() + "/"
-				+ configuration.getRepoName().toLowerCase() + ".git");
+		config.setRepoApiLink(apiUrl);
+		config.setRepoGitLink(gitUrl);
 
 		if (configuration.getAnalysisService() != null) {
 			config.setAnalysisService(configuration.getAnalysisService());
@@ -75,12 +73,27 @@ public class GitlabObjectTranslator {
 	}
 
 	/**
+	 * This method adds the details of a fork to the GitConfiguration after the fork
+	 * was created.
+	 * 
+	 * @param gitConfig
+	 * @param apiUrl
+	 * @param gitUrl
+	 * @return gitConfig
+	 */
+	public GitConfiguration addForkDetailsToConfiguration(GitConfiguration gitConfig, String apiUrl, String gitUrl) {
+		gitConfig.setForkApiLink(apiUrl);
+		gitConfig.setForkGitLink(gitUrl);
+		return gitConfig;
+	}
+
+	/**
 	 * This method translates GitLab Pull-Requests to BotPullRequests
 	 * 
 	 * @param gitlabRequests
-	 * 			@param gitConfig @return botRequests @throws
-	 *            URISyntaxException @throws GitLabAPIException @throws
-	 *            IOException @throws
+	 * @param gitConfig
+	 * @return botRequests @throws URISyntaxException @throws
+	 *         GitLabAPIException @throws IOException @throws
 	 */
 	public BotPullRequests translateRequests(GitLabPullRequests gitlabRequests, GitConfiguration gitConfig)
 			throws URISyntaxException, GitLabAPIException, IOException {
@@ -169,6 +182,7 @@ public class GitlabObjectTranslator {
 		createRequest.setSource_branch(botBranchName);
 		createRequest.setTarget_branch(refactoredRequest.getBranchName());
 		createRequest.setAllow_collaboration(true);
+		createRequest.setTarget_project_id(getProjectId(gitConfig.getRepoApiLink()));
 
 		return createRequest;
 	}
@@ -187,13 +201,25 @@ public class GitlabObjectTranslator {
 		GitLabCreateRequest createRequest = new GitLabCreateRequest();
 
 		// Fill object with data
-		createRequest
-				.setTitle("Bot Merge-Request Refactoring with '" + gitConfig.getAnalysisService() + "'");
+		createRequest.setTitle("Bot Merge-Request Refactoring with '" + gitConfig.getAnalysisService() + "'");
 		createRequest.setDescription(pullRequestBodyComment);
-		createRequest.setSource_branch(gitConfig.getBotName() + ":" + newBranch);
+		createRequest.setSource_branch(newBranch);
 		createRequest.setTarget_branch("master");
 		createRequest.setAllow_collaboration(true);
 
 		return createRequest;
 	}
+
+	/**
+	 * This method reads the projectID from the api link of a repository.
+	 * 
+	 * @param repoApiLink
+	 * @return projectId
+	 */
+	public String getProjectId(String repoApiLink) {
+		String[] splittString = repoApiLink.split("/");
+		String projectId = splittString[splittString.length - 1];
+		return projectId;
+	}
+
 }

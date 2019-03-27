@@ -62,7 +62,7 @@ public class GithubDataGrabber {
 	 * @return {Repository-File}
 	 * @throws GitHubAPIException
 	 */
-	public void checkRepository(String repoName, String repoOwner, String botToken) throws GitHubAPIException {
+	public GithubRepository checkRepository(String repoName, String repoOwner, String botToken) throws GitHubAPIException {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("api.github.com")
 				.path("/repos/" + repoOwner + "/" + repoName);
@@ -80,7 +80,7 @@ public class GithubDataGrabber {
 		
 		try {
 			// Send request to the GitHub-API
-			rest.exchange(githubURI, HttpMethod.GET, entity, GithubRepository.class).getBody();
+			return rest.exchange(githubURI, HttpMethod.GET, entity, GithubRepository.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
 			throw new GitHubAPIException("Repository does not exist on Github or invalid Bot-Token!", e);
@@ -384,7 +384,7 @@ public class GithubDataGrabber {
 	 * @throws URISyntaxException
 	 * @throws GitHubAPIException
 	 */
-	public void createFork(GitConfiguration gitConfig) throws URISyntaxException, GitHubAPIException {
+	public GithubRepository createFork(GitConfiguration gitConfig) throws URISyntaxException, GitHubAPIException {
 
 		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
@@ -400,7 +400,7 @@ public class GithubDataGrabber {
 
 		try {
 			// Send request to the Github-API
-			rest.exchange(forksUri, HttpMethod.POST, null, GithubRepository.class).getBody();
+			return rest.exchange(forksUri, HttpMethod.POST, null, GithubRepository.class).getBody();
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not create fork on Github!", r);
 		}

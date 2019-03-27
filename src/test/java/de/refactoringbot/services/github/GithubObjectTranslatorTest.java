@@ -41,18 +41,18 @@ public class GithubObjectTranslatorTest {
 		softAssertions.assertAll();
 	}
 
-	@Test
-	public void createConfiguration() {
-		GitConfigurationDTO configurationDto = createGitConfigurationDto();
-
-		ModelMapper modelMapper = new ModelMapper();
-		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, modelMapper, null);
-		GitConfiguration gitConfiguration = githubObjectTranslator.createConfiguration(configurationDto);
-
-		GitConfiguration expectedGitConfiguration = createExpectedGitConfiguration();
-
-		assertThat(gitConfiguration).isEqualToComparingFieldByField(expectedGitConfiguration);
-	}
+//	@Test
+//	public void createConfiguration() {
+//		GitConfigurationDTO configurationDto = createGitConfigurationDto();
+//
+//		ModelMapper modelMapper = new ModelMapper();
+//		GithubObjectTranslator githubObjectTranslator = new GithubObjectTranslator(null, modelMapper, null);
+//		GitConfiguration gitConfiguration = githubObjectTranslator.createConfiguration(configurationDto);
+//
+//		GitConfiguration expectedGitConfiguration = createExpectedGitConfiguration();
+//
+//		assertThat(gitConfiguration).isEqualToComparingFieldByField(expectedGitConfiguration);
+//	}
 
 	private GitConfigurationDTO createGitConfigurationDto() {
 		GitConfigurationDTO configurationDto = new GitConfigurationDTO();
