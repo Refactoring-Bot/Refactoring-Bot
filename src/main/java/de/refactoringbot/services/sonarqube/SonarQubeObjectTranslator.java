@@ -75,7 +75,7 @@ public class SonarQubeObjectTranslator {
 				throw new IOException("Unable to locate issue path.");
 			}
 
-			// Cut path outside the repository
+			// Cut path outside the repository // TODO why?
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 
 			botIssue.setFilePath(translatedPath);
