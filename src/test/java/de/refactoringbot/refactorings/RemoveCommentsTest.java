@@ -18,14 +18,10 @@ import de.refactoringbot.resources.removecomments.TestDataClassRemoveComments;
 public class RemoveCommentsTest extends AbstractRefactoringTests {
 
         private static final Logger logger = LoggerFactory.getLogger(RemoveCommentsTest.class);
+        private TestDataClassRemoveComments missingOverrideTestClass = new TestDataClassRemoveComments();
 
         @Rule
         public final ExpectedException exception = ExpectedException.none();
-
-        @Override
-        public Class<TestDataClassRemoveComments> getTestResourcesClass() {
-            return TestDataClassRemoveComments.class;
-        }
 
         @Test
         public void testRemoveLineComments() throws Exception {
@@ -40,7 +36,7 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 
         private void testRemoveComment(int line, String expectedResult) throws Exception {
             // arrange
-            File tempFile = getTempCopyOfTestResourcesFile();
+            File tempFile = createTempCopyOfTestResourcesFile(TestDataClassRemoveComments.class);
             BotIssue issue = new BotIssue();
             GitConfiguration gitConfig = new GitConfiguration();
             RemoveCommentedOutCode refactoring = new RemoveCommentedOutCode();

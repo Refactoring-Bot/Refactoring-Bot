@@ -32,11 +32,6 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
-	@Override
-	public Class<?> getTestResourcesClass() {
-		return TestDataClassReorderModifiers.class;
-	}
-
 	@Test
 	public void testReorderMethodModifiers() throws Exception {
 		// arrange
@@ -49,7 +44,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 		FileInputStream in = new FileInputStream(tempFile);
 		CompilationUnit cu = StaticJavaParser.parse(in);
 		MethodDeclaration methodDeclarationAfterRefactoring = RefactoringHelper
-				.getMethodByLineNumberOfMethodName(lineOfMethod, cu);
+				.getMethodDeclarationByLineNumber(lineOfMethod, cu);
 		assertAllModifiersInCorrectOrder(methodDeclarationAfterRefactoring.getModifiers());
 	}
 
@@ -78,7 +73,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 
 	private File performReorderModifiers(int lineNumber) throws Exception {
 		// arrange
-		File tempFile = getTempCopyOfTestResourcesFile();
+		File tempFile = createTempCopyOfTestResourcesFile(TestDataClassReorderModifiers.class);
 		BotIssue issue = new BotIssue();
 		GitConfiguration gitConfig = new GitConfiguration();
 		ReorderModifier refactoring = new ReorderModifier();

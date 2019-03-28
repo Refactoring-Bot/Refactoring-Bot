@@ -76,7 +76,7 @@ public class SonarQubeObjectTranslator {
                                         + "Are you sure that the source code and SonarQube analysis are on the same branch and version?");
 			}
 
-			// Cut path outside the repository
+			// Cut path outside the repository // TODO why?
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 
 			botIssue.setFilePath(translatedPath);

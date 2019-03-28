@@ -29,13 +29,12 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
 		String path = issue.getFilePath();
-		String methodName = null;
 
 		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
 		MethodDeclaration methodDeclarationToModify = RefactoringHelper
-				.getMethodByLineNumberOfMethodName(issue.getLine(), compilationUnit);
+				.getMethodDeclarationByLineNumber(issue.getLine(), compilationUnit);
 		if (methodDeclarationToModify == null) {
 			throw new BotRefactoringException("Could not find a method declaration at specified line!");
 		}
@@ -51,7 +50,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		out.close();
 
 		// Return commit message
-		return "Added override annotation to method " + methodName;
+		return "Added override annotation to method " + methodDeclarationToModify.getNameAsString();
 	}
 
 	/**
