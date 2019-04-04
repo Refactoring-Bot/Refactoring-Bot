@@ -120,7 +120,7 @@ public class GitlabDataGrabber {
 		if (!botUsername.equals(gitLabUser.getUsername())) {
 			throw new ValidationException("Bot-User does not exist on GitLab!");
 		}
-		if (gitLabUser.getPublicEmail() == null) {
+		if (gitLabUser.getPublicEmail() == null || gitLabUser.getPublicEmail().isEmpty()) {
 			throw new ValidationException("Bot-User does not have a public email on GitLab!");
 		}
 		if (!gitLabUser.getPublicEmail().equals(botEmail)) {

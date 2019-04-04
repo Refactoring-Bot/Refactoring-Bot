@@ -124,7 +124,7 @@ public class GithubDataGrabber {
 		if (!botUsername.equals(githubUser.getLogin())) {
 			throw new ValidationException("Bot-User does not exist on Github!");
 		}
-		if (githubUser.getEmail() == null) {
+		if (githubUser.getEmail() == null || githubUser.getEmail().isEmpty()) {
 			throw new ValidationException("Bot-User does not have a public email on Github!");
 		}
 		if (!githubUser.getEmail().equals(botEmail)) {
