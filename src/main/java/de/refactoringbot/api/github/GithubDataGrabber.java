@@ -83,7 +83,7 @@ public class GithubDataGrabber {
 			return rest.exchange(githubURI, HttpMethod.GET, entity, GithubRepository.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
-			throw new GitHubAPIException("Repository does not exist on Github or invalid Bot-Token!", e);
+			throw new GitHubAPIException("Repository does not exist on GitHub or invalid Bot-Token!", e);
 		}
 	}
 

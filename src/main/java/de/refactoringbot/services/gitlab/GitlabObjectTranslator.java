@@ -49,7 +49,7 @@ public class GitlabObjectTranslator {
 	}
 
 	/**
-	 * This method creates a GitConfiguration from GitHub data.
+	 * This method creates a GitConfiguration from GitLab data.
 	 * 
 	 * @param configuration
 	 * @param integer
@@ -126,7 +126,7 @@ public class GitlabObjectTranslator {
 				throw new URISyntaxException("Could not build discussions URI!", e.getMessage());
 			}
 
-			// Get and translate comments from github
+			// Get and translate comments from GitLab
 			GitLabDiscussions gitlabDiscussions = grabber.getAllPullRequestDiscussions(discussionsUri, gitConfig);
 			BotPullRequestComments comments = translatePullRequestComments(gitlabDiscussions);
 			pullRequest.setAllComments(comments.getComments());

@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
-import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.exceptions.ValidationException;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabCreateRequest;
@@ -56,13 +55,13 @@ public class GitlabDataGrabber {
 	private static final String TOKEN_HEADER = "Private-Token";
 
 	/**
-	 * This method tries to get a repository from github.
+	 * This method tries to get a repository from GitLab.
 	 * 
 	 * @param repoName
 	 * @param repoOwner
 	 * @param botToken
 	 * @throws MalformedURLException
-	 * @throws GitHubAPIException
+	 * @throws GitLabAPIException
 	 */
 	public GitLabRepository checkRepository(String repoName, String repoOwner, String botToken)
 			throws GitLabAPIException, MalformedURLException {
@@ -81,7 +80,7 @@ public class GitlabDataGrabber {
 			return rest.exchange(gitlabURI, HttpMethod.GET, entity, GitLabRepository.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
-			throw new GitLabAPIException("Repository does not exist on Github or invalid Bot-Token!", e);
+			throw new GitLabAPIException("Repository does not exist on GitLab or invalid Bot-Token!", e);
 		}
 	}
 
@@ -94,7 +93,7 @@ public class GitlabDataGrabber {
 	 * @return
 	 * @throws Exception
 	 */
-	public void checkGithubUser(String botUsername, String botToken, String botEmail) throws Exception {
+	public void checkGitlabUser(String botUsername, String botToken, String botEmail) throws Exception {
 		// Build URI
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(GITLAB_SCHEME).host(GITLAB_HOST)
 				.path(GITLAB_APIPATH + "user");
@@ -170,7 +169,7 @@ public class GitlabDataGrabber {
 	 * @param gitConfig
 	 * @return
 	 * @throws URISyntaxException
-	 * @throws GitHubAPIException
+	 * @throws GitLabAPIException
 	 */
 	public GitLabRepository createFork(GitConfiguration gitConfig) throws URISyntaxException, GitLabAPIException {
 
@@ -192,7 +191,7 @@ public class GitlabDataGrabber {
 	}
 
 	/**
-	 * This method deletes a repository from Github.
+	 * This method deletes a repository from GitLab.
 	 * 
 	 * @param gitConfig
 	 * @throws URISyntaxException
@@ -224,7 +223,7 @@ public class GitlabDataGrabber {
 	}
 
 	/**
-	 * This method returns all PullRequest from Github.
+	 * This method returns all PullRequest from GitLab.
 	 * 
 	 * @return allRequests
 	 * @throws URISyntaxException
@@ -270,7 +269,7 @@ public class GitlabDataGrabber {
 	 * @param commentUri
 	 * @param gitConfig
 	 * @return allComments
-	 * @throws GitHubAPIException
+	 * @throws GitLabAPIException
 	 * @throws IOException
 	 */
 	public GitLabDiscussions getAllPullRequestDiscussions(URI commentUri, GitConfiguration gitConfig)

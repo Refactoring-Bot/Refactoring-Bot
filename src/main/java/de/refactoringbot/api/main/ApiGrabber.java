@@ -213,7 +213,7 @@ public class ApiGrabber {
 		case gitlab:
 			GitLabRepository gitlabRepo = gitlabGrabber.checkRepository(configuration.getRepoName(),
 					configuration.getRepoOwner(), configuration.getBotToken());
-			gitlabGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
+			gitlabGrabber.checkGitlabUser(configuration.getBotName(), configuration.getBotToken(),
 					configuration.getBotEmail());
 
 			// Create git configuration and a fork
