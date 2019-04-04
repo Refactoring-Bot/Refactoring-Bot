@@ -214,6 +214,7 @@ public class GitlabObjectTranslator {
 		createRequest.setSource_branch(newBranch);
 		createRequest.setTarget_branch("master");
 		createRequest.setAllow_collaboration(true);
+		createRequest.setTarget_project_id(getProjectId(gitConfig.getRepoApiLink()));
 
 		return createRequest;
 	}
