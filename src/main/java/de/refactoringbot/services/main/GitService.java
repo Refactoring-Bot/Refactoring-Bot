@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import de.refactoringbot.configuration.BotConfiguration;
+import de.refactoringbot.model.configuration.FileHoster;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
@@ -189,15 +190,15 @@ public class GitService {
 			git.add().addFilepattern(".").call();
 			// Perform 'git commit -m'
 			git.commit().setMessage(commitMessage).setCommitter(gitConfig.getBotName(), gitConfig.getBotEmail()).call();
-			// Push with bot credenials
-			if (gitConfig.getRepoService().toString().equals("github")) {
+			// Push with bot credentials
+			if (gitConfig.getRepoService().equals(FileHoster.github)) {
 				git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
 						.call();
 			} else {
-				git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotToken()))
+				git.push().setCredentialsProvider(
+						new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotToken()))
 						.call();
 			}
-
 		} catch (TransportException t) {
 			logger.error(t.getMessage(), t);
 			throw new GitWorkflowException("Wrong bot token!");

@@ -387,15 +387,16 @@ public class RefactoringService {
 	 * This method returns all pull requests from a filehosting service.
 	 * 
 	 * @param config
-	 * @return allRequests
-	 * @throws GitLabAPIException 
-	 * @throws Exception
+	 * @return
+	 * @throws URISyntaxException
+	 * @throws GitHubAPIException
+	 * @throws IOException
+	 * @throws GitWorkflowException
+	 * @throws GitLabAPIException
 	 */
 	public BotPullRequests getPullRequests(GitConfiguration config)
 			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException, GitLabAPIException {
-		// Fetch target-Repository-Data
 		dataGetter.fetchRemote(config);
-
 		return grabber.getRequestsWithComments(config);
 	}
 
@@ -432,6 +433,7 @@ public class RefactoringService {
 	 * @param comment
 	 * @param request
 	 * @param botIssue
+	 * @param isCommentRefactoring
 	 * @return failedIssue
 	 */
 	private RefactoredIssue processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,

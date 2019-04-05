@@ -148,11 +148,11 @@ public class GitlabObjectTranslator {
 		BotPullRequestComments translatedComments = new BotPullRequestComments();
 
 		for (GitLabDiscussion gitlabDiscussion : gitlabDiscussions.getDiscussions()) {
-			for (Note gitlabNote: gitlabDiscussion.getNotes()) {
+			for (Note gitlabNote : gitlabDiscussion.getNotes()) {
 				// Work only on line comments
 				if (gitlabNote.getPosition() != null) {
 					BotPullRequestComment translatedComment = new BotPullRequestComment();
-					
+
 					// Fill comment with data
 					translatedComment.setDiscussionID(gitlabDiscussion.getId());
 					translatedComment.setCommentID(gitlabNote.getId());
@@ -160,7 +160,6 @@ public class GitlabObjectTranslator {
 					translatedComment.setUsername(gitlabNote.getAuthor().getUsername());
 					translatedComment.setCommentBody(gitlabNote.getBody());
 					translatedComment.setPosition(gitlabNote.getPosition().getNewLine());
-					
 
 					translatedComments.addComment(translatedComment);
 				}
@@ -218,9 +217,10 @@ public class GitlabObjectTranslator {
 
 		return createRequest;
 	}
-	
+
 	/**
-	 * This method returns a reply comment as a String that can be created on GitLab.
+	 * This method returns a reply comment as a String that can be created on
+	 * GitLab.
 	 * 
 	 * @param newRequestURL
 	 * @return comment
@@ -243,8 +243,7 @@ public class GitlabObjectTranslator {
 	 */
 	public String getProjectId(String repoApiLink) {
 		String[] splittString = repoApiLink.split("/");
-		String projectId = splittString[splittString.length - 1];
-		return projectId;
+		return splittString[splittString.length - 1];
 	}
 
 }
