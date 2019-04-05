@@ -1,7 +1,10 @@
 package de.refactoringbot.model.exceptions;
 
+/**
+ * Exception if something went wrong with a GitLab API call
+ */
 public class GitLabAPIException extends Exception {
-	
+
 	private static final long serialVersionUID = 1L;
 
 	public GitLabAPIException() {
