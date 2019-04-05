@@ -1,7 +1,6 @@
 package de.refactoringbot.api.gitlab;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -60,11 +59,10 @@ public class GitlabDataGrabber {
 	 * @param repoName
 	 * @param repoOwner
 	 * @param botToken
-	 * @throws MalformedURLException
 	 * @throws GitLabAPIException
 	 */
 	public GitLabRepository checkRepository(String repoName, String repoOwner, String botToken)
-			throws GitLabAPIException, MalformedURLException {
+			throws GitLabAPIException {
 		// Build URI
 		URI gitlabURI = URI.create("https://gitlab.com/api/v4/projects/" + repoOwner + "%2F" + repoName);
 
@@ -288,12 +286,9 @@ public class GitlabDataGrabber {
 			throw new GitLabAPIException("Could not get pull request comments from GitLab!", r);
 		}
 
-		GitLabDiscussions allDiscussions = new GitLabDiscussions();
-		
-		logger.info(commentUri.toString());
-
 		try {
-			// Try to map json to object
+			// map json to object
+			GitLabDiscussions allDiscussions = new GitLabDiscussions();
 			List<GitLabDiscussion> discussionList = mapper.readValue(json,
 					mapper.getTypeFactory().constructCollectionType(List.class, GitLabDiscussion.class));
 			allDiscussions.setDiscussions(discussionList);
@@ -354,8 +349,8 @@ public class GitlabDataGrabber {
 	 * @param discussionId
 	 * @param noteId
 	 * @param message
-	 * @throws GitLabAPIException 
-	 * @throws URISyntaxException 
+	 * @throws GitLabAPIException
+	 * @throws URISyntaxException
 	 */
 	public void respondToUser(GitConfiguration gitConfig, Integer pullRequestIid, String discussionId, Integer noteId,
 			String message) throws GitLabAPIException, URISyntaxException {
