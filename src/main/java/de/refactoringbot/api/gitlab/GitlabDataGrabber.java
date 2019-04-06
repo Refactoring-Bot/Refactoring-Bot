@@ -48,9 +48,7 @@ public class GitlabDataGrabber {
 	private static final Logger logger = LoggerFactory.getLogger(GitlabDataGrabber.class);
 
 	private static final String USER_AGENT = "Mozilla/5.0";
-	private static final String GITLAB_SCHEME = "https";
-	private static final String GITLAB_HOST = "gitlab.com";
-	private static final String GITLAB_APIPATH = "api/v4/";
+	private static final String GITLAB_DEFAULT_APILINK = "https://gitlab.com/api/v4";
 	private static final String TOKEN_HEADER = "Private-Token";
 
 	/**
@@ -59,12 +57,20 @@ public class GitlabDataGrabber {
 	 * @param repoName
 	 * @param repoOwner
 	 * @param botToken
+	 * @param apiLink
 	 * @throws GitLabAPIException
 	 */
-	public GitLabRepository checkRepository(String repoName, String repoOwner, String botToken)
+	public GitLabRepository checkRepository(String repoName, String repoOwner, String botToken, String apiLink)
 			throws GitLabAPIException {
+
 		// Build URI
-		URI gitlabURI = URI.create("https://gitlab.com/api/v4/projects/" + repoOwner + "%2F" + repoName);
+		URI gitlabURI = null;
+
+		if (apiLink == null || apiLink.isEmpty()) {
+			gitlabURI = URI.create(GITLAB_DEFAULT_APILINK + "/projects/" + repoOwner + "%2F" + repoName);
+		} else {
+			gitlabURI = URI.create(apiLink + "/projects/" + repoOwner + "%2F" + repoName);
+		}
 
 		RestTemplate rest = new RestTemplate();
 
@@ -88,15 +94,19 @@ public class GitlabDataGrabber {
 	 * @param botUsername
 	 * @param botToken
 	 * @param botEmail
+	 * @param apiLink
 	 * @return
 	 * @throws Exception
 	 */
-	public void checkGitlabUser(String botUsername, String botToken, String botEmail) throws Exception {
+	public void checkGitlabUser(String botUsername, String botToken, String botEmail, String apiLink) throws Exception {
 		// Build URI
-		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(GITLAB_SCHEME).host(GITLAB_HOST)
-				.path(GITLAB_APIPATH + "user");
+		URI gitlabURI = null;
 
-		URI gitlabURI = apiUriBuilder.build().encode().toUri();
+		if (apiLink == null || apiLink.isEmpty()) {
+			gitlabURI = URI.create(GITLAB_DEFAULT_APILINK + "/user");
+		} else {
+			gitlabURI = URI.create(apiLink + "/user");
+		}
 
 		RestTemplate rest = new RestTemplate();
 		HttpHeaders headers = new HttpHeaders();

@@ -202,9 +202,9 @@ public class ApiGrabber {
 		switch (configuration.getRepoService()) {
 		case github:
 			GithubRepository githubRepo = githubGrabber.checkRepository(configuration.getRepoName(),
-					configuration.getRepoOwner(), configuration.getBotToken());
+					configuration.getRepoOwner(), configuration.getBotToken(), configuration.getFilehosterApiLink());
 			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
-					configuration.getBotEmail());
+					configuration.getBotEmail(), configuration.getFilehosterApiLink());
 
 			// Create git configuration and a fork
 			gitConfig = githubTranslator.createConfiguration(configuration, githubRepo.getUrl(),
@@ -212,9 +212,9 @@ public class ApiGrabber {
 			return gitConfig;
 		case gitlab:
 			GitLabRepository gitlabRepo = gitlabGrabber.checkRepository(configuration.getRepoName(),
-					configuration.getRepoOwner(), configuration.getBotToken());
+					configuration.getRepoOwner(), configuration.getBotToken(), configuration.getFilehosterApiLink());
 			gitlabGrabber.checkGitlabUser(configuration.getBotName(), configuration.getBotToken(),
-					configuration.getBotEmail());
+					configuration.getBotEmail(), configuration.getFilehosterApiLink());
 
 			// Create git configuration and a fork
 			gitConfig = gitlabTranslator.createConfiguration(configuration, gitlabRepo.getLinks().getSelf(),
