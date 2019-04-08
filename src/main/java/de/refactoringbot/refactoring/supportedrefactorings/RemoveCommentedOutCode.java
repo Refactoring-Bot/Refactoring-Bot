@@ -65,7 +65,6 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
 					// otherwise check for commented out code
 					if (line.equals(issue.getLine()) || isCommentedOutCode(comment.getContent())) {
 						endLine = comment.getEnd().get().line;
-                                                System.out.println("Trying to remove " + comment.getContent());
 						comment.remove();
 						// Increase the line variable to find more commented out code lines below
 						line++;
