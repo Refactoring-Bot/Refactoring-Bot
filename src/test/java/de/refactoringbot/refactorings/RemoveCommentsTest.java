@@ -12,13 +12,13 @@ import org.slf4j.LoggerFactory;
 
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.GitConfiguration;
+import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveCommentedOutCode;
 import de.refactoringbot.resources.removecomments.TestDataClassRemoveComments;
 
 public class RemoveCommentsTest extends AbstractRefactoringTests {
 
 	private static final Logger logger = LoggerFactory.getLogger(RemoveCommentsTest.class);
-	private TestDataClassRemoveComments missingOverrideTestClass = new TestDataClassRemoveComments();
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
@@ -26,15 +26,38 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 	@Test
 	public void testRemoveLineComments() throws Exception {
 		// This should also remove the line directly below, but not the next one
-		testRemoveComment(6, "// Normal comment - This one shouldn't be removed");
+		int lineWithCommentToBeRemoved = 6;
+		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
+		
+		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
+		assertThat(lineContent).isEqualTo("// Normal comment - This one shouldn't be removed");
 	}
 
 	@Test
 	public void testRemoveBlockComment() throws Exception {
-		testRemoveComment(11, "return a + b;");
+		int lineWithCommentToBeRemoved = 10;
+		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
+		
+		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
+		assertThat(lineContent).isEqualTo("return c;");
+	}
+	
+	@Test
+	public void testRemoveNotExistingComment() throws Exception {
+		exception.expect(BotRefactoringException.class);
+		
+		int lineWithCommentToBeRemoved = 3;
+		removeComment(lineWithCommentToBeRemoved);
 	}
 
-	private void testRemoveComment(int line, String expectedResult) throws Exception {
+	/**
+	 * Performs the refactoring
+	 * 
+	 * @param line
+	 * @return modified temporary file of test class
+	 * @throws Exception
+	 */
+	private File removeComment(int line) throws Exception {
 		// arrange
 		File tempFile = createTempCopyOfTestResourcesFile(TestDataClassRemoveComments.class);
 		BotIssue issue = new BotIssue();
@@ -48,10 +71,8 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 		// act
 		String outputMessage = refactoring.performRefactoring(issue, gitConfig);
 		logger.info(outputMessage);
-
-		// assert
-		String lineContent = getStrippedContentFromFile(tempFile, line);
-		assertThat(lineContent).isEqualTo(expectedResult);
+		
+		return tempFile;
 	}
 
 }

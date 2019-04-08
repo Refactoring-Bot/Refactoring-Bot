@@ -8,9 +8,8 @@ public class TestDataClassRemoveComments {
 		// Normal comment - This one shouldn't be removed
 		int c = a + b;
 		/*
-		 * Integer.toString(c);
+		 * Integer.toString(c); 
 		 */
-		c = b - a;
-		return a + b;
+		return c;
 	}
 }
