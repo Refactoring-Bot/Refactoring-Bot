@@ -28,7 +28,7 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 		// This should also remove the line directly below, but not the next one
 		int lineWithCommentToBeRemoved = 6;
 		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
-		
+
 		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
 		assertThat(lineContent).isEqualTo("// Normal comment - This one shouldn't be removed");
 	}
@@ -37,15 +37,51 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 	public void testRemoveBlockComment() throws Exception {
 		int lineWithCommentToBeRemoved = 10;
 		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
-		
+
 		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
 		assertThat(lineContent).isEqualTo("return c;");
 	}
-	
+
+	@Test
+	public void testRemoveCommentedOutForLoop() throws Exception {
+		int lineWithCommentToBeRemoved = 17;
+		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
+
+		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
+		assertThat(lineContent).isEqualTo("return 2 * a;");
+	}
+
+	@Test
+	public void testRemoveCommentedOutLinesWithoutBrackets() throws Exception {
+		int lineWithCommentToBeRemoved = 25;
+		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
+
+		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
+		assertThat(lineContent).isEqualTo("return 2 * a;");
+	}
+
+	@Test
+	public void testRemoveCommentedOutSwitch() throws Exception {
+		int lineWithCommentToBeRemoved = 35;
+		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
+
+		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
+		assertThat(lineContent).isEqualTo("return 2 * a;");
+	}
+
+	@Test
+	public void testRemoveCommentedOutReturn() throws Exception {
+		int lineWithCommentToBeRemoved = 49;
+		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
+
+		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
+		assertThat(lineContent).isEqualTo("return 2 * a;");
+	}
+
 	@Test
 	public void testRemoveNotExistingComment() throws Exception {
 		exception.expect(BotRefactoringException.class);
-		
+
 		int lineWithCommentToBeRemoved = 3;
 		removeComment(lineWithCommentToBeRemoved);
 	}
@@ -71,7 +107,7 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 		// act
 		String outputMessage = refactoring.performRefactoring(issue, gitConfig);
 		logger.info(outputMessage);
-		
+
 		return tempFile;
 	}
 

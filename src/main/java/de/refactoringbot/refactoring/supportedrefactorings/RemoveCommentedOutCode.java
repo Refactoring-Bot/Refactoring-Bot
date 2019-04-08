@@ -1,7 +1,6 @@
 package de.refactoringbot.refactoring.supportedrefactorings;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
@@ -38,12 +37,12 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
 	 * @param issue
 	 * @param gitConfig
 	 * @return commitMessage
-	 * @throws FileNotFoundException
-	 * @throws de.refactoringbot.model.exceptions.BotRefactoringException
+	 * @throws IOException
+	 * @throws BotRefactoringException
 	 */
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig)
-			throws FileNotFoundException, IOException, BotRefactoringException {
+			throws IOException, BotRefactoringException {
 
 		// Prepare data
 		String path = gitConfig.getRepoFolder() + "/" + issue.getFilePath();
@@ -110,22 +109,14 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
 	 * @return Whether or not the comment contains code
 	 */
 	private boolean isCommentedOutCode(String content) {
-
-		// Method call pattern
-		if (content.matches(".+\\..+\\(.*\\)")) {
-			return true;
-			// if or while statement
-		} else if (content.matches("(if\\s*\\(.*)| (while\\s*\\(.*)")) {
-			return true;
-			// empty lines or lines ending with a semicolon
-		} else if ((content.trim().endsWith(";")) || content.trim().equals("")) {
-			return true;
-			// Single brackets (from methods or if statements)
-		} else if ((content.trim().equals("{")) || content.trim().equals("}")) {
-			return true;
-		}
-
-		return false;
+		boolean matchesMethodCall = content.matches(".+\\..+\\(.*\\)");
+		boolean matchesIfOrWhileStatement = content.matches("(if\\s*\\(.*)| (while\\s*\\(.*)");
+		boolean matchesEmptyLinesOrLinesEndingWithSemicolon = (content.trim().endsWith(";"))
+				|| content.trim().equals("");
+		boolean matchesSingleBrackets = (content.trim().equals("{")) || content.trim().equals("}");
+		
+		return matchesMethodCall || matchesIfOrWhileStatement || matchesEmptyLinesOrLinesEndingWithSemicolon
+				|| matchesSingleBrackets;
 	}
 
 }
