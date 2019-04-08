@@ -17,41 +17,41 @@ import de.refactoringbot.resources.removecomments.TestDataClassRemoveComments;
 
 public class RemoveCommentsTest extends AbstractRefactoringTests {
 
-        private static final Logger logger = LoggerFactory.getLogger(RemoveCommentsTest.class);
-        private TestDataClassRemoveComments missingOverrideTestClass = new TestDataClassRemoveComments();
+	private static final Logger logger = LoggerFactory.getLogger(RemoveCommentsTest.class);
+	private TestDataClassRemoveComments missingOverrideTestClass = new TestDataClassRemoveComments();
 
-        @Rule
-        public final ExpectedException exception = ExpectedException.none();
+	@Rule
+	public final ExpectedException exception = ExpectedException.none();
 
-        @Test
-        public void testRemoveLineComments() throws Exception {
-            // This should also remove the line directly below, but not the next one
-            testRemoveComment(6, "// Normal comment - This one shouldn't be removed");
-        }
+	@Test
+	public void testRemoveLineComments() throws Exception {
+		// This should also remove the line directly below, but not the next one
+		testRemoveComment(6, "// Normal comment - This one shouldn't be removed");
+	}
 
-        @Test
-        public void testRemoveBlockComment() throws Exception {
-            testRemoveComment(11, "return a + b;");
-        }
+	@Test
+	public void testRemoveBlockComment() throws Exception {
+		testRemoveComment(11, "return a + b;");
+	}
 
-        private void testRemoveComment(int line, String expectedResult) throws Exception {
-            // arrange
-            File tempFile = createTempCopyOfTestResourcesFile(TestDataClassRemoveComments.class);
-            BotIssue issue = new BotIssue();
-            GitConfiguration gitConfig = new GitConfiguration();
-            RemoveCommentedOutCode refactoring = new RemoveCommentedOutCode();
+	private void testRemoveComment(int line, String expectedResult) throws Exception {
+		// arrange
+		File tempFile = createTempCopyOfTestResourcesFile(TestDataClassRemoveComments.class);
+		BotIssue issue = new BotIssue();
+		GitConfiguration gitConfig = new GitConfiguration();
+		RemoveCommentedOutCode refactoring = new RemoveCommentedOutCode();
 
-            gitConfig.setRepoFolder("");
-            issue.setFilePath(tempFile.getAbsolutePath());
-            issue.setLine(line);
+		gitConfig.setRepoFolder("");
+		issue.setFilePath(tempFile.getAbsolutePath());
+		issue.setLine(line);
 
-            // act
-            String outputMessage = refactoring.performRefactoring(issue, gitConfig);
-            logger.info(outputMessage);
+		// act
+		String outputMessage = refactoring.performRefactoring(issue, gitConfig);
+		logger.info(outputMessage);
 
-            // assert
-            String lineContent = getStrippedContentFromFile(tempFile, line);
-            assertThat(lineContent).isEqualTo(expectedResult);
-        }
+		// assert
+		String lineContent = getStrippedContentFromFile(tempFile, line);
+		assertThat(lineContent).isEqualTo(expectedResult);
+	}
 
 }

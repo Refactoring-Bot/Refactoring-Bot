@@ -73,7 +73,7 @@ public class SonarQubeObjectTranslator {
 
 			if (!issuePath.exists()) {
 				throw new IOException("Unable to locate issue path." + System.getProperty("line.separator")
-                                        + "Are you sure that the source code and SonarQube analysis are on the same branch and version?");
+						+ "Are you sure that the source code and SonarQube analysis are on the same branch and version?");
 			}
 
 			// Cut path outside the repository // TODO why?
