@@ -65,6 +65,7 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
 					// otherwise check for commented out code
 					if (line.equals(issue.getLine()) || isCommentedOutCode(comment.getContent())) {
 						endLine = comment.getEnd().get().line;
+                                                System.out.println("Trying to remove " + comment.getContent());
 						comment.remove();
 						// Increase the line variable to find more commented out code lines below
 						line++;
@@ -110,13 +111,15 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
 	 */
 	private boolean isCommentedOutCode(String content) {
 		boolean matchesMethodCall = content.matches(".+\\..+\\(.*\\)");
-		boolean matchesIfOrWhileStatement = content.matches("(if\\s*\\(.*)| (while\\s*\\(.*)");
+		boolean matchesIfWhileForSwitchStatement = content.matches("(if\\s*\\(.*)| (while\\s*\\(.*)| (for\\s*\\(.*)|"
+                        + " (switch\\s*\\(.*) ");
 		boolean matchesEmptyLinesOrLinesEndingWithSemicolon = (content.trim().endsWith(";"))
 				|| content.trim().equals("");
 		boolean matchesSingleBrackets = (content.trim().equals("{")) || content.trim().equals("}");
-		
-		return matchesMethodCall || matchesIfOrWhileStatement || matchesEmptyLinesOrLinesEndingWithSemicolon
-				|| matchesSingleBrackets;
+                boolean matchesSwitchCase = content.matches("\\s*case.*:\\s*| \\s*default\\s*:\\s*");
+                
+		return matchesMethodCall || matchesIfWhileForSwitchStatement || matchesEmptyLinesOrLinesEndingWithSemicolon
+				|| matchesSingleBrackets || matchesSwitchCase;
 	}
 
 }
