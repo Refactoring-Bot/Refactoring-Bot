@@ -78,6 +78,15 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
 		assertThat(lineContent).isEqualTo("return 2 * a;");
 	}
+	
+	@Test
+	public void testRemoveCommentedOutInnerClass() throws Exception {
+		int lineWithCommentToBeRemoved = 53;
+		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
+
+		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
+		assertThat(lineContent).isEmpty();
+	}
 
 	@Test
 	public void testRemoveNotExistingComment() throws Exception {

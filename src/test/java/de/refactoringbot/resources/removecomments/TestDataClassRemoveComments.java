@@ -50,4 +50,10 @@ public class TestDataClassRemoveComments {
 		return 2 * a;
 	}
 
+	// private class InnerClass {
+	// public int commentedOutMethod() {
+	// return 0;
+	// }
+	// }
+
 }
