@@ -76,7 +76,7 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
 
 		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
-		assertThat(lineContent).isEqualTo("return a * 2;");
+		assertThat(lineContent).isEqualTo("return 2 * a;");
 	}
 
 	@Test

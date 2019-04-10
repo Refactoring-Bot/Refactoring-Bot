@@ -46,8 +46,8 @@ public class TestDataClassRemoveComments {
 	}
 
 	protected int commentedOutReturn(int a) {
-		// return a * 3;
-		return a * 2;
+		// return a * 2;
+		return 2 * a;
 	}
 
 }
