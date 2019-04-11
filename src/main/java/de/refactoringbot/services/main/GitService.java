@@ -78,7 +78,15 @@ public class GitService {
 	public void fetchRemote(GitConfiguration gitConfig) throws GitWorkflowException {
 		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Fetch data
-			git.fetch().setRemote("upstream").call();
+			if (gitConfig.getRepoService().equals(FileHoster.github)) {
+				git.fetch().setRemote("upstream")
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
+						.call();
+			} else {
+				git.fetch().setRemote("upstream").setCredentialsProvider(
+						new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotToken()))
+						.call();
+			}
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Could not fetch data from 'upstream'!");
@@ -111,10 +119,18 @@ public class GitService {
 	public void cloneRepository(GitConfiguration gitConfig) throws GitWorkflowException {
 		Git git = null;
 		try {
-			// Clone repository into git folder
-			git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
-					.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
-					.call();
+			if (gitConfig.getRepoService().equals(FileHoster.github)) {
+				git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
+						.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
+						.call();
+			} else {
+				git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
+						.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotName(),
+								gitConfig.getBotToken()))
+						.call();
+			}
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Faild to clone " + "'" + gitConfig.getForkGitLink() + "' successfully!");
