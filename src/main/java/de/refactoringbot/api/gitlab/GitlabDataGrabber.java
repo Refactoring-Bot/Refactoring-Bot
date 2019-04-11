@@ -182,7 +182,6 @@ public class GitlabDataGrabber {
 	public GitLabRepository createFork(GitConfiguration gitConfig) throws URISyntaxException, GitLabAPIException {
 
 		// Build URI
-		logger.info("Fork-URL: " + gitConfig.getRepoApiLink() + "/fork");
 		URI forkUri = createURIFromApiLink(gitConfig.getRepoApiLink() + "/fork");
 
 		RestTemplate rest = new RestTemplate();
