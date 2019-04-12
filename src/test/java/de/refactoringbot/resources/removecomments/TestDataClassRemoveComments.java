@@ -5,7 +5,7 @@ public class TestDataClassRemoveComments {
 	protected int add(int a, int b) {
 		// int d = a + b;
 		// int e = a + b;
-		// Normal comment - This one shouldn't be removed
+		// Normal comment
 		int c = a + b;
 		/*
 		 * Integer.toString(c);
@@ -51,9 +51,9 @@ public class TestDataClassRemoveComments {
 	}
 
 	// private class InnerClass {
-	// public int commentedOutMethod() {
-	// return 0;
-	// }
+	//      public int commentedOutMethod() {
+	//      return 0;
+	//      }
 	// }
 
 }
