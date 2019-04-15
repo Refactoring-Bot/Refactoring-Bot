@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 import de.refactoringbot.refactoring.supportedrefactorings.AddOverrideAnnotation;
+import de.refactoringbot.refactoring.supportedrefactorings.ImmediatelyReturnExpression;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveCommentedOutCode;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
 import de.refactoringbot.refactoring.supportedrefactorings.RenameMethod;
@@ -26,6 +27,7 @@ public class RefactoringOperations {
 	public static final String REORDER_MODIFIER = "Reorder Modifier";
 	public static final String REMOVE_COMMENTED_OUT_CODE = "Remove Commented Out Code";
 	public static final String REMOVE_PARAMETER = "Remove Parameter";
+	public static final String IMMEDIATELY_RETURN_EXPRESSION = "Immediately return expression";
 	public static final String UNKNOWN = "Unknown Refactoring";
 
 	/**
@@ -41,6 +43,7 @@ public class RefactoringOperations {
 		ruleToClassMapping.put(RENAME_METHOD, RenameMethod.class);
 		ruleToClassMapping.put(REMOVE_COMMENTED_OUT_CODE, RemoveCommentedOutCode.class);
 		ruleToClassMapping.put(REMOVE_PARAMETER, RemoveMethodParameter.class);
+		ruleToClassMapping.put(IMMEDIATELY_RETURN_EXPRESSION, ImmediatelyReturnExpression.class);
 
 		return ruleToClassMapping;
 	}

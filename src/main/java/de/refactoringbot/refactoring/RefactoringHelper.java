@@ -20,6 +20,8 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.VariableDeclarationExpr;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
@@ -91,14 +93,13 @@ public class RefactoringHelper {
 	 * @return MethodDeclaration or null if none found
 	 */
 	public static MethodDeclaration getMethodDeclarationByLineNumber(int lineNumber, CompilationUnit cu) {
-		MethodDeclaration result = null;
 		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
 		for (MethodDeclaration method : methods) {
 			if (isMethodDeclarationAtLine(method, lineNumber)) {
-				result = method;
+				return method;
 			}
 		}
-		return result;
+		return null;
 	}
 
 	/**
@@ -112,6 +113,26 @@ public class RefactoringHelper {
 	}
 
 	/**
+	 * Finds a method declaration in a compilation unit that surrounds the given
+	 * line somewhere in the method body
+	 * 
+	 * @param lineSomewhereInMethodBody
+	 * @param cu
+	 * @return MethodDeclaration or null if none found
+	 */
+	public static MethodDeclaration getMethodDeclarationByLineNumberInMethod(int lineSomewhereInMethodBody,
+			CompilationUnit cu) {
+		while (lineSomewhereInMethodBody > 0) {
+			MethodDeclaration m = getMethodDeclarationByLineNumber(lineSomewhereInMethodBody, cu);
+			if (m != null) {
+				return m;
+			}
+			lineSomewhereInMethodBody--;
+		}
+		return null;
+	}
+
+	/**
 	 * Finds a field declaration in a compilation unit that starts at the specified
 	 * line number
 	 * 
@@ -120,14 +141,13 @@ public class RefactoringHelper {
 	 * @return FieldDeclaration or null if none found
 	 */
 	public static FieldDeclaration getFieldDeclarationByLineNumber(int lineNumber, CompilationUnit cu) {
-		FieldDeclaration result = null;
 		List<FieldDeclaration> fields = cu.findAll(FieldDeclaration.class);
 		for (FieldDeclaration field : fields) {
 			if (isFieldDeclarationAtLine(field, lineNumber)) {
-				result = field;
+				return field;
 			}
 		}
-		return result;
+		return null;
 	}
 
 	/**
@@ -138,6 +158,36 @@ public class RefactoringHelper {
 	public static boolean isFieldDeclarationAtLine(FieldDeclaration fieldDeclaration, Integer lineNumber) {
 		Optional<Position> beginPositionOfField = fieldDeclaration.getBegin();
 		return (beginPositionOfField.isPresent() && beginPositionOfField.get().line == lineNumber);
+	}
+
+	public static ExpressionStmt getExpressionStmtByLineNumber(int lineNumber, CompilationUnit cu) {
+		List<ExpressionStmt> stmts = cu.findAll(ExpressionStmt.class);
+		for (ExpressionStmt stmt : stmts) {
+			if (isExpressionStmtAtLine(stmt, lineNumber)) {
+				return stmt;
+			}
+		}
+		return null;
+	}
+
+	private static boolean isExpressionStmtAtLine(ExpressionStmt stmt, int lineNumber) {
+		Optional<Position> beginPositionOfStatement = stmt.getBegin();
+		return (beginPositionOfStatement.isPresent() && beginPositionOfStatement.get().line == lineNumber);
+	}
+
+	public static VariableDeclarationExpr getVariableDeclarationExprByLineNumber(int lineNumber, CompilationUnit cu) {
+		List<VariableDeclarationExpr> expressions = cu.findAll(VariableDeclarationExpr.class);
+		for (VariableDeclarationExpr expression : expressions) {
+			if (isVariableDeclarationExprAtLine(expression, lineNumber)) {
+				return expression;
+			}
+		}
+		return null;
+	}
+
+	private static boolean isVariableDeclarationExprAtLine(VariableDeclarationExpr expression, int lineNumber) {
+		Optional<Position> beginPositionOfExpr = expression.getBegin();
+		return (beginPositionOfExpr.isPresent() && beginPositionOfExpr.get().line == lineNumber);
 	}
 
 	/**
