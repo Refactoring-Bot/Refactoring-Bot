@@ -12,7 +12,7 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -42,7 +42,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 
 		// assert
 		FileInputStream in = new FileInputStream(tempFile);
-		CompilationUnit cu = JavaParser.parse(in);
+		CompilationUnit cu = StaticJavaParser.parse(in);
 		MethodDeclaration methodDeclarationAfterRefactoring = RefactoringHelper
 				.getMethodDeclarationByLineNumber(lineOfMethod, cu);
 		assertAllModifiersInCorrectOrder(methodDeclarationAfterRefactoring.getModifiers());
@@ -58,7 +58,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 
 		// assert
 		FileInputStream in = new FileInputStream(tempFile);
-		CompilationUnit cu = JavaParser.parse(in);
+		CompilationUnit cu = StaticJavaParser.parse(in);
 		FieldDeclaration fieldDeclarationAfterRefactoring = RefactoringHelper
 				.getFieldDeclarationByLineNumber(lineNumber, cu);
 		assertAllModifiersInCorrectOrder(fieldDeclarationAfterRefactoring.getModifiers());

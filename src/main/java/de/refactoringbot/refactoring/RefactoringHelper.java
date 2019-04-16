@@ -13,8 +13,8 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.javaparser.JavaParser;
 import com.github.javaparser.Position;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -163,7 +163,7 @@ public class RefactoringHelper {
 	public static List<ClassOrInterfaceDeclaration> getAllClassesAndInterfacesFromFile(String filePath)
 			throws FileNotFoundException {
 		FileInputStream is = new FileInputStream(filePath);
-		CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(is));
+		CompilationUnit cu = LexicalPreservingPrinter.setup(StaticJavaParser.parse(is));
 		return cu.findAll(ClassOrInterfaceDeclaration.class);
 	}
 

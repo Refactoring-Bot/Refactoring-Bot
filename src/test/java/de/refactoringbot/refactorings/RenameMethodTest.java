@@ -15,7 +15,7 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -89,7 +89,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		int lineNumberOfMethodToBeRenamed = renameMethodTestClass.getLineOfMethodToBeRenamed(true);
 		String newMethodName = "newMethodName";
 
-		CompilationUnit cuOriginalFileOfTestClass = JavaParser.parse(fileOfTestClass);
+		CompilationUnit cuOriginalFileOfTestClass = StaticJavaParser.parse(fileOfTestClass);
 		MethodDeclaration originalDummyMethod = RefactoringHelper.getMethodDeclarationByLineNumber(
 				renameMethodTestClass.getLineOfMethodToBeRenamed(), cuOriginalFileOfTestClass);
 		MethodDeclaration originalMethodWithTargetMethodSignatureInInnerClass = RefactoringHelper
@@ -105,7 +105,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 
 		// assert
-		CompilationUnit cuRefactoredFileOfTestClass = JavaParser.parse(fileOfTestClass);
+		CompilationUnit cuRefactoredFileOfTestClass = StaticJavaParser.parse(fileOfTestClass);
 
 		// assert that target method has been renamed
 		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfTestClass, lineNumberOfMethodToBeRenamed,
@@ -148,7 +148,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 
 		// assert that caller method in different file has been refactored
-		CompilationUnit cuRefactoredFileWithCallerMethod = JavaParser.parse(fileWithCallerMethod);
+		CompilationUnit cuRefactoredFileWithCallerMethod = StaticJavaParser.parse(fileWithCallerMethod);
 		int lineNumberOfCallerInDifferentFile = renameMethodCallerTestClass.getLineOfCallerMethodInDifferentFile();
 		assertThatNumberOfMethodCallsIsEqualToExpected(cuRefactoredFileWithCallerMethod,
 				lineNumberOfCallerInDifferentFile, newMethodName, 1);
@@ -173,7 +173,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 
 		// assert that target's super class has been refactored
-		CompilationUnit cuRefactoredFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
+		CompilationUnit cuRefactoredFileOfSuperClass = StaticJavaParser.parse(fileOfSuperClass);
 		int lineNumberOfMethodInSuperClass = renameMethodSuperClass.getLineOfMethodToBeRenamed(true);
 		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSuperClass, lineNumberOfMethodInSuperClass,
 				newMethodName);
@@ -198,7 +198,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 
 		// assert that target's sub class has been refactored
-		CompilationUnit cuRefactoredFileOfSubClass = JavaParser.parse(fileOfSubClass);
+		CompilationUnit cuRefactoredFileOfSubClass = StaticJavaParser.parse(fileOfSubClass);
 		int lineNumberOfMethodInSubClass = renameMethodSubClass.getLineOfMethodToBeRenamed(true);
 		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSubClass, lineNumberOfMethodInSubClass, newMethodName);
 	}
@@ -222,7 +222,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 
 		// assert
-		CompilationUnit cuRefactoredFileOfSiblingClass = JavaParser.parse(fileOfSiblingClass);
+		CompilationUnit cuRefactoredFileOfSiblingClass = StaticJavaParser.parse(fileOfSiblingClass);
 
 		// assert that target's sibling has been refactored
 		int lineNumberOfMethodInSiblingClass = renameMethodSiblingClass.getLineOfMethodToBeRenamed(true);
@@ -254,7 +254,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 
 		// assert that method in interface has been refactored
-		CompilationUnit cuRefactoredFileOfInterface = JavaParser.parse(fileOfInterface);
+		CompilationUnit cuRefactoredFileOfInterface = StaticJavaParser.parse(fileOfInterface);
 		List<MethodDeclaration> methodDeclarations = cuRefactoredFileOfInterface.findAll(MethodDeclaration.class);
 		assertThat(methodDeclarations).size().isEqualTo(1);
 		assertThat(methodDeclarations.get(0).getNameAsString()).isEqualTo(newMethodName);
@@ -280,7 +280,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 
 		// assert that method in super class has been refactored
-		CompilationUnit cuRefactoredFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
+		CompilationUnit cuRefactoredFileOfSuperClass = StaticJavaParser.parse(fileOfSuperClass);
 		int lineNumberOfMethodInSuperClass = renameMethodSuperClass.getLineOfInterfaceMethod();
 		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSuperClass, lineNumberOfMethodInSuperClass,
 				newMethodName);
@@ -308,7 +308,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		performRenameMethod(filesToConsider, fileOfTestClass, lineNumberOfMethodToBeRenamed, newMethodName);
 
 		// assert
-		CompilationUnit cuRefactoredFileOfTestClass = JavaParser.parse(fileOfTestClass);
+		CompilationUnit cuRefactoredFileOfTestClass = StaticJavaParser.parse(fileOfTestClass);
 
 		// assert that method in inner class has been refactored
 		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfTestClass, lineNumberOfMethodToBeRenamed,
@@ -320,13 +320,13 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				newMethodName);
 
 		// assert that method in interface has been refactored
-		CompilationUnit cuRefactoredFileOfInterface = JavaParser.parse(fileOfInterface);
+		CompilationUnit cuRefactoredFileOfInterface = StaticJavaParser.parse(fileOfInterface);
 		List<MethodDeclaration> methodDeclarations = cuRefactoredFileOfInterface.findAll(MethodDeclaration.class);
 		assertThat(methodDeclarations).size().isEqualTo(1);
 		assertThat(methodDeclarations.get(0).getNameAsString()).isEqualTo(newMethodName);
 
 		// assert that super class of outer class has been refactored
-		CompilationUnit cuRefactoredFileOfSuperClass = JavaParser.parse(fileOfSuperClass);
+		CompilationUnit cuRefactoredFileOfSuperClass = StaticJavaParser.parse(fileOfSuperClass);
 		int lineNumberOfMethodInSuperClass = renameMethodSuperClass.getLineOfInterfaceMethod();
 		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfSuperClass, lineNumberOfMethodInSuperClass,
 				newMethodName);
@@ -348,7 +348,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 		int lineNumberOfMethodToBeRenamed = renameMethodTestClassWithEmptyInterfaceImpl.getLineOfMethodToBeRenamed();
 		String newMethodName = "newMethodName";
 
-		CompilationUnit cuOriginalFileOfTestClassImplementingEmptyInterface = JavaParser
+		CompilationUnit cuOriginalFileOfTestClassImplementingEmptyInterface = StaticJavaParser
 				.parse(fileOfTestClassImplementingEmptyInterface);
 		MethodDeclaration originalMethodInInnerClass = RefactoringHelper.getMethodDeclarationByLineNumber(
 				renameMethodTestClassWithEmptyInterfaceImpl.getLineOfMethodToBeRenamed(),
@@ -361,7 +361,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 				newMethodName);
 
 		// assert
-		CompilationUnit cuRefactoredFileOfTestClassImplementingEmptyInterface = JavaParser
+		CompilationUnit cuRefactoredFileOfTestClassImplementingEmptyInterface = StaticJavaParser
 				.parse(fileOfTestClassImplementingEmptyInterface);
 
 		// assert that method in outer class has been refactored
@@ -393,7 +393,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 
 		// assert that method in outer class (the method for which the actual renaming
 		// was intended) has been refactored
-		CompilationUnit cuRefactoredFileOfTestClass = JavaParser.parse(fileOfTestClass);
+		CompilationUnit cuRefactoredFileOfTestClass = StaticJavaParser.parse(fileOfTestClass);
 		assertThatMethodNameIsEqualToExpected(cuRefactoredFileOfTestClass, lineNumberOfMethodToBeRenamed,
 				newMethodName);
 	}
