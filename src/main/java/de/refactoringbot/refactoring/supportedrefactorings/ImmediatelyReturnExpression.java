@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
-import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
@@ -42,7 +42,7 @@ public class ImmediatelyReturnExpression implements RefactoringImpl {
 		int lineWithStmtToBeReturned = issue.getLine();
 
 		FileInputStream in = new FileInputStream(issueFilePath);
-		CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+		CompilationUnit cu = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
 		MethodDeclaration targetMethod = RefactoringHelper
 				.getMethodDeclarationByLineNumberInMethod(lineWithStmtToBeReturned, cu);
@@ -67,7 +67,7 @@ public class ImmediatelyReturnExpression implements RefactoringImpl {
 			throw new BotRefactoringException("Variable is used in more than one return statement.");
 		}
 
-		returnStmts.get(0).setExpression(JavaParser.parseExpression(initializer.get().toString()));
+		returnStmts.get(0).setExpression(StaticJavaParser.parseExpression(initializer.get().toString()));
 
 		ExpressionStmt expression = RefactoringHelper.getExpressionStmtByLineNumber(lineWithStmtToBeReturned, cu);
 		expression.remove();
