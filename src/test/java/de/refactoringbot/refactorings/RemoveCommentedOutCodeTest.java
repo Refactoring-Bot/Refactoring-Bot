@@ -16,9 +16,9 @@ import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveCommentedOutCode;
 import de.refactoringbot.resources.removecomments.TestDataClassRemoveComments;
 
-public class RemoveCommentsTest extends AbstractRefactoringTests {
+public class RemoveCommentedOutCodeTest extends AbstractRefactoringTests {
 
-	private static final Logger logger = LoggerFactory.getLogger(RemoveCommentsTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(RemoveCommentedOutCodeTest.class);
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
@@ -78,14 +78,14 @@ public class RemoveCommentsTest extends AbstractRefactoringTests {
 		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
 		assertThat(lineContent).isEqualTo("return 2 * a;");
 	}
-	
+
 	@Test
 	public void testRemoveCommentedOutInnerClass() throws Exception {
 		int lineWithCommentToBeRemoved = 53;
 		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
 
 		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
-                // For some reason JavaParser also removes one empty line below the comment block
+		// For some reason JavaParser also removes one empty line below the comment block
 		assertThat(lineContent).isEqualTo("}");
 	}
 
