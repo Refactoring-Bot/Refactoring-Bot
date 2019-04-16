@@ -102,7 +102,7 @@ public class GrammarServiceTest {
 
 	@Test
 	public void testCheckComment() {
-		GrammarService grammarService = new GrammarService(fileService);
+		GrammarService grammarService = new GrammarService();
 		// Init gitconfig with bot username
 		GitConfiguration gitConfig = new GitConfiguration();
 		gitConfig.setBotName(CORRECT_BOT_USERNAME);
@@ -133,7 +133,7 @@ public class GrammarServiceTest {
 		// arrange
 		Mockito.when(fileService.getAllJavaFiles(System.getProperty("user.dir"))).thenReturn(new ArrayList<>());
 		GitConfiguration gitConfig = new GitConfiguration();
-		GrammarService grammarService = new GrammarService(fileService);
+		GrammarService grammarService = new GrammarService();
 		BotPullRequestComment comment = new BotPullRequestComment();
 		comment.setCommentID(0);
 		comment.setUsername("randomuser");

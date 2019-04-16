@@ -292,6 +292,28 @@ public class ApiGrabber {
 	}
 
 	/**
+	 * This method returns the absolute path of a anaylsis service issue. This is
+	 * only necessary for analysis services that only return relative paths for
+	 * their issues (e.g. SonarQube). Other anaylsis services should just return the
+	 * input path in their case-section.
+	 * 
+	 * @param gitConfig
+	 * @param relativePath
+	 * @return absoluteFilePath
+	 * @throws IOException
+	 */
+	public String getAnalysisServiceAbsoluteIssuePath(GitConfiguration gitConfig, String relativePath)
+			throws IOException {
+		// Pick service
+		switch (gitConfig.getAnalysisService()) {
+		case sonarqube:
+			return sonarQubeTranslator.buildIssuePath(gitConfig, relativePath);
+		default:
+			return null;
+		}
+	}
+
+	/**
 	 * This method creates a request on a filehoster if the refactoring was
 	 * performed with issues from a analysis tool.
 	 *
