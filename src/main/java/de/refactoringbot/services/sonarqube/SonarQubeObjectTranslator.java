@@ -45,9 +45,6 @@ public class SonarQubeObjectTranslator {
 			botIssue.setLine(issue.getLine());
 			botIssue.setCommentServiceID(issue.getKey());
 
-			// Set creation date to determine the age of the issue
-			botIssue.setCreationDate(issue.getCreationDate());
-
 			// Translate SonarQube rule
 			switch (issue.getRule()) {
 			case "squid:S1161":
@@ -125,7 +122,8 @@ public class SonarQubeObjectTranslator {
 		}
 
 		if (!issuePath.exists()) {
-			throw new IOException("Unable to locate issue path.");
+			throw new IOException("Unable to locate issue path." + System.getProperty("line.separator")
+			+ "Are you sure that the source code and SonarQube analysis are on the same branch and version?");
 		}
 
 		// Cut path outside the repository

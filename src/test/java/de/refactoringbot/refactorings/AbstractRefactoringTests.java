@@ -19,24 +19,36 @@ public abstract class AbstractRefactoringTests {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	/**
-	 * Returns the test data class for a specific refactoring test class
-	 * 
-	 * @return
-	 */
-	public abstract Class<?> getTestResourcesClass();
+	private static final String TEST_FOLDER_PATH = "src/test/java/";
+	private static final String JAVA_FILE_EXTENSION = ".java";
 
 	/**
-	 * Returns a temporary copy of the test resources file of the current
-	 * refactoring test class
+	 * Creates a temporary copy of the test resources file containing the given
+	 * class. All copies are stored in the same temporary folder.
 	 * 
+	 * @param clazz
 	 * @return
 	 * @throws IOException
 	 */
-	protected File getTempCopyOfTestResourcesFile() throws IOException {
+	protected File createTempCopyOfTestResourcesFile(Class<?> clazz) throws IOException {
 		File copy = folder.newFile();
-		com.google.common.io.Files.copy(getTestResourcesFile(), copy);
+		com.google.common.io.Files.copy(getTestResourcesFile(clazz), copy);
 		return copy;
+	}
+
+	/**
+	 * @return absolute path of temporary test folder
+	 */
+	protected String getAbsolutePathOfTempFolder() {
+		return folder.getRoot().getAbsolutePath();
+	}
+
+	/**
+	 * @return absolute path of <code>src/test/java/</code> directory in this
+	 *         repository
+	 */
+	protected String getAbsolutePathOfTestsFolder() {
+		return new File(TEST_FOLDER_PATH).getAbsolutePath();
 	}
 
 	/**
@@ -59,11 +71,12 @@ public abstract class AbstractRefactoringTests {
 	 * Returns the test resource file that was determined based on the test
 	 * resources class
 	 * 
+	 * @param clazz
 	 * @return
 	 */
-	private File getTestResourcesFile() {
-		String pathToTestResources = "src/test/java/"
-				+ ClassUtils.convertClassNameToResourcePath(getTestResourcesClass().getName()) + ".java";
+	private File getTestResourcesFile(Class<?> clazz) {
+		String pathToTestResources = TEST_FOLDER_PATH + ClassUtils.convertClassNameToResourcePath(clazz.getName())
+				+ JAVA_FILE_EXTENSION;
 		return new File(pathToTestResources);
 	}
 

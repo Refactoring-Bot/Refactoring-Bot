@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
@@ -29,13 +29,12 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 	@Override
 	public String performRefactoring(BotIssue issue, GitConfiguration gitConfig) throws Exception {
 		String path = issue.getFilePath();
-		String methodName = null;
 
 		FileInputStream in = new FileInputStream(gitConfig.getRepoFolder() + "/" + path);
-		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
 		MethodDeclaration methodDeclarationToModify = RefactoringHelper
-				.getMethodByLineNumberOfMethodName(issue.getLine(), compilationUnit);
+				.getMethodDeclarationByLineNumber(issue.getLine(), compilationUnit);
 		if (methodDeclarationToModify == null) {
 			throw new BotRefactoringException("Could not find a method declaration at specified line!");
 		}
@@ -51,7 +50,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		out.close();
 
 		// Return commit message
-		return "Added override annotation to method " + methodName;
+		return "Added override annotation to method " + methodDeclarationToModify.getNameAsString();
 	}
 
 	/**

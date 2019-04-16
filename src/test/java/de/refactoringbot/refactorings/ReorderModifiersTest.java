@@ -12,7 +12,7 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -32,11 +32,6 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
-	@Override
-	public Class<?> getTestResourcesClass() {
-		return TestDataClassReorderModifiers.class;
-	}
-
 	@Test
 	public void testReorderMethodModifiers() throws Exception {
 		// arrange
@@ -47,9 +42,9 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 
 		// assert
 		FileInputStream in = new FileInputStream(tempFile);
-		CompilationUnit cu = JavaParser.parse(in);
+		CompilationUnit cu = StaticJavaParser.parse(in);
 		MethodDeclaration methodDeclarationAfterRefactoring = RefactoringHelper
-				.getMethodByLineNumberOfMethodName(lineOfMethod, cu);
+				.getMethodDeclarationByLineNumber(lineOfMethod, cu);
 		assertAllModifiersInCorrectOrder(methodDeclarationAfterRefactoring.getModifiers());
 	}
 
@@ -63,7 +58,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 
 		// assert
 		FileInputStream in = new FileInputStream(tempFile);
-		CompilationUnit cu = JavaParser.parse(in);
+		CompilationUnit cu = StaticJavaParser.parse(in);
 		FieldDeclaration fieldDeclarationAfterRefactoring = RefactoringHelper
 				.getFieldDeclarationByLineNumber(lineNumber, cu);
 		assertAllModifiersInCorrectOrder(fieldDeclarationAfterRefactoring.getModifiers());
@@ -78,7 +73,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 
 	private File performReorderModifiers(int lineNumber) throws Exception {
 		// arrange
-		File tempFile = getTempCopyOfTestResourcesFile();
+		File tempFile = createTempCopyOfTestResourcesFile(TestDataClassReorderModifiers.class);
 		BotIssue issue = new BotIssue();
 		GitConfiguration gitConfig = new GitConfiguration();
 		ReorderModifier refactoring = new ReorderModifier();
