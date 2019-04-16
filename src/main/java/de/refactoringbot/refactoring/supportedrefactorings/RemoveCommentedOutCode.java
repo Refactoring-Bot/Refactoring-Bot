@@ -55,11 +55,13 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
 
 		List<Comment> comments = compilationUnit.getAllContainedComments();
 
-                // Keeping track of the start and end line of the commented out code to add it to the output string
+		// Keeping track of the start and end line of the commented out code to add it
+		// to the output string
 		int startLine = line;
 		int endLine = -1;
 
-                // Going through all comments and checking if the line matches the one we're looking for
+		// Going through all comments and checking if the line matches the one we're
+		// looking for
 		for (Comment comment : comments) {
 			if ((line >= comment.getBegin().get().line) && (line <= comment.getEnd().get().line)) {
 				if (comment.isLineComment()) {
@@ -80,7 +82,8 @@ public class RemoveCommentedOutCode implements RefactoringImpl {
 			}
 		}
 
-                // We never set the endLine variable, which means we found no matching comment for the indicated line
+		// We never set the endLine variable, which means we found no matching comment
+		// for the indicated line
 		if (endLine == -1) {
 			throw new BotRefactoringException("Commented out code line could not be found"
 					+ System.getProperty("line.separator") + "Are you sure that the source code and "
