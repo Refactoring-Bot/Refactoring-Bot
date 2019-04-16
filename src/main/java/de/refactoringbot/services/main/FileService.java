@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
@@ -71,10 +71,11 @@ public class FileService {
 
 		for (String javaFile : allJavaFiles) {
 			FileInputStream filepath = new FileInputStream(javaFile);
-			CompilationUnit compilationUnit;
 
+			CompilationUnit compilationUnit;
+                        
 			try {
-				compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(filepath));
+				compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(filepath));
 			} catch (Exception e) {
 				logger.error(e.getMessage(), e);
 				continue;

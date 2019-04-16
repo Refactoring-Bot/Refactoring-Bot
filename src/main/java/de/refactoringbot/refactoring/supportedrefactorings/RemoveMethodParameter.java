@@ -14,7 +14,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -272,7 +272,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 
 		for (String currentFilePath : javaFilesRelevantForRefactoring) {
 			FileInputStream is = new FileInputStream(currentFilePath);
-			CompilationUnit cu = LexicalPreservingPrinter.setup(JavaParser.parse(is));
+			CompilationUnit cu = LexicalPreservingPrinter.setup(StaticJavaParser.parse(is));
 
 			List<MethodDeclaration> methodDeclarationsInCurrentFile = cu.findAll(MethodDeclaration.class);
 			List<MethodCallExpr> methodCallsInCurrentFile = cu.findAll(MethodCallExpr.class);
@@ -436,6 +436,6 @@ public class RemoveMethodParameter implements RefactoringImpl {
 		}
 		typeSolver.add(new ReflectionTypeSolver());
 		JavaSymbolSolver javaSymbolSolver = new JavaSymbolSolver(typeSolver);
-		JavaParser.getStaticConfiguration().setSymbolResolver(javaSymbolSolver);
+		StaticJavaParser.getConfiguration().setSymbolResolver(javaSymbolSolver);
 	}
 }

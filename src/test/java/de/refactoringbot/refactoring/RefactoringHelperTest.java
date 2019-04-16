@@ -12,7 +12,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.util.ClassUtils;
 
-import com.github.javaparser.JavaParser;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -32,7 +32,7 @@ public class RefactoringHelperTest {
 	public void testIsLocalMethodSignatureInClassOrInterface() throws FileNotFoundException {
 		// arrange
 		FileInputStream in = new FileInputStream(getTestResourcesFile());
-		CompilationUnit cu = JavaParser.parse(in);
+		CompilationUnit cu = StaticJavaParser.parse(in);
 		Optional<ClassOrInterfaceDeclaration> clazz = cu.getClassByName(TARGET_CLASS_NAME);
 		assertThat(clazz).isPresent();
 
@@ -51,7 +51,7 @@ public class RefactoringHelperTest {
 	public void testGetMethodByLineNumberOfMethodName() throws FileNotFoundException {
 		// arrange
 		FileInputStream in = new FileInputStream(getTestResourcesFile());
-		CompilationUnit cu = JavaParser.parse(in);
+		CompilationUnit cu = StaticJavaParser.parse(in);
 		int lineNumber = TestDataClassRefactoringHelper.getLineOfMethod(true);
 
 		// act
@@ -72,7 +72,7 @@ public class RefactoringHelperTest {
 	public void testGetFieldDeclarationByLineNumber() throws FileNotFoundException {
 		// arrange
 		FileInputStream in = new FileInputStream(getTestResourcesFile());
-		CompilationUnit cu = JavaParser.parse(in);
+		CompilationUnit cu = StaticJavaParser.parse(in);
 		int lineNumber = TestDataClassRefactoringHelper.lineNumberOfFieldDeclaration;
 		String expectedFieldAsString = "public static int lineNumberOfFieldDeclaration = " + lineNumber + ";";
 
