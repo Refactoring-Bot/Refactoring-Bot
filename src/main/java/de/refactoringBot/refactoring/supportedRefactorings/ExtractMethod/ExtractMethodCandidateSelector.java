@@ -16,11 +16,11 @@ public class ExtractMethodCandidateSelector {
     private Long methodStartLine;
 
     private final double lengthScoreWeight = 1;
-    private final double maxLineLengthScore = 40;
+    private final double maxLineLengthScore = 30;
     private final double nestingScoreWeight = 1;
     private final double paramScoreWeight = 1;
     private final double maxParameterScore = 4;
-    private final double semanticsScoreWeight = 1;
+    private final double semanticsScoreWeight = 2;
     private final double semanticsBeginningWeight = 2;
 
     ExtractMethodCandidateSelector(StatementGraphNode fullGraph, List<RefactorCandidate> candidates, Map<Long, LineMapVariable> variableMap, List<Long> commentLines, List<Long> emptyLines, Long methodStartLine, Long methodEndLine) {

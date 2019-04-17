@@ -513,26 +513,28 @@ public class ExtractMethodUtil {
         Long newLine = lastLine;
         if (ExtractMethodUtil.nodeContainsVariable(node, variable)) {
             Long lineNumber = ExtractMethodUtil.getLineNumber(lineMap, node);
-            if (ExtractMethodUtil.nodeIsAssignmentNode(node)) {
+            if (ExtractMethodUtil.nodeIsAssignmentNode(node) || ExtractMethodUtil.nodeIsDeclarationNode(node)) {
                 newLine = lineNumber;
-            } else {
-                Long in = (lastLine != null && lineNumber > lastLine) ? lastLine : previousLine;
-                // add in
-                variableMap.computeIfAbsent(lineNumber, k -> new LineMapVariable());
-                variableMap.get(lineNumber).in.computeIfAbsent(variable, k -> new HashSet<>());
-                variableMap.get(lineNumber).in.get(variable).add(in);
-                // add out
-                variableMap.computeIfAbsent(lastLine, k -> new LineMapVariable());
-                variableMap.get(in).out.computeIfAbsent(variable, k -> new HashSet<>());
-                variableMap.get(in).out.get(variable).add(lineNumber);
-                System.out.println(variableMap);
             }
+            Long in = (lastLine != null && lineNumber > lastLine) ? lastLine : previousLine;
+            // add in
+            variableMap.computeIfAbsent(lineNumber, k -> new LineMapVariable());
+            variableMap.get(lineNumber).in.computeIfAbsent(variable, k -> new HashSet<>());
+            variableMap.get(lineNumber).in.get(variable).add(in);
+            // add out
+            variableMap.computeIfAbsent(lastLine, k -> new LineMapVariable());
+            variableMap.get(in).out.computeIfAbsent(variable, k -> new HashSet<>());
+            variableMap.get(in).out.get(variable).add(lineNumber);
+            System.out.println(variableMap);
         }
         return newLine;
     }
 
     private static boolean nodeIsAssignmentNode(Node node) {
         return node.getClass().equals(AssignmentNode.class);
+    }
+    private static boolean nodeIsDeclarationNode(Node node) {
+        return node.getClass().equals(VariableDeclarationNode.class);
     }
 
     private static boolean nodeContainsVariable(Node node, LocalVariable variable) {
@@ -695,22 +697,28 @@ public class ExtractMethodUtil {
         Set<Block> allBlocks = ExtractMethodUtil.getAllBlocks(candidate.statements);
         List<Node> allContent = ExtractMethodUtil.getAllContent(allBlocks);
         for (Node node : allContent) {
+
             if (node.getClass().equals(CaseNode.class)) {
                 CaseNode caseNode = (CaseNode) node;
+                // check if switch is in candidate
                 if (!allBlocks.contains(caseNode.getSwitchOperand().getBlock())) {
                     return false;
                 }
-            }
-            if (node.getClass().equals(MarkerNode.class)) {
-                if (((MarkerNode) node).getMessage().contains("switch")) {
-                    JCTree.JCSwitch switchTree = (JCTree.JCSwitch) node.getTree();
-                    for (JCTree.JCCase caseNode : switchTree.cases) {
-                        if (!candidate.containsLine(lineMap.getLineNumber(caseNode.pos))) {
-                            return false;
+                boolean containsSwitch = false;
+                for (Node switchNode : allContent) {
+                    if (switchNode.getType().equals(MarkerNode.class)) {
+                        if (((MarkerNode) switchNode).getMessage().contains("switch")) {
+                            containsSwitch = true;
+                            JCTree.JCSwitch switchTree = (JCTree.JCSwitch) node.getTree();
+                            for (JCTree.JCCase caseInSwitchNode : switchTree.cases) {
+                                if (!candidate.containsLine(lineMap.getLineNumber(caseInSwitchNode.pos))) {
+                                    return false;
+                                }
+                            }
                         }
-
                     }
                 }
+                return containsSwitch;
             }
         }
         return true;
