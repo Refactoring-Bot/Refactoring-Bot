@@ -39,17 +39,18 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
     private final CompilationUnit compilationUnit;
     private final RefactorCandidate candidate;
     private final String fileName;
+    private final String originalMethodName;
 
-    public MethodExtractor(RefactorCandidate candidate, String fileName) throws FileNotFoundException {
+    public MethodExtractor(RefactorCandidate candidate, String fileName, String originalMethodName) throws FileNotFoundException {
         // Read file
         FileInputStream in = new FileInputStream(fileName);
         this.compilationUnit = JavaParser.parse(in);
         this.candidate = candidate;
         this.fileName = fileName;
+        this.originalMethodName = originalMethodName.substring(0, 1).toUpperCase() + originalMethodName.substring(1);
     }
 
-    public String apply() throws FileNotFoundException {
-        String originalMethodName = "";
+    public void apply() throws FileNotFoundException {
         for (TypeDeclaration type : compilationUnit.getTypes()) {
             Optional<Position> beginPosition = type.getBegin();
             Optional<Position> endPosition = type.getEnd();
@@ -63,7 +64,7 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                     if (this.candidate.outVariables.size() > 0) {
                         methodType = new ClassOrInterfaceType(this.candidate.outVariables.iterator().next().type);
                     }
-                    MethodDeclaration extractedMethod = new MethodDeclaration(modifiers, methodType, "extractedMethod");
+                    MethodDeclaration extractedMethod = new MethodDeclaration(modifiers, methodType, "extractedMethod" + originalMethodName);
                     for (LocalVariable inVar : this.candidate.inVariables) {
                         extractedMethod.addParameter(inVar.type, inVar.name);
                     }
@@ -71,7 +72,7 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
 
                     // call new method in original method
                     Expression methodCall;
-                    MethodCallExpr call = new MethodCallExpr("extractedMethod");
+                    MethodCallExpr call = new MethodCallExpr("extractedMethod" + originalMethodName);
                     for (LocalVariable var : this.candidate.inVariables) {
                         call.addArgument(var.name);
                     }
@@ -90,7 +91,6 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                     // remove code from original method and add candidate code to new method
                     MethodVisitor methodVisitor = new MethodVisitor(this.candidate, methodCall);
                     List<Statement> nodes = compilationUnit.accept(methodVisitor, null);
-                    originalMethodName = methodVisitor.methodName;
                     BlockStmt block = new BlockStmt();
                     extractedMethod.setBody(block);
                     for (Statement node : nodes) {
@@ -112,7 +112,6 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                 }
             }
         }
-        return originalMethodName;
     }
 
 

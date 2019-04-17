@@ -101,10 +101,9 @@ public class ExtractMethod implements RefactoringImpl {
 				ExtractMethodCandidateSelector selector = new ExtractMethodCandidateSelector(graph, candidates, variableMap, commentLines, emptyLines, this.cfgContainer.startLine, this.cfgContainer.endLine);
 				RefactorCandidate bestCandidate = selector.selectBestCandidate();
 
-				String originalMethodName = "";
 				try {
-					MethodExtractor methodExtractor = new MethodExtractor(bestCandidate, sourcePath);
-					originalMethodName = methodExtractor.apply();
+					MethodExtractor methodExtractor = new MethodExtractor(bestCandidate, sourcePath, this.cfgContainer.methodName);
+					methodExtractor.apply();
 				} catch (FileNotFoundException ex) {
 					ex.printStackTrace();
 				}
@@ -113,16 +112,9 @@ public class ExtractMethod implements RefactoringImpl {
 
 				// this.printGraphToFile(this.debugDir, this.cfgContainer.cfg);
 
-				return "extracted method from " + originalMethodName + "()";
+				return "extracted method from " + this.cfgContainer.methodName + "()";
 			}
 		}
-
-		/*
-		// Save changes to file
-		PrintWriter out = new PrintWriter(gitConfig.getRepoFolder() + "/" + path);
-		out.println(compilationUnit.toString());
-		out.close();
-		*/
 
 		return null;
 	}

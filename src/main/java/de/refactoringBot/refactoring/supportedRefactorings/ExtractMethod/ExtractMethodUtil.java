@@ -902,7 +902,7 @@ public class ExtractMethodUtil {
 
             if (startLine <= this.lineNumber && endLine >= this.lineNumber) {
                 // generate cfg
-                return new CFGContainer(CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv), startLine, endLine);
+                return new CFGContainer(CFGBuilder.build(this.compilationUnitTree, node, this.classTree, DummyTypeProcessor.processingEnv), startLine, endLine, node.getName().toString());
             } else {
                 return null;
             }
