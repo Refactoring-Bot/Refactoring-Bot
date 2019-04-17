@@ -99,7 +99,7 @@ public class SonarQubeObjectTranslator {
 				break;
 			case "squid:S1172":
 				botIssue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
-				botIssue.setRefactorString(getParameterName(issue));
+				botIssue.setRefactorString(getNameOfFirstUnusedParameterInIssue(issue));
 				botIssues.add(botIssue);
 				break;
 			default:
@@ -118,15 +118,13 @@ public class SonarQubeObjectTranslator {
 	 * @param issue
 	 * @return parameterName
 	 */
-	public String getParameterName(SonarIssue issue) {
-		String message = issue.getMessage();
-		String[] splitMessage = message.split(" ");
-		String paramPartOfMessage = "";
-		for (int i = 0; i < splitMessage.length; i++) {
-			if (splitMessage[i].equals("parameter") && i < splitMessage.length - 1) {
-				paramPartOfMessage = splitMessage[i + 1];
-			}
-		}
-		return paramPartOfMessage.substring(1, paramPartOfMessage.length() - 2);
+	public String getNameOfFirstUnusedParameterInIssue(SonarIssue issue) {
+		String message = issue.getFlows().get(0).getLocations().get(0).getMsg();
+		String[] splitMessage = message.split("Remove this unused method parameter");
+		String param = splitMessage[1];
+		param = param.replace("\"", "");
+		param = param.replace(".", "");
+		param = param.trim();
+		return param;
 	}
 }

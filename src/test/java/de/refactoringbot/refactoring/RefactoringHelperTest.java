@@ -5,7 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,8 +21,14 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.symbolsolver.JavaSymbolSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 
+import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.resources.refactoringhelper.TestDataClassRefactoringHelper;
+import de.refactoringbot.testutils.TestUtils;
 
 public class RefactoringHelperTest {
 
@@ -46,7 +56,7 @@ public class RefactoringHelperTest {
 		assertThat(actual1).isTrue();
 		assertThat(actual2).isFalse();
 	}
-	
+
 	@Test
 	public void testGetMethodByLineNumberOfMethodName() throws FileNotFoundException {
 		// arrange
@@ -82,6 +92,93 @@ public class RefactoringHelperTest {
 		// assert
 		assertThat(field).isNotNull();
 		assertThat(field.toString()).isEqualTo(expectedFieldAsString);
+	}
+
+	@Test
+	public void testGetClassOrInterfaceOfMethod() throws FileNotFoundException {
+		// arrange
+		FileInputStream in = new FileInputStream(getTestResourcesFile());
+		CompilationUnit cu = StaticJavaParser.parse(in);
+		int lineNumber = TestDataClassRefactoringHelper.getLineOfMethod(true);
+
+		MethodDeclaration methodDeclaration = RefactoringHelper.getMethodDeclarationByLineNumber(lineNumber, cu);
+		assertThat(methodDeclaration).isNotNull();
+
+		// act
+		ClassOrInterfaceDeclaration classOrInterface = RefactoringHelper.getClassOrInterfaceOfMethod(methodDeclaration);
+
+		// assert
+		assertThat(classOrInterface).isNotNull();
+		assertThat(classOrInterface.getNameAsString()).isEqualTo(TARGET_CLASS_NAME);
+	}
+
+	@Test
+	public void testGetAllClassesAndInterfacesFromFile() throws FileNotFoundException {
+		// arrange
+		String filePath = getTestResourcesFile().getAbsolutePath();
+
+		// act
+		List<ClassOrInterfaceDeclaration> allClassesAndInterfacesOfFile = RefactoringHelper
+				.getAllClassesAndInterfacesFromFile(filePath);
+
+		// assert
+		assertThat(allClassesAndInterfacesOfFile).hasSize(2);
+	}
+
+	@Test
+	public void testGetQualifiedMethodSignatureAsString() throws FileNotFoundException, BotRefactoringException {
+		configureStaticJavaParserForResolving();
+
+		// arrange
+		FileInputStream in = new FileInputStream(getTestResourcesFile());
+		CompilationUnit cu = StaticJavaParser.parse(in);
+		int lineNumber = TestDataClassRefactoringHelper.getLineOfMethod(true);
+		MethodDeclaration targetMethod = RefactoringHelper.getMethodDeclarationByLineNumber(lineNumber, cu);
+		assertThat(targetMethod).isNotNull();
+
+		// act
+		String qualifiedMethodSignature = RefactoringHelper.getQualifiedMethodSignatureAsString(targetMethod);
+
+		// assert
+		assertThat(qualifiedMethodSignature).isEqualTo(
+				"de.refactoringbot.resources.refactoringhelper.TestDataClassRefactoringHelper.getLineOfMethod(boolean)");
+	}
+
+	@Test
+	public void testFindRelatedClassesAndInterfaces() throws BotRefactoringException, IOException {
+		configureStaticJavaParserForResolving();
+
+		// arrange
+		FileInputStream in = new FileInputStream(getTestResourcesFile());
+		CompilationUnit cu = StaticJavaParser.parse(in);
+		Optional<ClassOrInterfaceDeclaration> targetClass = cu.getClassByName(TARGET_CLASS_NAME);
+		assertThat(targetClass).isPresent();
+
+		int lineNumber = TestDataClassRefactoringHelper.getLineOfMethod(true);
+		MethodDeclaration targetMethod = RefactoringHelper.getMethodDeclarationByLineNumber(lineNumber, cu);
+		assertThat(targetMethod).isNotNull();
+
+		List<String> allJavaFiles = new ArrayList<>();
+		allJavaFiles.add(getTestResourcesFile().getCanonicalPath());
+
+		// act
+		Set<String> relatedClassesAndInterfaces = RefactoringHelper.findRelatedClassesAndInterfaces(allJavaFiles,
+				targetClass.get(), targetMethod);
+
+		// assert
+		// this method is already being tested indirectly in some of the refactoring
+		// tests (e.g. for removing a method parameter) with a larger set of classes.
+		// That's why we keep it simple here.
+		assertThat(relatedClassesAndInterfaces).hasSize(2);
+	}
+
+	private void configureStaticJavaParserForResolving() {
+		CombinedTypeSolver typeSolver = new CombinedTypeSolver();
+		String javaRoot = TestUtils.getAbsolutePathOfTestsFolder();
+		typeSolver.add(new JavaParserTypeSolver(javaRoot));
+		typeSolver.add(new ReflectionTypeSolver());
+		JavaSymbolSolver javaSymbolSolver = new JavaSymbolSolver(typeSolver);
+		StaticJavaParser.getConfiguration().setSymbolResolver(javaSymbolSolver);
 	}
 
 	private File getTestResourcesFile() {

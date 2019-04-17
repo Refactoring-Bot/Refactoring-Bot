@@ -11,6 +11,8 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.springframework.util.ClassUtils;
 
+import de.refactoringbot.testutils.TestUtils;
+
 /**
  * Abstract class for refactoring test cases
  */
@@ -19,7 +21,6 @@ public abstract class AbstractRefactoringTests {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	private static final String TEST_FOLDER_PATH = "src/test/java/";
 	private static final String JAVA_FILE_EXTENSION = ".java";
 
 	/**
@@ -41,14 +42,6 @@ public abstract class AbstractRefactoringTests {
 	 */
 	protected String getAbsolutePathOfTempFolder() {
 		return folder.getRoot().getAbsolutePath();
-	}
-
-	/**
-	 * @return absolute path of <code>src/test/java/</code> directory in this
-	 *         repository
-	 */
-	protected String getAbsolutePathOfTestsFolder() {
-		return new File(TEST_FOLDER_PATH).getAbsolutePath();
 	}
 
 	/**
@@ -75,7 +68,7 @@ public abstract class AbstractRefactoringTests {
 	 * @return
 	 */
 	private File getTestResourcesFile(Class<?> clazz) {
-		String pathToTestResources = TEST_FOLDER_PATH + ClassUtils.convertClassNameToResourcePath(clazz.getName())
+		String pathToTestResources = TestUtils.TEST_FOLDER_PATH + ClassUtils.convertClassNameToResourcePath(clazz.getName())
 				+ JAVA_FILE_EXTENSION;
 		return new File(pathToTestResources);
 	}

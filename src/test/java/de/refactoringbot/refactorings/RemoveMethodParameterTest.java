@@ -35,6 +35,7 @@ import de.refactoringbot.resources.removeparameter.TestDataClassImplementingEmpt
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter.TestDataInnerClassRemoveParameter;
 import de.refactoringbot.resources.removeparameter.TestDataClassRemoveParameter.TestDataInnerClassWithInterfaceImpl;
+import de.refactoringbot.testutils.TestUtils;
 import de.refactoringbot.resources.removeparameter.TestDataClassWithCallOfTargetMethod;
 import de.refactoringbot.resources.removeparameter.TestDataEmptyInterface;
 import de.refactoringbot.resources.removeparameter.TestDataInterfaceRemoveParameter;
@@ -615,7 +616,7 @@ public class RemoveMethodParameterTest extends AbstractRefactoringTests {
 		gitConfig.setRepoFolder(getAbsolutePathOfTempFolder());
 
 		ArrayList<String> javaRoots = new ArrayList<>();
-		javaRoots.add(getAbsolutePathOfTestsFolder());
+		javaRoots.add(TestUtils.getAbsolutePathOfTestsFolder());
 		BotIssue issue = new BotIssue();
 		issue.setFilePath(targetFile.getName());
 		issue.setLine(lineNumberOfMethodWithParameterToBeRemoved);
