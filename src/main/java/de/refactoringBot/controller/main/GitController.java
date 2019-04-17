@@ -183,7 +183,7 @@ public class GitController {
 				git.close();
 			}
 			logger.error(e.getMessage(), e);
-			throw new Exception("Branch with the name " + "'" + newBranch + "' could not be created!");
+			//throw new Exception("Branch with the name " + "'" + newBranch + "' could not be created!");
 		}
 	}
 

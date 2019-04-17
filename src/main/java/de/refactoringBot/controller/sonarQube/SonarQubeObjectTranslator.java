@@ -47,7 +47,7 @@ public class SonarQubeObjectTranslator {
 			String sonarIssuePath = Paths.get(component.substring(project.length() + 1, component.length())).toString();
 			
 			// Create full path for sonar issue
-			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 11) + sonarIssuePath;
+			sonarIssuePath = gitConfig.getSrcFolder().substring(0, gitConfig.getSrcFolder().length() - 24) + sonarIssuePath;
 			// Cut path outside the repository
 			String translatedPath = StringUtils.difference(gitConfig.getRepoFolder(), sonarIssuePath);
 			// Remove leading '/'
@@ -82,6 +82,6 @@ public class SonarQubeObjectTranslator {
 			}
 		}
 
-		return botIssues;
+ 		return botIssues;
 	}
 }

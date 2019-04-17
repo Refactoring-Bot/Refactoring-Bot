@@ -2038,6 +2038,9 @@ public class CFGBuilder {
          * false otherwise.
          */
         protected boolean isNumericOrBoxed(TypeMirror type) {
+            if (type == null) {
+                return false;
+            }
             if (TypesUtils.isBoxedPrimitive(type)) {
                 type = types.unboxedType(type);
             }
@@ -2968,8 +2971,8 @@ public class CFGBuilder {
                         TypeMirror promotedType = binaryPromotedType(leftType, rightType);
                         targetRHS = binaryNumericPromotion(targetLHS, promotedType);
                         value = binaryNumericPromotion(value, promotedType);
-                    } else if (TypesUtils.isBooleanType(leftType)
-                            && TypesUtils.isBooleanType(rightType)) {
+                    } else if (leftType != null && TypesUtils.isBooleanType(leftType)
+                            && rightType != null && TypesUtils.isBooleanType(rightType)) {
                         targetRHS = unbox(targetLHS);
                         value = unbox(value);
                     } else {
@@ -3199,8 +3202,8 @@ public class CFGBuilder {
                         TypeMirror leftType = TreeUtils.typeOf(leftTree);
                         TypeMirror rightType = TreeUtils.typeOf(rightTree);
                         boolean isBooleanOp =
-                                TypesUtils.isBooleanType(leftType)
-                                        && TypesUtils.isBooleanType(rightType);
+                                leftType != null && TypesUtils.isBooleanType(leftType)
+                                        && rightType != null && TypesUtils.isBooleanType(rightType);
 
                         Node left;
                         Node right;
