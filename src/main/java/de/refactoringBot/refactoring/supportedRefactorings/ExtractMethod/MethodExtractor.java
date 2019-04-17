@@ -48,7 +48,8 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
         this.fileName = fileName;
     }
 
-    public void apply() throws FileNotFoundException {
+    public String apply() throws FileNotFoundException {
+        String originalMethodName = "";
         for (TypeDeclaration type : compilationUnit.getTypes()) {
             Optional<Position> beginPosition = type.getBegin();
             Optional<Position> endPosition = type.getEnd();
@@ -87,7 +88,9 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                     }
 
                     // remove code from original method and add candidate code to new method
-                    List<Statement> nodes = compilationUnit.accept(new MethodVisitor(this.candidate, methodCall), null);
+                    MethodVisitor methodVisitor = new MethodVisitor(this.candidate, methodCall);
+                    List<Statement> nodes = compilationUnit.accept(methodVisitor, null);
+                    originalMethodName = methodVisitor.methodName;
                     BlockStmt block = new BlockStmt();
                     extractedMethod.setBody(block);
                     for (Statement node : nodes) {
@@ -109,6 +112,7 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                 }
             }
         }
+        return originalMethodName;
     }
 
 
@@ -116,6 +120,8 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
     private static class MethodVisitor extends GenericVisitorAdapter<List<Statement>, Void> {
         private RefactorCandidate candidate;
         private Expression methodCall;
+
+        public String methodName = "";
 
         private enum StatementResult {
             NONE, SUBSTATEMENT, STATEMENT
@@ -135,27 +141,56 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
                 int startLine = beginPosition.get().line;
                 int endLine = endPosition.get().line;
                 if (startLine <= candidate.startLine && endLine >= candidate.endLine) {
-
-                    for (Statement statement : n.getBody().get().getStatements()) {
-                        switch (this.candidateContainsStatement(statement)) {
-                            case NONE:
-                                break;
-                            case STATEMENT:
-                                removedNodes.add(statement);
-                                break;
-                            case SUBSTATEMENT:
-                                statement.getChildNodes();
-                                break;
-                        }
-                    }
-                    int index = n.getBody().get().getStatements().indexOf(removedNodes.get(0));
-                    n.getBody().get().addStatement(index, this.methodCall);
+                    this.methodName = n.getDeclarationAsString(false, false, false);
+                    removedNodes = this.extractStatements(n.getBody().get(), 0, this.methodCall);
                     return removedNodes;
 
                     //removedNodes = this.analyseStatements(n.getBody().get(), removedNodes);
                 }
             }
             return null;
+        }
+
+        private List<Statement> extractStatements(BlockStmt parentStatement, int currentDepth, Expression methodCall) {
+            List<Statement> removedNodes = new ArrayList<>();
+            Integer index = null;
+            for (Statement statement : parentStatement.getStatements()) {
+                if (this.candidateContainsStatement(statement)) {
+                    if (candidate.nestingDepth == currentDepth) {
+                        if (index == null) {
+                            index = parentStatement.getStatements().indexOf(statement);
+                        }
+                        removedNodes.add(statement);
+                    } else {
+                        BlockStmt newParentStatement = null;
+                        if (statement.isForStmt()) {
+                            newParentStatement = statement.asForStmt().getBody().asBlockStmt();
+                        } else if (statement.isForEachStmt()) {
+                            newParentStatement = statement.asForEachStmt().getBody().asBlockStmt();
+                        } else if (statement.isForeachStmt()) {
+                            newParentStatement = statement.asForeachStmt().getBody().asBlockStmt();
+                        } else if (statement.isIfStmt()) {
+                            System.out.println(statement);
+                            newParentStatement = statement.asIfStmt().getThenStmt().asBlockStmt();
+                            boolean inThenBranch = false;
+                            for (Statement thenStatement: newParentStatement.getStatements()) {
+                                if (this.candidateContainsStatement(thenStatement)) {
+                                    inThenBranch = true;
+                                }
+                            }
+                            if (!inThenBranch) {
+                                newParentStatement = statement.asIfStmt().getElseStmt().get().asBlockStmt();
+                            }
+                        }
+                        return this.extractStatements(newParentStatement, ++currentDepth, methodCall);
+                    }
+                }
+            }
+            for (Statement statement : removedNodes) {
+                statement.remove();
+            }
+            parentStatement.addStatement(index, methodCall);
+            return removedNodes;
         }
 /*
         private List<Statement> analyseStatements(Node parentNode, List<Statement> removedNodes) {
@@ -179,19 +214,24 @@ public class MethodExtractor extends VoidVisitorAdapter<Void> {
             return removedNodes;
         }*/
 
-        private StatementResult candidateContainsStatement(Statement statement) {
+        private boolean candidateContainsStatement(Statement statement) {
             Optional<Position> beginPosition = statement.getBegin();
             Optional<Position> endPosition = statement.getEnd();
             if (beginPosition.isPresent() && endPosition.isPresent()) {
-                int startLine = beginPosition.get().line;
-                int endLine = endPosition.get().line;
-                if (startLine < this.candidate.startLine && endLine >= this.candidate.endLine) {
-                    return StatementResult.SUBSTATEMENT;
-                } else if (this.candidate.containsLine(startLine) || this.candidate.containsLine(endLine)) {
-                    return StatementResult.STATEMENT;
+                Long startLine = new Long(beginPosition.get().line);
+                Long endLine = new Long(endPosition.get().line);
+                if (rangeContainsLineNumber(startLine, endLine, candidate.startLine) ||
+                    rangeContainsLineNumber(startLine, endLine, candidate.endLine) ||
+                    rangeContainsLineNumber(candidate.startLine, candidate.endLine, startLine) ||
+                    rangeContainsLineNumber(candidate.startLine, candidate.endLine, endLine)) {
+                    return true;
                 }
             }
-            return StatementResult.NONE;
+            return false;
+        }
+
+        private boolean rangeContainsLineNumber(Long startLine, Long endLine, Long lineNumber) {
+            return startLine <= lineNumber && endLine >= lineNumber;
         }
     }
 }

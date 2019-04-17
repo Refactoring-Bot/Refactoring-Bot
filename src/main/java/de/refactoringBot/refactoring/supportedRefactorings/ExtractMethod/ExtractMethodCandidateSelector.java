@@ -15,8 +15,8 @@ public class ExtractMethodCandidateSelector {
     private Long methodEndLine;
     private Long methodStartLine;
 
-    private final double lengthScoreWeight = 0.1;
-    private final double maxLineLengthScore = 30;
+    private final double lengthScoreWeight = 1;
+    private final double maxLineLengthScore = 40;
     private final double nestingScoreWeight = 1;
     private final double paramScoreWeight = 1;
     private final double maxParameterScore = 4;
@@ -59,7 +59,7 @@ public class ExtractMethodCandidateSelector {
     private double scoreLength(RefactorCandidate candidate) {
         long lengthCandidate = candidate.endLine - candidate.startLine;
         long lengthRemainder = (this.methodEndLine - this.methodStartLine) - lengthCandidate;
-        return this.lengthScoreWeight * (Math.min(Math.min(lengthCandidate, lengthRemainder), this.maxLineLengthScore));
+        return this.lengthScoreWeight * 0.1 * (Math.min(Math.min(lengthCandidate, lengthRemainder), this.maxLineLengthScore));
     }
 
     private double scoreNesting(RefactorCandidate candidate) {
@@ -140,6 +140,6 @@ public class ExtractMethodCandidateSelector {
 
         int linesAtBeginning = (numberAtBeginning > 0) ? 1 : 0;
         int linesAtEnd = (numberAtEnd > 0) ? 1 : 0;
-        return this.semanticsScoreWeight * (this.semanticsBeginningWeight * (linesAtBeginning + numberAtBeginning) + linesAtEnd + numberAtEnd);
+        return this.semanticsScoreWeight * 0.25 * (this.semanticsBeginningWeight * (linesAtBeginning + numberAtBeginning) + linesAtEnd + numberAtEnd);
     }
 }

@@ -554,11 +554,16 @@ public class ExtractMethodUtil {
 
     // MARK: begin candidate generation
     public static List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap, List<Long> allLines, List<Long> commentLines, List<Long> emptyLines, LineMap lineMap, int minLineLength) {
+        return findCandidates(graph, variableMap, breakContinueMap, allLines, commentLines, emptyLines, lineMap, minLineLength, 0);
+    }
+
+    public static List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap, List<Long> allLines, List<Long> commentLines, List<Long> emptyLines, LineMap lineMap, int minLineLength, int currentDepth) {
         List<RefactorCandidate> candidates = new ArrayList<>();
         for (int outerIndex = 0; outerIndex < graph.children.size(); outerIndex++) {
             for (int innerIndex = graph.children.size() - 1; innerIndex >= outerIndex; innerIndex--) {
 
                 RefactorCandidate potentialCandidate = new RefactorCandidate();
+                potentialCandidate.nestingDepth = currentDepth;
                 potentialCandidate.startLine = graph.children.get(outerIndex).linenumber;
                 Long lastLine = ExtractMethodUtil.getLastLine(graph.children.get(innerIndex));
                 if (innerIndex < graph.children.size() - 1) {
@@ -574,7 +579,7 @@ public class ExtractMethodUtil {
                     candidates.add(potentialCandidate);
                 }
             }
-            candidates.addAll(ExtractMethodUtil.findCandidates(graph.children.get(outerIndex), variableMap, breakContinueMap, allLines, commentLines, emptyLines, lineMap, minLineLength));
+            candidates.addAll(ExtractMethodUtil.findCandidates(graph.children.get(outerIndex), variableMap, breakContinueMap, allLines, commentLines, emptyLines, lineMap, minLineLength, ++currentDepth));
         }
         return candidates;
     }

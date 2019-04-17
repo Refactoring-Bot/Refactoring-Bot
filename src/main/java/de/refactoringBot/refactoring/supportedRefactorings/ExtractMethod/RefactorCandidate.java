@@ -11,6 +11,7 @@ public class RefactorCandidate {
     Long startLine;
     Long endLine;
     double score = 0L;
+    int nestingDepth = 0;
     Set<LocalVariable> inVariables = new HashSet<>();
     Set<LocalVariable> outVariables = new HashSet<>();
 

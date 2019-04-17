@@ -19,8 +19,9 @@ public class MethodExtractorTest {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         String path = classLoader.getResource("RefactorInnerExample.java").getPath();
         RefactorCandidate candidate = new RefactorCandidate();
-        candidate.startLine = 25L;
-        candidate.endLine = 29L;
+        candidate.startLine = 28L;
+        candidate.endLine = 28L;
+        candidate.nestingDepth = 2;
         MethodExtractor extractor = new MethodExtractor(candidate, path);
         extractor.apply();
     }
