@@ -553,11 +553,11 @@ public class ExtractMethodUtil {
     // MARK: end analyse data flow
 
     // MARK: begin candidate generation
-    public static List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap, List<Long> allLines, List<Long> commentLines, List<Long> emptyLines, LineMap lineMap, int minLineLength) {
-        return findCandidates(graph, variableMap, breakContinueMap, allLines, commentLines, emptyLines, lineMap, minLineLength, 0);
+    public static List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap, List<Long> allLines, List<Long> commentLines, List<Long> emptyLines, LineMap lineMap, int minLineLength, CFGContainer cfgContainer) {
+        return findCandidates(graph, variableMap, breakContinueMap, allLines, commentLines, emptyLines, lineMap, minLineLength, 0, cfgContainer);
     }
 
-    public static List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap, List<Long> allLines, List<Long> commentLines, List<Long> emptyLines, LineMap lineMap, int minLineLength, int currentDepth) {
+    public static List<RefactorCandidate> findCandidates(StatementGraphNode graph, Map<Long, LineMapVariable> variableMap, Map<Long, Long> breakContinueMap, List<Long> allLines, List<Long> commentLines, List<Long> emptyLines, LineMap lineMap, int minLineLength, int currentDepth, CFGContainer cfgContainer) {
         List<RefactorCandidate> candidates = new ArrayList<>();
         for (int outerIndex = 0; outerIndex < graph.children.size(); outerIndex++) {
             for (int innerIndex = graph.children.size() - 1; innerIndex >= outerIndex; innerIndex--) {
@@ -573,13 +573,14 @@ public class ExtractMethodUtil {
                 }
                 potentialCandidate.statements.addAll(ExtractMethodUtil.getStatements(graph, outerIndex, innerIndex));
 
-                if (ExtractMethodUtil.isLongEnough(potentialCandidate, minLineLength) &&
+                if (ExtractMethodUtil.linesAreValid(potentialCandidate, cfgContainer.startLine, cfgContainer.endLine) &&
+                        ExtractMethodUtil.isLongEnough(potentialCandidate, minLineLength, cfgContainer.endLine - cfgContainer.startLine + 1) &&
                         ExtractMethodUtil.isValid(potentialCandidate, graph) &&
                         ExtractMethodUtil.isExtractable(potentialCandidate, variableMap, breakContinueMap, lineMap)) {
                     candidates.add(potentialCandidate);
                 }
             }
-            candidates.addAll(ExtractMethodUtil.findCandidates(graph.children.get(outerIndex), variableMap, breakContinueMap, allLines, commentLines, emptyLines, lineMap, minLineLength, ++currentDepth));
+            candidates.addAll(ExtractMethodUtil.findCandidates(graph.children.get(outerIndex), variableMap, breakContinueMap, allLines, commentLines, emptyLines, lineMap, minLineLength, currentDepth + 1, cfgContainer));
         }
         return candidates;
     }
@@ -649,9 +650,16 @@ public class ExtractMethodUtil {
         return true;
     }
 
+    private static boolean linesAreValid(RefactorCandidate candidate, long startLine, long endLine) {
+        return candidate.startLine >= startLine && candidate.endLine <= endLine;
+    }
+
     // checks if the candidate is long enough
-    private static boolean isLongEnough(RefactorCandidate candidate, int minLineLength) {
-        return (candidate.endLine - candidate.startLine) >= (minLineLength - 1);
+    private static boolean isLongEnough(RefactorCandidate candidate, int minLineLength, long originalLength) {
+        long candidateLength = candidate.endLine - candidate.startLine + 1;
+        boolean candidateLongEnough = candidateLength >= minLineLength;
+        boolean remainderLongEnough = (originalLength - candidateLength) >= minLineLength;
+        return candidateLongEnough && remainderLongEnough;
     }
 
     // checks if the candidate has only one output parameter and continue, break or return are handled correct

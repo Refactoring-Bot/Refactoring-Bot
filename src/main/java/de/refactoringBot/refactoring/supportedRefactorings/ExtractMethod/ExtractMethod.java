@@ -95,7 +95,7 @@ public class ExtractMethod implements RefactoringImpl {
 
 				// find candidates
 				Map<Long, Long> breakContinueMap = compilationUnitTree.accept(new ExtractMethodUtil.BreakContinueVisitor(this.lineMap), null);
-				List<RefactorCandidate> candidates = ExtractMethodUtil.findCandidates(graph, variableMap, breakContinueMap, allLines, commentLines, emptyLines, this.lineMap, this.minLineLength);
+				List<RefactorCandidate> candidates = ExtractMethodUtil.findCandidates(graph, variableMap, breakContinueMap, allLines, commentLines, emptyLines, this.lineMap, this.minLineLength, this.cfgContainer);
 
 				// get best candidate
 				ExtractMethodCandidateSelector selector = new ExtractMethodCandidateSelector(graph, candidates, variableMap, commentLines, emptyLines, this.cfgContainer.startLine, this.cfgContainer.endLine);
