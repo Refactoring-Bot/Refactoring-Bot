@@ -49,48 +49,48 @@ public class ExtractMethodTest {
     public void refactorMethodSimple() {
         ExtractMethod extractMethod = new ExtractMethod();
         String commitMessage = extractMethod.refactorMethod(this.simpleExamplePath, 4);
-        Assert.assertEquals(commitMessage, "extracted method");
+        Assert.assertEquals(commitMessage, "extracted method from simpleMethod()");
     }
 
     @Test
     public void refactorMethodIfElse() {
         ExtractMethod extractMethod = new ExtractMethod();
         String commitMessage = extractMethod.refactorMethod(this.ifElseExamplePath, 4);
-        Assert.assertEquals(commitMessage, "extracted method");
+        Assert.assertEquals(commitMessage, "extracted method from simpleMethod()");
     }
 
     @Test
     public void refactorMethodSwitch() {
         ExtractMethod extractMethod = new ExtractMethod();
         String commitMessage = extractMethod.refactorMethod(this.switchExamplePath, 4);
-        Assert.assertEquals(commitMessage, "extracted method");
+        Assert.assertEquals(commitMessage, "extracted method from simpleMethod()");
     }
 
     @Test
     public void refactorMethodForLoop() {
         ExtractMethod extractMethod = new ExtractMethod();
         String commitMessage = extractMethod.refactorMethod(this.forLoopExamplePath, 4);
-        Assert.assertEquals(commitMessage, "extracted method");
+        Assert.assertEquals(commitMessage, "extracted method from simpleMethod()");
     }
 
     @Test
     public void refactorMethodTryCatch() {
         ExtractMethod extractMethod = new ExtractMethod();
         String commitMessage = extractMethod.refactorMethod(this.tryCatchExamplePath, 4);
-        Assert.assertEquals(commitMessage, "extracted method");
+        Assert.assertEquals(commitMessage, "extracted method from simpleMethod()");
     }
     @Test
     public void refactorMethodMultipleReturns() {
         ExtractMethod extractMethod = new ExtractMethod();
         String commitMessage = extractMethod.refactorMethod(this.multipleReturnsExamplePath, 4);
-        Assert.assertEquals(commitMessage, "extracted method");
+        Assert.assertEquals(commitMessage, "extracted method from simpleMethod()");
     }
 
     @Test
     public void refactorLong() {
         ExtractMethod extractMethod = new ExtractMethod();
         String commitMessage = extractMethod.refactorMethod(this.longExamplePath, 20);
-        Assert.assertEquals(commitMessage, "extracted method");
+        Assert.assertEquals(commitMessage, "extracted method from runProgram()");
     }
 
     @After

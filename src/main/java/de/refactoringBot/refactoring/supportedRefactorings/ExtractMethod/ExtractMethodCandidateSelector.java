@@ -42,7 +42,9 @@ public class ExtractMethodCandidateSelector {
                 return -Double.compare(o1.score, o2.score);
             }
         });
-
+        if (candidates.size() == 0) {
+            return null;
+        }
         return candidates.get(0);
     }
 

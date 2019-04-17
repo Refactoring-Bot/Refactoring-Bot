@@ -575,10 +575,11 @@ public class ExtractMethodUtil {
                 }
                 potentialCandidate.statements.addAll(ExtractMethodUtil.getStatements(graph, outerIndex, innerIndex));
 
-                if (ExtractMethodUtil.linesAreValid(potentialCandidate, cfgContainer.startLine, cfgContainer.endLine) &&
-                        ExtractMethodUtil.isLongEnough(potentialCandidate, minLineLength, cfgContainer.endLine - cfgContainer.startLine + 1) &&
-                        ExtractMethodUtil.isValid(potentialCandidate, graph) &&
-                        ExtractMethodUtil.isExtractable(potentialCandidate, variableMap, breakContinueMap, lineMap)) {
+                boolean linesAreValid = ExtractMethodUtil.linesAreValid(potentialCandidate, cfgContainer.startLine, cfgContainer.endLine);
+                boolean isLongEnough = ExtractMethodUtil.isLongEnough(potentialCandidate, minLineLength, cfgContainer.endLine - cfgContainer.startLine + 1);
+                boolean isValid = ExtractMethodUtil.isValid(potentialCandidate, graph);
+                boolean isExtractable = ExtractMethodUtil.isExtractable(potentialCandidate, variableMap, breakContinueMap, lineMap);
+                if (linesAreValid && isLongEnough && isValid && isExtractable) {
                     candidates.add(potentialCandidate);
                 }
             }
@@ -697,7 +698,6 @@ public class ExtractMethodUtil {
         Set<Block> allBlocks = ExtractMethodUtil.getAllBlocks(candidate.statements);
         List<Node> allContent = ExtractMethodUtil.getAllContent(allBlocks);
         for (Node node : allContent) {
-
             if (node.getClass().equals(CaseNode.class)) {
                 CaseNode caseNode = (CaseNode) node;
                 // check if switch is in candidate
@@ -706,10 +706,10 @@ public class ExtractMethodUtil {
                 }
                 boolean containsSwitch = false;
                 for (Node switchNode : allContent) {
-                    if (switchNode.getType().equals(MarkerNode.class)) {
+                    if (switchNode.getClass().equals(MarkerNode.class)) {
                         if (((MarkerNode) switchNode).getMessage().contains("switch")) {
                             containsSwitch = true;
-                            JCTree.JCSwitch switchTree = (JCTree.JCSwitch) node.getTree();
+                            JCTree.JCSwitch switchTree = (JCTree.JCSwitch) switchNode.getTree();
                             for (JCTree.JCCase caseInSwitchNode : switchTree.cases) {
                                 if (!candidate.containsLine(lineMap.getLineNumber(caseInSwitchNode.pos))) {
                                     return false;
