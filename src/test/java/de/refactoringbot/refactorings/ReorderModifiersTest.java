@@ -33,7 +33,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 	public final ExpectedException exception = ExpectedException.none();
 
 	@Test
-	public void testReorderMethodModifiers() throws Exception {
+	public void testReorderIntMethodModifiers() throws Exception {
 		// arrange
 		int lineOfMethod = TestDataClassReorderModifiers.getLineOfMethodWithStaticAndFinalInWrongOrder();
 
@@ -48,10 +48,52 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 		assertAllModifiersInCorrectOrder(methodDeclarationAfterRefactoring.getModifiers());
 	}
 
+	/**
+	 * Test for method of return type String, because the LexicalPreservingPrinter
+	 * sometimes has a problem with non-primitive types
+	 */
 	@Test
-	public void testReorderFieldModifiers() throws Exception {
+	public void testReorderStringMethodModifiers() throws Exception {
+		// arrange
+		int lineOfMethod = Integer
+				.parseInt(TestDataClassReorderModifiers.getLineOfStringMethodWithStaticAndFinalInWrongOrder());
+
+		// act
+		File tempFile = performReorderModifiers(lineOfMethod);
+
+		// assert
+		FileInputStream in = new FileInputStream(tempFile);
+		CompilationUnit cu = StaticJavaParser.parse(in);
+		MethodDeclaration methodDeclarationAfterRefactoring = RefactoringHelper
+				.getMethodDeclarationByLineNumber(lineOfMethod, cu);
+		assertAllModifiersInCorrectOrder(methodDeclarationAfterRefactoring.getModifiers());
+	}
+
+	@Test
+	public void testReorderIntFieldModifiers() throws Exception {
 		// arrange
 		int lineNumber = TestDataClassReorderModifiers.lineNumberOfFieldWithStaticAndFinalInWrongOrder;
+
+		// act
+		File tempFile = performReorderModifiers(lineNumber);
+
+		// assert
+		FileInputStream in = new FileInputStream(tempFile);
+		CompilationUnit cu = StaticJavaParser.parse(in);
+		FieldDeclaration fieldDeclarationAfterRefactoring = RefactoringHelper
+				.getFieldDeclarationByLineNumber(lineNumber, cu);
+		assertAllModifiersInCorrectOrder(fieldDeclarationAfterRefactoring.getModifiers());
+	}
+
+	/**
+	 * Test for field of type String, because the LexicalPreservingPrinter sometimes
+	 * has a problem with non-primitive types
+	 */
+	@Test
+	public void testReorderStringFieldModifiers() throws Exception {
+		// arrange
+		int lineNumber = Integer
+				.parseInt(TestDataClassReorderModifiers.lineNumberOfStringFieldWithStaticAndFinalInWrongOrder);
 
 		// act
 		File tempFile = performReorderModifiers(lineNumber);
