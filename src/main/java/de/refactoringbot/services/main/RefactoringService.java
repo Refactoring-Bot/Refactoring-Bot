@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import javax.transaction.NotSupportedException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +46,7 @@ import javassist.NotFoundException;
 public class RefactoringService {
 
 	@Autowired
-	ApiGrabber grabber;
+	ApiGrabber apiGrabber;
 	@Autowired
 	SonarQubeDataGrabber sonarQubeGrabber;
 	@Autowired
@@ -121,7 +119,7 @@ public class RefactoringService {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 		try {
 			// Get issues from analysis service API
-			List<BotIssue> botIssues = getBotIssues(config);
+			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
 
 			// Iterate all issues
 			for (BotIssue botIssue : botIssues) {
@@ -298,7 +296,7 @@ public class RefactoringService {
 					// Push changes
 					dataGetter.pushChanges(config, botIssue.getCommitMessage());
 					// Reply to User
-					grabber.replyToUserInsideBotRequest(request, comment, config);
+					apiGrabber.replyToUserInsideBotRequest(request, comment, config);
 
 					// Save and return refactored issue
 					return issueRepo.save(refactoredIssue);
@@ -308,7 +306,7 @@ public class RefactoringService {
 				// Create refactoring branch with Filehoster-Service + Comment-ID
 				String newBranch = config.getRepoService() + "_Refactoring_" + comment.getCommentID().toString();
 				// Check if branch already exists (throws exception if it does)
-				grabber.checkBranch(config, newBranch);
+				apiGrabber.checkBranch(config, newBranch);
 				// Create new Branch
 				dataGetter.createBranch(config, request.getBranchName(), newBranch, "upstream");
 				// Add current filepaths to Issue
@@ -323,7 +321,7 @@ public class RefactoringService {
 
 					// Push changes + create Pull-Request
 					dataGetter.pushChanges(config, botIssue.getCommitMessage());
-					grabber.makeCreateRequest(request, comment, config, newBranch);
+					apiGrabber.makeCreateRequest(request, comment, config, newBranch);
 
 					// Save and return refactored issue
 					return issueRepo.save(refactoredIssue);
@@ -334,7 +332,7 @@ public class RefactoringService {
 			// Create new branch for refactoring
 			String newBranch = "sonarQube_Refactoring_" + botIssue.getCommentServiceID();
 			// Check if branch already exists (throws exception if it does)
-			grabber.checkBranch(config, newBranch);
+			apiGrabber.checkBranch(config, newBranch);
 			dataGetter.createBranch(config, "master", newBranch, "upstream");
 			// Add current filepaths to Issue
 			botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
@@ -348,7 +346,7 @@ public class RefactoringService {
 
 				// Push changes + create Pull-Request
 				dataGetter.pushChanges(config, botIssue.getCommitMessage());
-				grabber.makeCreateRequestWithAnalysisService(botIssue, config, newBranch);
+				apiGrabber.makeCreateRequestWithAnalysisService(botIssue, config, newBranch);
 
 				// Save and return refactored issue
 				return issueRepo.save(refactoredIssue);
@@ -406,7 +404,7 @@ public class RefactoringService {
 	public BotPullRequests getPullRequests(GitConfiguration config)
 			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException, GitLabAPIException {
 		dataGetter.fetchRemote(config);
-		return grabber.getRequestsWithComments(config);
+		return apiGrabber.getRequestsWithComments(config);
 	}
 
 	/**
@@ -453,7 +451,7 @@ public class RefactoringService {
 		// Reply to user if refactoring comments
 		if (isCommentRefactoring) {
 			try {
-				grabber.replyToUserForFailedRefactoring(request, comment, config,
+				apiGrabber.replyToUserForFailedRefactoring(request, comment, config,
 						constructCommentReplyMessage(botIssue.getErrorMessage()));
 			} catch (Exception u) {
 				logger.error(u.getMessage(), u);
@@ -496,25 +494,6 @@ public class RefactoringService {
 
 		return issue;
 	}
-
-	/**
-	 * This method collects all issues from a analysis service and translates them
-	 * to BotIssues.
-	 * 
-	 * @param config
-	 * @return botIssues
-	 * @throws Exception
-	 */
-	private List<BotIssue> getBotIssues(GitConfiguration config) throws Exception {
-		List<BotIssue> botIssues = grabber.getAnalysisServiceIssues(config);
-
-		// BotIssues are null if analysis service not supported
-		if (botIssues == null) {
-			throw new NotSupportedException("Analysis-Service '" + config.getAnalysisService() + "' is not supported!");
-		}
-
-		return botIssues;
-	}
 	
 	/**
 	 * This method updates a BotIssue with up-to-date file paths.
@@ -529,7 +508,7 @@ public class RefactoringService {
 		botIssue.setJavaRoots(fileService.findJavaRoots(botIssue.getAllJavaFiles()));
 		
 		if (!isCommentRefactoring) {
-			botIssue.setFilePath(grabber.getAnalysisServiceAbsoluteIssuePath(config, botIssue.getFilePath()));
+			botIssue.setFilePath(apiGrabber.getAnalysisServiceAbsoluteIssuePath(config, botIssue.getFilePath()));
 		}
 		
 		return botIssue;

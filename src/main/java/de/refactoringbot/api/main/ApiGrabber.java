@@ -287,7 +287,8 @@ public class ApiGrabber {
 			}
 			return botIssues;
 		default:
-			return null;
+			throw new UnsupportedOperationException(
+					"Analysis-Service '" + gitConfig.getAnalysisService() + "' is not supported!");
 		}
 	}
 
