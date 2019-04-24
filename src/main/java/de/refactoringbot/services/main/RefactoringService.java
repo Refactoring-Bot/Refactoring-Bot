@@ -24,6 +24,7 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
+import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
 import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
@@ -70,6 +71,8 @@ public class RefactoringService {
 	BotService botService;
 	@Autowired
 	WitService witService;
+	@Autowired
+	FileService fileService;
 
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringService.class);
 
@@ -280,6 +283,9 @@ public class RefactoringService {
 			if (isBotPR) {
 				// Change to existing Refactoring-Branch
 				dataGetter.switchBranch(config, request.getBranchName());
+				
+				// Add current filepaths to Issue
+				botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 
 				// Try to refactor
 				botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
@@ -305,6 +311,8 @@ public class RefactoringService {
 				grabber.checkBranch(config, newBranch);
 				// Create new Branch
 				dataGetter.createBranch(config, request.getBranchName(), newBranch, "upstream");
+				// Add current filepaths to Issue
+				botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 				// Try to refactor
 				botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
 
@@ -328,6 +336,8 @@ public class RefactoringService {
 			// Check if branch already exists (throws exception if it does)
 			grabber.checkBranch(config, newBranch);
 			dataGetter.createBranch(config, "master", newBranch, "upstream");
+			// Add current filepaths to Issue
+			botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 			// Try to refactor
 			botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
 
@@ -386,14 +396,16 @@ public class RefactoringService {
 	 * This method returns all pull requests from a filehosting service.
 	 * 
 	 * @param config
-	 * @return allRequests
-	 * @throws Exception
+	 * @return
+	 * @throws URISyntaxException
+	 * @throws GitHubAPIException
+	 * @throws IOException
+	 * @throws GitWorkflowException
+	 * @throws GitLabAPIException
 	 */
 	public BotPullRequests getPullRequests(GitConfiguration config)
-			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException {
-		// Fetch target-Repository-Data
+			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException, GitLabAPIException {
 		dataGetter.fetchRemote(config);
-
 		return grabber.getRequestsWithComments(config);
 	}
 
@@ -430,6 +442,7 @@ public class RefactoringService {
 	 * @param comment
 	 * @param request
 	 * @param botIssue
+	 * @param isCommentRefactoring
 	 * @return failedIssue
 	 */
 	private RefactoredIssue processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,
@@ -501,5 +514,24 @@ public class RefactoringService {
 		}
 
 		return botIssues;
+	}
+	
+	/**
+	 * This method updates a BotIssue with up-to-date file paths.
+	 * @param botIssue
+	 * @param isCommentRefactoring
+	 * @param config
+	 * @return botIssue
+	 * @throws IOException
+	 */
+	private BotIssue addUpToDateFilePaths(BotIssue botIssue, Boolean isCommentRefactoring, GitConfiguration config) throws IOException {
+		botIssue.setAllJavaFiles(fileService.getAllJavaFiles(config.getRepoFolder()));
+		botIssue.setJavaRoots(fileService.findJavaRoots(botIssue.getAllJavaFiles()));
+		
+		if (!isCommentRefactoring) {
+			botIssue.setFilePath(grabber.getAnalysisServiceAbsoluteIssuePath(config, botIssue.getFilePath()));
+		}
+		
+		return botIssue;
 	}
 }

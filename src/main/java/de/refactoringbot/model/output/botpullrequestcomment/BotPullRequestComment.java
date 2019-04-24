@@ -2,11 +2,20 @@ package de.refactoringbot.model.output.botpullrequestcomment;
 
 public class BotPullRequestComment {
 
+	private String discussionID;
 	private Integer commentID;
 	private String username;
 	private String filepath;
 	private Integer position;
 	private String commentBody;
+	
+	public String getDiscussionID() {
+		return discussionID;
+	}
+
+	public void setDiscussionID(String discussionID) {
+		this.discussionID = discussionID;
+	}
 
 	public Integer getCommentID() {
 		return commentID;

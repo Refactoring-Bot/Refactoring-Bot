@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import de.refactoringbot.configuration.BotConfiguration;
+import de.refactoringbot.model.configuration.FileHoster;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
@@ -77,7 +78,15 @@ public class GitService {
 	public void fetchRemote(GitConfiguration gitConfig) throws GitWorkflowException {
 		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Fetch data
-			git.fetch().setRemote("upstream").call();
+			if (gitConfig.getRepoService().equals(FileHoster.github)) {
+				git.fetch().setRemote("upstream")
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
+						.call();
+			} else {
+				git.fetch().setRemote("upstream").setCredentialsProvider(
+						new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotToken()))
+						.call();
+			}
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Could not fetch data from 'upstream'!");
@@ -110,10 +119,18 @@ public class GitService {
 	public void cloneRepository(GitConfiguration gitConfig) throws GitWorkflowException {
 		Git git = null;
 		try {
-			// Clone repository into git folder
-			git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
-					.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
-					.call();
+			if (gitConfig.getRepoService().equals(FileHoster.github)) {
+				git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
+						.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
+						.call();
+			} else {
+				git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
+						.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotName(),
+								gitConfig.getBotToken()))
+						.call();
+			}
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Faild to clone " + "'" + gitConfig.getForkGitLink() + "' successfully!");
@@ -189,9 +206,15 @@ public class GitService {
 			git.add().addFilepattern(".").call();
 			// Perform 'git commit -m'
 			git.commit().setMessage(commitMessage).setCommitter(gitConfig.getBotName(), gitConfig.getBotEmail()).call();
-			// Push with bot credenials
-			git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
-					.call();
+			// Push with bot credentials
+			if (gitConfig.getRepoService().equals(FileHoster.github)) {
+				git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
+						.call();
+			} else {
+				git.push().setCredentialsProvider(
+						new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotToken()))
+						.call();
+			}
 		} catch (TransportException t) {
 			logger.error(t.getMessage(), t);
 			throw new GitWorkflowException("Wrong bot token!");
@@ -261,7 +284,8 @@ public class GitService {
 	}
 
 	/**
-	 * Calculates the absolute new line number of the last line in the given diffHunkLines
+	 * Calculates the absolute new line number of the last line in the given
+	 * diffHunkLines
 	 * 
 	 * @param diffHunkStartPosition
 	 * @param diffHunkLines

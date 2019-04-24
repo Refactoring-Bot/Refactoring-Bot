@@ -19,7 +19,6 @@ import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
-import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.services.github.GithubObjectTranslator;
 import javassist.NotFoundException;
 
@@ -163,7 +162,7 @@ public class ConfigurationService {
 		File dir = new File(botConfig.getBotRefactoringDirectory() + config.getConfigurationId());
 		dir.mkdir();
 		// Create the fork on the filehoster bot account
-		grabber.createFork(config);
+		config = grabber.createFork(config);
 		// Clone fork + add remote of origin repository
 		gitService.initLocalWorkspace(config);
 
@@ -200,7 +199,7 @@ public class ConfigurationService {
 		// Delete repository from the filehoster bot account
 		try {
 			deleteConfigurationRepo(config);
-		} catch (GitHubAPIException e) {
+		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			userFeedback = userFeedback.concat(e.getMessage());
 		}
@@ -220,15 +219,15 @@ public class ConfigurationService {
 	 * servers.
 	 * 
 	 * @param config
-	 * @throws DatabaseConnectionException
+	 * @throws Exception
 	 */
-	public void deleteConfigurationRepo(GitConfiguration config) throws GitHubAPIException {
+	public void deleteConfigurationRepo(GitConfiguration config) throws Exception {
 		// Delete configuration from the database
 		try {
 			grabber.deleteRepository(config);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			throw new GitHubAPIException(" Could not delete repository on " + config.getRepoService() + "!");
+			throw e;
 		}
 	}
 

@@ -5,6 +5,7 @@ public class GitConfigurationDTO {
 	private String repoName;
 	private String repoOwner;
 	private FileHoster repoService;
+	private String filehosterApiLink;
 
 	private String botName;
 	private String botEmail;
@@ -92,6 +93,14 @@ public class GitConfigurationDTO {
 
 	public void setAnalysisServiceApiLink(String analysisServiceApiLink) {
 		this.analysisServiceApiLink = analysisServiceApiLink;
+	}
+
+	public String getFilehosterApiLink() {
+		return filehosterApiLink;
+	}
+
+	public void setFilehosterApiLink(String filehosterApiLink) {
+		this.filehosterApiLink = filehosterApiLink;
 	}
 
 }
