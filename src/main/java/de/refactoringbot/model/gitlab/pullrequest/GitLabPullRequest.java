@@ -4,6 +4,7 @@ package de.refactoringbot.model.gitlab.pullrequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -163,7 +164,7 @@ public class GitLabPullRequest {
     @JsonProperty("approvals_before_merge")
     private Object approvalsBeforeMerge;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("id")
     public Integer getId() {

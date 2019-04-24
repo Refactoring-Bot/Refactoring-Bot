@@ -5,7 +5,7 @@ import java.util.List;
 
 public class GitLabDiscussions {
 
-	List<GitLabDiscussion> discussions = new ArrayList<GitLabDiscussion>();
+	List<GitLabDiscussion> discussions = new ArrayList<>();
 	
 	public List<GitLabDiscussion> getDiscussions() {
 		return discussions;

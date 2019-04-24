@@ -3,6 +3,7 @@ package de.refactoringbot.model.gitlab.repository;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -22,7 +23,7 @@ public class Permissions {
     @JsonProperty("group_access")
     private GroupAccess groupAccess;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("project_access")
     public ProjectAccess getProjectAccess() {

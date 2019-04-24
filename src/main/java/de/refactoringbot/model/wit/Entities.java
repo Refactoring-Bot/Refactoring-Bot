@@ -3,6 +3,7 @@ package de.refactoringbot.model.wit;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -16,11 +17,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class Entities {
 
     @JsonProperty("refactoring")
-    private List<WitEntity> refactoring = new ArrayList<WitEntity>();
+    private List<WitEntity> refactoring = new ArrayList<>();
     @JsonProperty("refactoringString")
-    private List<WitEntity> refactoringString = new ArrayList<WitEntity>();
+    private List<WitEntity> refactoringString = new ArrayList<>();
     @JsonProperty("javaAnnotations")
-    private List<WitEntity> javaAnnotations = new ArrayList<WitEntity>();
+    private List<WitEntity> javaAnnotations = new ArrayList<>();
 
     @JsonProperty("refactoring")
     public List<WitEntity> getRefactoring() {

@@ -3,6 +3,7 @@ package de.refactoringbot.model.gitlab.pullrequest;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -28,7 +29,7 @@ public class TimeStats {
     @JsonProperty("human_total_time_spent")
     private Object humanTotalTimeSpent;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("time_estimate")
     public Integer getTimeEstimate() {
