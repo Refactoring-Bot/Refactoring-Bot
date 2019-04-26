@@ -50,7 +50,7 @@ public class RefactoringService {
 	@Autowired
 	SonarQubeDataGrabber sonarQubeGrabber;
 	@Autowired
-	GitService dataGetter;
+	GitService gitService;
 	@Autowired
 	ConfigurationRepository configRepo;
 	@Autowired
@@ -280,7 +280,7 @@ public class RefactoringService {
 			// If PR owner = bot
 			if (isBotPR) {
 				// Change to existing Refactoring-Branch
-				dataGetter.switchBranch(config, request.getBranchName());
+				gitService.switchBranch(config, request.getBranchName());
 				
 				// Add current filepaths to Issue
 				botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
@@ -294,7 +294,7 @@ public class RefactoringService {
 					RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
 
 					// Push changes
-					dataGetter.pushChanges(config, botIssue.getCommitMessage());
+					gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
 					// Reply to User
 					apiGrabber.replyToUserInsideBotRequest(request, comment, config);
 
@@ -308,7 +308,7 @@ public class RefactoringService {
 				// Check if branch already exists (throws exception if it does)
 				apiGrabber.checkBranch(config, newBranch);
 				// Create new Branch
-				dataGetter.createBranch(config, request.getBranchName(), newBranch, "upstream");
+				gitService.createBranch(config, request.getBranchName(), newBranch, "upstream");
 				// Add current filepaths to Issue
 				botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 				// Try to refactor
@@ -320,7 +320,7 @@ public class RefactoringService {
 					RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
 
 					// Push changes + create Pull-Request
-					dataGetter.pushChanges(config, botIssue.getCommitMessage());
+					gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
 					apiGrabber.makeCreateRequest(request, comment, config, newBranch);
 
 					// Save and return refactored issue
@@ -333,7 +333,7 @@ public class RefactoringService {
 			String newBranch = "sonarQube_Refactoring_" + botIssue.getCommentServiceID();
 			// Check if branch already exists (throws exception if it does)
 			apiGrabber.checkBranch(config, newBranch);
-			dataGetter.createBranch(config, "master", newBranch, "upstream");
+			gitService.createBranch(config, "master", newBranch, "upstream");
 			// Add current filepaths to Issue
 			botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 			// Try to refactor
@@ -345,7 +345,7 @@ public class RefactoringService {
 				RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
 
 				// Push changes + create Pull-Request
-				dataGetter.pushChanges(config, botIssue.getCommitMessage());
+				gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
 				apiGrabber.makeCreateRequestWithAnalysisService(botIssue, config, newBranch);
 
 				// Save and return refactored issue
@@ -403,7 +403,7 @@ public class RefactoringService {
 	 */
 	public BotPullRequests getPullRequests(GitConfiguration config)
 			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException, GitLabAPIException {
-		dataGetter.fetchRemote(config);
+		gitService.fetchRemote(config);
 		return apiGrabber.getRequestsWithComments(config);
 	}
 
