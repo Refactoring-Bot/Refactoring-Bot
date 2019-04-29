@@ -49,7 +49,7 @@ public class SonarQubeDataGrabber {
 			// Build URI
 			UriComponentsBuilder apiUriBuilder = createUriBuilder(gitConfig.getAnalysisServiceApiLink(), "/issues/search");
 
-			apiUriBuilder.queryParam("componentRoots", gitConfig.getAnalysisServiceProjectKey());
+			apiUriBuilder.queryParam("componentKeys", gitConfig.getAnalysisServiceProjectKey());
 			apiUriBuilder.queryParam("statuses", "OPEN,REOPENED");
 			apiUriBuilder.queryParam("ps", 500);
 			apiUriBuilder.queryParam("p", page);
@@ -75,7 +75,6 @@ public class SonarQubeDataGrabber {
 				break;
 
 			}
-
 		}
 
 		return issues;

@@ -1,7 +1,6 @@
 package de.refactoringbot.services.wit;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +16,6 @@ import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestCommen
 import de.refactoringbot.model.wit.WitEntity;
 import de.refactoringbot.model.wit.WitObject;
 import de.refactoringbot.refactoring.RefactoringOperations;
-import de.refactoringbot.services.main.FileService;
 
 /**
  * This class implements functions around the wit.ai service.
@@ -28,15 +26,13 @@ import de.refactoringbot.services.main.FileService;
 @Service
 public class WitService {
 
-	private FileService fileService;
 	private WitDataGrabber witDataGrabber;
 	private DataAnonymizerService dataAnonymizer;
 
 	private static final Logger logger = LoggerFactory.getLogger(WitService.class);
 
 	@Autowired
-	public WitService(FileService fileService, WitDataGrabber witDataGrabber, DataAnonymizerService dataAnonymizer) {
-		this.fileService = fileService;
+	public WitService(WitDataGrabber witDataGrabber, DataAnonymizerService dataAnonymizer) {
 		this.witDataGrabber = witDataGrabber;
 		this.dataAnonymizer = dataAnonymizer;
 	}
@@ -59,18 +55,11 @@ public class WitService {
 			issue.setLine(comment.getPosition());
 			issue.setFilePath(comment.getFilepath());
 
-			List<String> allJavaFiles = fileService.getAllJavaFiles(gitConfig.getRepoFolder());
-			issue.setAllJavaFiles(allJavaFiles);
-			issue.setJavaRoots(fileService.findJavaRoots(allJavaFiles));
-
 			mapCommentBodyToIssue(issue, comment.getCommentBody());
 			return issue;
 		} catch (WitAPIException | ReviewCommentUnclearException e) {
 			logger.error(e.getMessage(), e);
 			throw new ReviewCommentUnclearException(e.getMessage());
-		} catch (IOException e) {
-			logger.error(e.getMessage(), e);
-			throw new IOException("Could not create a BotIssue from the comment '" + comment.getCommentBody() + "'!");
 		}
 	}
 

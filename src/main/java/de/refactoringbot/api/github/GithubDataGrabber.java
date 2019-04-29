@@ -52,6 +52,7 @@ public class GithubDataGrabber {
 	private static final Logger logger = LoggerFactory.getLogger(GithubDataGrabber.class);
 
 	private static final String USER_AGENT = "Mozilla/5.0";
+	private static final String GITHUB_DEFAULT_APILINK = "https://api.github.com";
 
 	/**
 	 * This method tries to get a repository from github.
@@ -59,13 +60,26 @@ public class GithubDataGrabber {
 	 * @param repoName
 	 * @param repoOwner
 	 * @param botToken
+	 * @param apiLink
 	 * @return {Repository-File}
 	 * @throws GitHubAPIException
+	 * @throws URISyntaxException
 	 */
-	public void checkRepository(String repoName, String repoOwner, String botToken) throws GitHubAPIException {
+	public GithubRepository checkRepository(String repoName, String repoOwner, String botToken, String apiLink)
+			throws GitHubAPIException, URISyntaxException {
+
+		// Create URI from user input
+		URI configUri = null;
+		
+		if (apiLink == null || apiLink.isEmpty()) {
+			configUri = createURIFromApiLink(GITHUB_DEFAULT_APILINK + "/repos/" + repoOwner + "/" + repoName);
+		} else {
+			configUri = createURIFromApiLink(apiLink + "/repos/" + repoOwner + "/" + repoName);
+		}
+		
 		// Build URI
-		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("api.github.com")
-				.path("/repos/" + repoOwner + "/" + repoName);
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
+				.host(configUri.getHost()).path(configUri.getPath());
 
 		apiUriBuilder.queryParam("access_token", botToken);
 
@@ -77,13 +91,12 @@ public class GithubDataGrabber {
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
-		
 		try {
 			// Send request to the GitHub-API
-			rest.exchange(githubURI, HttpMethod.GET, entity, GithubRepository.class).getBody();
+			return rest.exchange(githubURI, HttpMethod.GET, entity, GithubRepository.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
-			throw new GitHubAPIException("Repository does not exist on Github or invalid Bot-Token!", e);
+			throw new GitHubAPIException("Repository does not exist on GitHub or invalid Bot-Token!", e);
 		}
 	}
 
@@ -93,13 +106,24 @@ public class GithubDataGrabber {
 	 * @param botUsername
 	 * @param botToken
 	 * @param botEmail
+	 * @param apiLink
 	 * @return
 	 * @throws Exception
 	 */
-	public void checkGithubUser(String botUsername, String botToken, String botEmail) throws Exception {
+	public void checkGithubUser(String botUsername, String botToken, String botEmail, String apiLink) throws Exception {
+
+		// Create URI from user input
+		URI configUri = null;
+		
+		if (apiLink == null || apiLink.isEmpty()) {
+			configUri = createURIFromApiLink(GITHUB_DEFAULT_APILINK + "/user");
+		} else {
+			configUri = createURIFromApiLink(apiLink + "/user");
+		}
+		
 		// Build URI
-		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("api.github.com")
-				.path("/user");
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme()).host(configUri.getHost())
+				.path(configUri.getPath());
 
 		apiUriBuilder.queryParam("access_token", botToken);
 
@@ -110,7 +134,6 @@ public class GithubDataGrabber {
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
-		
 		GithubUser githubUser = null;
 		try {
 			// Send request to the GitHub-API
@@ -124,7 +147,7 @@ public class GithubDataGrabber {
 		if (!botUsername.equals(githubUser.getLogin())) {
 			throw new ValidationException("Bot-User does not exist on Github!");
 		}
-		if (githubUser.getEmail() == null) {
+		if (githubUser.getEmail() == null || githubUser.getEmail().isEmpty()) {
 			throw new ValidationException("Bot-User does not have a public email on Github!");
 		}
 		if (!githubUser.getEmail().equals(botEmail)) {
@@ -160,7 +183,7 @@ public class GithubDataGrabber {
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-		
+
 		try {
 			// Send Request to the GitHub-API
 			rest.exchange(pullsUri, HttpMethod.GET, entity, String.class).getBody();
@@ -202,7 +225,7 @@ public class GithubDataGrabber {
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-		
+
 		String json = null;
 		try {
 			// Send Request to the GitHub-API
@@ -212,10 +235,8 @@ public class GithubDataGrabber {
 			throw new GitHubAPIException("Could not get Pull-Requests from Github!", e);
 		}
 
-
 		GithubPullRequests allRequests = new GithubPullRequests();
 
-		
 		try {
 			List<GithubPullRequest> requestList = mapper.readValue(json,
 					mapper.getTypeFactory().constructCollectionType(List.class, GithubPullRequest.class));
@@ -249,7 +270,7 @@ public class GithubDataGrabber {
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-		
+
 		String json = null;
 		try {
 			// Send request to the GitHub-API
@@ -260,7 +281,6 @@ public class GithubDataGrabber {
 
 		GitHubPullRequestComments allComments = new GitHubPullRequestComments();
 
-		
 		try {
 			// Try to map json to object
 			List<PullRequestComment> commentList = mapper.readValue(json,
@@ -334,7 +354,6 @@ public class GithubDataGrabber {
 
 		RestTemplate rest = new RestTemplate();
 
-		
 		try {
 			// Send request to Github-API
 			rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<>(comment), String.class);
@@ -366,7 +385,6 @@ public class GithubDataGrabber {
 
 		RestTemplate rest = new RestTemplate();
 
-		
 		try {
 			// Send request to the GitHub-API
 			return rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<>(request), GithubPullRequest.class)
@@ -384,7 +402,7 @@ public class GithubDataGrabber {
 	 * @throws URISyntaxException
 	 * @throws GitHubAPIException
 	 */
-	public void createFork(GitConfiguration gitConfig) throws URISyntaxException, GitHubAPIException {
+	public GithubRepository createFork(GitConfiguration gitConfig) throws URISyntaxException, GitHubAPIException {
 
 		URI configUri = createURIFromApiLink(gitConfig.getRepoApiLink());
 
@@ -400,7 +418,7 @@ public class GithubDataGrabber {
 
 		try {
 			// Send request to the Github-API
-			rest.exchange(forksUri, HttpMethod.POST, null, GithubRepository.class).getBody();
+			return rest.exchange(forksUri, HttpMethod.POST, null, GithubRepository.class).getBody();
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not create fork on Github!", r);
 		}
@@ -441,9 +459,10 @@ public class GithubDataGrabber {
 			throw new GitHubAPIException("Could not delete repository from Github!", r);
 		}
 	}
-	
+
 	/**
 	 * Attempts to instantiate a URI object using the specified API link
+	 * 
 	 * @param link
 	 * @return uri
 	 * @throws URISyntaxException

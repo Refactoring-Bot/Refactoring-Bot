@@ -1,7 +1,5 @@
 package de.refactoringbot.services.main;
 
-import java.util.List;
-
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
@@ -9,7 +7,6 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import de.refactoringbot.grammar.botgrammar.BotOperationsBaseListener;
@@ -30,14 +27,7 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 @Service
 public class GrammarService {
 
-	private FileService fileService;
-
 	private static final Logger logger = LoggerFactory.getLogger(GrammarService.class);
-
-	@Autowired
-	public GrammarService(FileService fileService) {
-		this.fileService = fileService;
-	}
 
 	/**
 	 * This method checks if a comment is meant for the bot to understand. That is
@@ -117,11 +107,6 @@ public class GrammarService {
 			issue.setCommentServiceID(comment.getCommentID().toString());
 			issue.setLine(comment.getPosition());
 			issue.setFilePath(comment.getFilepath());
-
-			// Set all Java-Files and Java-Roots
-			List<String> allJavaFiles = fileService.getAllJavaFiles(gitConfig.getRepoFolder());
-			issue.setAllJavaFiles(allJavaFiles);
-			issue.setJavaRoots(fileService.findJavaRoots(allJavaFiles));
 
 			mapCommentBodyToIssue(issue, comment.getCommentBody());
 			return issue;

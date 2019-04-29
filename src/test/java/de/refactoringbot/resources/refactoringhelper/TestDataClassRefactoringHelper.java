@@ -1,6 +1,6 @@
 package de.refactoringbot.resources.refactoringhelper;
 
-public class TestDataClassRefactoringHelper {
+public class TestDataClassRefactoringHelper extends TestDataSuperClassRefactoringHelper {
 
 	public static int lineNumberOfFieldDeclaration = 5;
 	public static double lineNumberOfAnotherFieldDeclaration = 6;
@@ -16,4 +16,7 @@ public class TestDataClassRefactoringHelper {
 		return 15;
 	}
 
+	protected class InnerClass {
+
+	}
 }

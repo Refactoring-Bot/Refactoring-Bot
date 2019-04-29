@@ -30,6 +30,7 @@ import de.refactoringbot.resources.renamemethod.TestDataClassImplementingEmptyIn
 import de.refactoringbot.resources.renamemethod.TestDataClassRenameMethod;
 import de.refactoringbot.resources.renamemethod.TestDataClassRenameMethod.TestDataInnerClassRenameMethod;
 import de.refactoringbot.resources.renamemethod.TestDataClassRenameMethod.TestDataInnerClassWithInterfaceImpl;
+import de.refactoringbot.testutils.TestUtils;
 import de.refactoringbot.resources.renamemethod.TestDataClassWithCallOfTargetMethod;
 import de.refactoringbot.resources.renamemethod.TestDataEmptyInterface;
 import de.refactoringbot.resources.renamemethod.TestDataInterfaceRenameMethod;
@@ -453,7 +454,7 @@ public class RenameMethodTest extends AbstractRefactoringTests {
 
 		BotIssue issue = new BotIssue();
 		ArrayList<String> javaRoots = new ArrayList<>();
-		javaRoots.add(getAbsolutePathOfTestsFolder());
+		javaRoots.add(TestUtils.getAbsolutePathOfTestsFolder());
 		issue.setFilePath(targetFile.getName());
 		issue.setLine(lineNumberOfMethodToBeRenamed);
 		issue.setJavaRoots(javaRoots);

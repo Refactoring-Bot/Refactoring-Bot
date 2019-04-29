@@ -1,5 +1,5 @@
 
-package de.refactoringbot.model.wit;
+package de.refactoringbot.model.gitlab.repository;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,49 +13,36 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-    "_text",
-    "entities",
-    "msg_id"
+    "access_level",
+    "notification_level"
 })
-public class WitObject {
+public class ProjectAccess {
 
-    @JsonProperty("_text")
-    private String text;
-    @JsonProperty("entities")
-    private Entities entities;
-    @JsonProperty("msg_id")
-    private String msgId;
+    @JsonProperty("access_level")
+    private Integer accessLevel;
+    @JsonProperty("notification_level")
+    private Integer notificationLevel;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<>();
 
-    @JsonProperty("_text")
-    public String getText() {
-        return text;
+    @JsonProperty("access_level")
+    public Integer getAccessLevel() {
+        return accessLevel;
     }
 
-    @JsonProperty("_text")
-    public void setText(String text) {
-        this.text = text;
+    @JsonProperty("access_level")
+    public void setAccessLevel(Integer accessLevel) {
+        this.accessLevel = accessLevel;
     }
 
-    @JsonProperty("entities")
-    public Entities getEntities() {
-        return entities;
+    @JsonProperty("notification_level")
+    public Integer getNotificationLevel() {
+        return notificationLevel;
     }
 
-    @JsonProperty("entities")
-    public void setEntities(Entities entities) {
-        this.entities = entities;
-    }
-
-    @JsonProperty("msg_id")
-    public String getMsgId() {
-        return msgId;
-    }
-
-    @JsonProperty("msg_id")
-    public void setMsgId(String msgId) {
-        this.msgId = msgId;
+    @JsonProperty("notification_level")
+    public void setNotificationLevel(Integer notificationLevel) {
+        this.notificationLevel = notificationLevel;
     }
 
     @JsonAnyGetter

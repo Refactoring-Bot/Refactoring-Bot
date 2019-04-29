@@ -1,5 +1,5 @@
 
-package de.refactoringbot.model.wit;
+package de.refactoringbot.model.gitlab.repository;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,49 +13,36 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-    "_text",
-    "entities",
-    "msg_id"
+    "project_access",
+    "group_access"
 })
-public class WitObject {
+public class Permissions {
 
-    @JsonProperty("_text")
-    private String text;
-    @JsonProperty("entities")
-    private Entities entities;
-    @JsonProperty("msg_id")
-    private String msgId;
+    @JsonProperty("project_access")
+    private ProjectAccess projectAccess;
+    @JsonProperty("group_access")
+    private GroupAccess groupAccess;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<>();
 
-    @JsonProperty("_text")
-    public String getText() {
-        return text;
+    @JsonProperty("project_access")
+    public ProjectAccess getProjectAccess() {
+        return projectAccess;
     }
 
-    @JsonProperty("_text")
-    public void setText(String text) {
-        this.text = text;
+    @JsonProperty("project_access")
+    public void setProjectAccess(ProjectAccess projectAccess) {
+        this.projectAccess = projectAccess;
     }
 
-    @JsonProperty("entities")
-    public Entities getEntities() {
-        return entities;
+    @JsonProperty("group_access")
+    public GroupAccess getGroupAccess() {
+        return groupAccess;
     }
 
-    @JsonProperty("entities")
-    public void setEntities(Entities entities) {
-        this.entities = entities;
-    }
-
-    @JsonProperty("msg_id")
-    public String getMsgId() {
-        return msgId;
-    }
-
-    @JsonProperty("msg_id")
-    public void setMsgId(String msgId) {
-        this.msgId = msgId;
+    @JsonProperty("group_access")
+    public void setGroupAccess(GroupAccess groupAccess) {
+        this.groupAccess = groupAccess;
     }
 
     @JsonAnyGetter

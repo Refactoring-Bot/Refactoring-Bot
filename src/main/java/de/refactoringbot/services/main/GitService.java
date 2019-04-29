@@ -1,6 +1,7 @@
 package de.refactoringbot.services.main;
 
 import java.io.File;
+import java.util.List;
 
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
@@ -8,7 +9,11 @@ import org.eclipse.jgit.api.RemoteAddCommand;
 import org.eclipse.jgit.api.errors.RefAlreadyExistsException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.api.errors.TransportException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.lib.CoreConfig.AutoCRLF;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.slf4j.Logger;
@@ -17,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import de.refactoringbot.configuration.BotConfiguration;
+import de.refactoringbot.model.configuration.FileHoster;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
@@ -77,7 +83,15 @@ public class GitService {
 	public void fetchRemote(GitConfiguration gitConfig) throws GitWorkflowException {
 		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
 			// Fetch data
-			git.fetch().setRemote("upstream").call();
+			if (gitConfig.getRepoService().equals(FileHoster.github)) {
+				git.fetch().setRemote("upstream")
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
+						.call();
+			} else {
+				git.fetch().setRemote("upstream").setCredentialsProvider(
+						new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotToken()))
+						.call();
+			}
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Could not fetch data from 'upstream'!");
@@ -110,10 +124,18 @@ public class GitService {
 	public void cloneRepository(GitConfiguration gitConfig) throws GitWorkflowException {
 		Git git = null;
 		try {
-			// Clone repository into git folder
-			git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
-					.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
-					.call();
+			if (gitConfig.getRepoService().equals(FileHoster.github)) {
+				git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
+						.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
+						.call();
+			} else {
+				git = Git.cloneRepository().setURI(gitConfig.getForkGitLink())
+						.setDirectory(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))
+						.setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotName(),
+								gitConfig.getBotToken()))
+						.call();
+			}
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			throw new GitWorkflowException("Faild to clone " + "'" + gitConfig.getForkGitLink() + "' successfully!");
@@ -183,15 +205,40 @@ public class GitService {
 	 * 
 	 * @throws GitWorkflowException
 	 */
-	public void pushChanges(GitConfiguration gitConfig, String commitMessage) throws GitWorkflowException {
+	public void commitAndPushChanges(GitConfiguration gitConfig, String commitMessage) throws GitWorkflowException {
 		try (Git git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId()))) {
-			// Perform 'git add .'
-			git.add().addFilepattern(".").call();
-			// Perform 'git commit -m'
+			StoredConfig storedRepoConfig = git.getRepository().getConfig();
+			// set autocrlf to true to handle line endings of different operating systems
+			// correctly. Otherwise the bot will most likely change the line endings of all
+			// files to the default of its operating system.
+			// Corresponds to 'git config --global core.autocrlf true'
+			storedRepoConfig.setEnum(ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_AUTOCRLF,
+					AutoCRLF.TRUE);
+			// set filemode explicitly to false
+			storedRepoConfig.setBoolean(ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_FILEMODE,
+					false);
+			storedRepoConfig.save();
+
+			// We only add those files to the staging area that have actually been changed.
+			// 'git add .' in this JGit config would sometimes cause files to be added
+			// without content changes (e.g. due to unpredictable whitespace changes).
+			List<DiffEntry> diffEntries = git.diff().call();
+			for (DiffEntry diffEntry : diffEntries) {
+				git.add().addFilepattern(diffEntry.getOldPath()).call();
+			}
+
+			// 'git commit -m'
 			git.commit().setMessage(commitMessage).setCommitter(gitConfig.getBotName(), gitConfig.getBotEmail()).call();
-			// Push with bot credenials
-			git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
-					.call();
+
+			// push with bot credentials
+			if (gitConfig.getRepoService().equals(FileHoster.github)) {
+				git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(gitConfig.getBotToken(), ""))
+						.call();
+			} else {
+				git.push().setCredentialsProvider(
+						new UsernamePasswordCredentialsProvider(gitConfig.getBotName(), gitConfig.getBotToken()))
+						.call();
+			}
 		} catch (TransportException t) {
 			logger.error(t.getMessage(), t);
 			throw new GitWorkflowException("Wrong bot token!");
@@ -261,7 +308,8 @@ public class GitService {
 	}
 
 	/**
-	 * Calculates the absolute new line number of the last line in the given diffHunkLines
+	 * Calculates the absolute new line number of the last line in the given
+	 * diffHunkLines
 	 * 
 	 * @param diffHunkStartPosition
 	 * @param diffHunkLines

@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import javax.transaction.NotSupportedException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +22,7 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
+import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
 import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
@@ -47,11 +46,11 @@ import javassist.NotFoundException;
 public class RefactoringService {
 
 	@Autowired
-	ApiGrabber grabber;
+	ApiGrabber apiGrabber;
 	@Autowired
 	SonarQubeDataGrabber sonarQubeGrabber;
 	@Autowired
-	GitService dataGetter;
+	GitService gitService;
 	@Autowired
 	ConfigurationRepository configRepo;
 	@Autowired
@@ -70,6 +69,8 @@ public class RefactoringService {
 	BotService botService;
 	@Autowired
 	WitService witService;
+	@Autowired
+	FileService fileService;
 
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringService.class);
 
@@ -118,7 +119,7 @@ public class RefactoringService {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 		try {
 			// Get issues from analysis service API
-			List<BotIssue> botIssues = getBotIssues(config);
+			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
 
 			// Iterate all issues
 			for (BotIssue botIssue : botIssues) {
@@ -279,7 +280,10 @@ public class RefactoringService {
 			// If PR owner = bot
 			if (isBotPR) {
 				// Change to existing Refactoring-Branch
-				dataGetter.switchBranch(config, request.getBranchName());
+				gitService.switchBranch(config, request.getBranchName());
+				
+				// Add current filepaths to Issue
+				botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 
 				// Try to refactor
 				botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
@@ -290,9 +294,9 @@ public class RefactoringService {
 					RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
 
 					// Push changes
-					dataGetter.pushChanges(config, botIssue.getCommitMessage());
+					gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
 					// Reply to User
-					grabber.replyToUserInsideBotRequest(request, comment, config);
+					apiGrabber.replyToUserInsideBotRequest(request, comment, config);
 
 					// Save and return refactored issue
 					return issueRepo.save(refactoredIssue);
@@ -302,9 +306,11 @@ public class RefactoringService {
 				// Create refactoring branch with Filehoster-Service + Comment-ID
 				String newBranch = config.getRepoService() + "_Refactoring_" + comment.getCommentID().toString();
 				// Check if branch already exists (throws exception if it does)
-				grabber.checkBranch(config, newBranch);
+				apiGrabber.checkBranch(config, newBranch);
 				// Create new Branch
-				dataGetter.createBranch(config, request.getBranchName(), newBranch, "upstream");
+				gitService.createBranch(config, request.getBranchName(), newBranch, "upstream");
+				// Add current filepaths to Issue
+				botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 				// Try to refactor
 				botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
 
@@ -314,8 +320,8 @@ public class RefactoringService {
 					RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
 
 					// Push changes + create Pull-Request
-					dataGetter.pushChanges(config, botIssue.getCommitMessage());
-					grabber.makeCreateRequest(request, comment, config, newBranch);
+					gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
+					apiGrabber.makeCreateRequest(request, comment, config, newBranch);
 
 					// Save and return refactored issue
 					return issueRepo.save(refactoredIssue);
@@ -326,8 +332,10 @@ public class RefactoringService {
 			// Create new branch for refactoring
 			String newBranch = "sonarQube_Refactoring_" + botIssue.getCommentServiceID();
 			// Check if branch already exists (throws exception if it does)
-			grabber.checkBranch(config, newBranch);
-			dataGetter.createBranch(config, "master", newBranch, "upstream");
+			apiGrabber.checkBranch(config, newBranch);
+			gitService.createBranch(config, "master", newBranch, "upstream");
+			// Add current filepaths to Issue
+			botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 			// Try to refactor
 			botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
 
@@ -337,8 +345,8 @@ public class RefactoringService {
 				RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
 
 				// Push changes + create Pull-Request
-				dataGetter.pushChanges(config, botIssue.getCommitMessage());
-				grabber.makeCreateRequestWithAnalysisService(botIssue, config, newBranch);
+				gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
+				apiGrabber.makeCreateRequestWithAnalysisService(botIssue, config, newBranch);
 
 				// Save and return refactored issue
 				return issueRepo.save(refactoredIssue);
@@ -386,15 +394,17 @@ public class RefactoringService {
 	 * This method returns all pull requests from a filehosting service.
 	 * 
 	 * @param config
-	 * @return allRequests
-	 * @throws Exception
+	 * @return
+	 * @throws URISyntaxException
+	 * @throws GitHubAPIException
+	 * @throws IOException
+	 * @throws GitWorkflowException
+	 * @throws GitLabAPIException
 	 */
 	public BotPullRequests getPullRequests(GitConfiguration config)
-			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException {
-		// Fetch target-Repository-Data
-		dataGetter.fetchRemote(config);
-
-		return grabber.getRequestsWithComments(config);
+			throws URISyntaxException, GitHubAPIException, IOException, GitWorkflowException, GitLabAPIException {
+		gitService.fetchRemote(config);
+		return apiGrabber.getRequestsWithComments(config);
 	}
 
 	/**
@@ -430,6 +440,7 @@ public class RefactoringService {
 	 * @param comment
 	 * @param request
 	 * @param botIssue
+	 * @param isCommentRefactoring
 	 * @return failedIssue
 	 */
 	private RefactoredIssue processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,
@@ -440,7 +451,7 @@ public class RefactoringService {
 		// Reply to user if refactoring comments
 		if (isCommentRefactoring) {
 			try {
-				grabber.replyToUserForFailedRefactoring(request, comment, config,
+				apiGrabber.replyToUserForFailedRefactoring(request, comment, config,
 						constructCommentReplyMessage(botIssue.getErrorMessage()));
 			} catch (Exception u) {
 				logger.error(u.getMessage(), u);
@@ -483,23 +494,23 @@ public class RefactoringService {
 
 		return issue;
 	}
-
+	
 	/**
-	 * This method collects all issues from a analysis service and translates them
-	 * to BotIssues.
-	 * 
+	 * This method updates a BotIssue with up-to-date file paths.
+	 * @param botIssue
+	 * @param isCommentRefactoring
 	 * @param config
-	 * @return botIssues
-	 * @throws Exception
+	 * @return botIssue
+	 * @throws IOException
 	 */
-	private List<BotIssue> getBotIssues(GitConfiguration config) throws Exception {
-		List<BotIssue> botIssues = grabber.getAnalysisServiceIssues(config);
-
-		// BotIssues are null if analysis service not supported
-		if (botIssues == null) {
-			throw new NotSupportedException("Analysis-Service '" + config.getAnalysisService() + "' is not supported!");
+	private BotIssue addUpToDateFilePaths(BotIssue botIssue, Boolean isCommentRefactoring, GitConfiguration config) throws IOException {
+		botIssue.setAllJavaFiles(fileService.getAllJavaFiles(config.getRepoFolder()));
+		botIssue.setJavaRoots(fileService.findJavaRoots(botIssue.getAllJavaFiles()));
+		
+		if (!isCommentRefactoring) {
+			botIssue.setFilePath(apiGrabber.getAnalysisServiceAbsoluteIssuePath(config, botIssue.getFilePath()));
 		}
-
-		return botIssues;
+		
+		return botIssue;
 	}
 }
