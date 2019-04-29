@@ -54,4 +54,8 @@ public class TestDataClassImmediatelyReturnExpression {
 		return result;
 	}
 
+	public static int getLineOfMultipleVariableDeclarations() {
+		int dummy = 0, result = dummy + 58;
+		return result;
+	}
 }

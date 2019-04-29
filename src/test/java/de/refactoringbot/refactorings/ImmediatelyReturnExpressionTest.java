@@ -113,12 +113,23 @@ public class ImmediatelyReturnExpressionTest extends AbstractRefactoringTests {
 
 		// act
 		File modifiedTempFile = performRefactoring(lineOfResultAssignment);
-		
+
 		// assert
 		String lineContentComment = getStrippedContentFromFile(modifiedTempFile, lineOfResultAssignment);
 		String lineContentReturn = getStrippedContentFromFile(modifiedTempFile, lineOfResultAssignment + 1);
 		assertThat(lineContentComment).isEqualTo("// comment");
 		assertThat(lineContentReturn).isEqualTo("return 53;");
+	}
+
+	@Test
+	public void testMultipleVariableDeclarationsAtSameLine() throws Exception {
+		exception.expect(UnsupportedOperationException.class);
+		
+		// arrange
+		int lineOfResultAssignment = TestDataClassImmediatelyReturnExpression.getLineOfMultipleVariableDeclarations();
+		
+		// act
+		performRefactoring(lineOfResultAssignment);
 	}
 
 	private File performRefactoring(int line) throws Exception {
