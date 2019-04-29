@@ -17,6 +17,7 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.BotRefactoringException;
 import de.refactoringbot.refactoring.supportedrefactorings.ImmediatelyReturnExpression;
 import de.refactoringbot.resources.immediatelyreturn.TestDataClassImmediatelyReturnExpression;
+import de.refactoringbot.testutils.TestUtils;
 
 public class ImmediatelyReturnExpressionTest extends AbstractRefactoringTests {
 
@@ -125,7 +126,7 @@ public class ImmediatelyReturnExpressionTest extends AbstractRefactoringTests {
 		ImmediatelyReturnExpression refactoring = new ImmediatelyReturnExpression();
 
 		ArrayList<String> javaRoots = new ArrayList<>();
-		javaRoots.add(getAbsolutePathOfTestsFolder());
+		javaRoots.add(TestUtils.getAbsolutePathOfTestsFolder());
 		BotIssue issue = new BotIssue();
 		issue.setFilePath(tempFile.getName());
 		issue.setLine(line);
