@@ -1,4 +1,4 @@
-package de.refactoringBot.refactoring.supportedRefactorings.prepareCodeForCF;
+package de.refactoringBot.refactoring.supportedRefactorings.shared;
 
 public class PrepareCodeICVariable {
     String varName;

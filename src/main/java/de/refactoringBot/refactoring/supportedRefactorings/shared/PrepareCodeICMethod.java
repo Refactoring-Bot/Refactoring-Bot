@@ -1,10 +1,8 @@
-package de.refactoringBot.refactoring.supportedRefactorings.prepareCodeForCF;
+package de.refactoringBot.refactoring.supportedRefactorings.shared;
 
 
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.expr.Expression;
-
-import java.util.ArrayList;
 
 public class PrepareCodeICMethod {
     String methodName;

@@ -3,7 +3,7 @@ package de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
-import de.refactoringBot.refactoring.supportedRefactorings.prepareCodeForCF.PrepareCode;
+import de.refactoringBot.refactoring.supportedRefactorings.shared.PrepareCode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,15 +28,22 @@ public class RemoveCodeCloneTest {
     @Test
     public void refactorCodeClone() throws FileNotFoundException {
         // Read file
-        FileInputStream in = new FileInputStream(this.codeCloneExamplePath);
-        CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+//        FileInputStream in = new FileInputStream(this.codeCloneExamplePath);
+//        CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+//
+//        PrepareCode removeCodeClones = new PrepareCode();
+//        removeCodeClones.prepareCode(compilationUnit);
 
-        PrepareCode removeCodeClones = new PrepareCode();
-        removeCodeClones.checkPrecondition8(compilationUnit);
+//        removeCodeClones test = new removeCodeClones();
+//        try {
+//            test.performRefactoring(null, null);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         ExtractMethod extractMethod = new ExtractMethod();
-        String commitMessage = extractMethod.refactorMethod(this.codeCloneExamplePath, 88);
-        Assert.assertEquals(commitMessage, "extracted method"); // TODO
+        String commitMessage = extractMethod.refactorMethod(this.codeCloneExamplePath, 67);
+        Assert.assertEquals(commitMessage, "extracted method");
     }
 
     @After

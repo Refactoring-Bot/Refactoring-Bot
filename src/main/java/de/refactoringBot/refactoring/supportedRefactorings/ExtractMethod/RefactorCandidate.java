@@ -7,12 +7,12 @@ import java.util.Set;
 import org.apache.tomcat.jni.Local;
 
 public class RefactorCandidate {
-    List<StatementGraphNode> statements = new ArrayList<>();
-    Long startLine;
-    Long endLine;
-    double score = 0L;
-    Set<LocalVariable> inVariables = new HashSet<>();
-    Set<LocalVariable> outVariables = new HashSet<>();
+    public List<StatementGraphNode> statements = new ArrayList<>();
+    public Long startLine;
+    public Long endLine;
+    public double score = 0L;
+    public Set<LocalVariable> inVariables = new HashSet<>();
+    public Set<LocalVariable> outVariables = new HashSet<>();
 
     public boolean containsLine(Long lineNumber) {
         return startLine <= lineNumber && endLine >= lineNumber;

@@ -1,4 +1,4 @@
-package de.refactoringBot.refactoring.supportedRefactorings.prepareCodeForCF;
+package de.refactoringBot.refactoring.supportedRefactorings.shared;
 
 import java.util.ArrayList;
 
@@ -12,12 +12,15 @@ public class PrepareCodeInnerClass {
     ArrayList<PrepareCodeICMethod> methods;
     // All variables of the inner class
     ArrayList<PrepareCodeICVariable> variables;
+    // Number of parameters for constructor
+    ArrayList<Integer> constructorParamNumber;
 
     public PrepareCodeInnerClass(String className) {
         this.className = className;
         this.varNames = new ArrayList<>();
         this.methods = new ArrayList<>();
         this.variables = new ArrayList<>();
+        this.constructorParamNumber = new ArrayList<>();
     }
 
 }

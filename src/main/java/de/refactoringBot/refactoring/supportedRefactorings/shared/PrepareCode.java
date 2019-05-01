@@ -1,4 +1,4 @@
-package de.refactoringBot.refactoring.supportedRefactorings.prepareCodeForCF;
+package de.refactoringBot.refactoring.supportedRefactorings.shared;
 
 import java.util.*;
 
@@ -13,12 +13,13 @@ import com.github.javaparser.ast.type.TypeParameter;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 import com.github.javaparser.ast.visitor.Visitable;
 import com.github.javaparser.metamodel.JavaParserMetaModel;
+import sun.reflect.annotation.AnnotationType;
 
 public class PrepareCode {
 
     private ArrayList<PrepareCodeInnerClass> innerClasses = new ArrayList<>();
 
-    public void checkPrecondition8(CompilationUnit compUnit) {
+    public CompilationUnit prepareCode(CompilationUnit compUnit) {
         // Remove imports
         ArrayList<Node> importNodesToDelete = new ArrayList<>(compUnit.getImports());
         for (Node nodeToDelete : importNodesToDelete) {
@@ -26,31 +27,51 @@ public class PrepareCode {
         }
         compUnit.addImport("java.util.*");
 
-        // Remove parent class
+        // Remove parent class and annotations
         ArrayList<Node> parentNodesToDelete = new ArrayList<>();
+        ArrayList<Node> annotationNodesToDelete = new ArrayList<>();
         for (Node classNode : compUnit.getChildNodes()) {
             if (classNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
                 for (Node childNode : classNode.getChildNodes()) {
                     if (childNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceTypeMetaModel) {
+                        // parent class node
                         parentNodesToDelete.add(childNode);
+                    } else if (childNode.getMetaModel() == JavaParserMetaModel.normalAnnotationExprMetaModel) {
+                        // annotation node
+                        annotationNodesToDelete.add(childNode);
                     }
                 }
             }
         }
-        for (Node nodeToDelete : parentNodesToDelete) {
-            compUnit.accept(new RemoveNodeVisitor(), nodeToDelete);
-        }
 
-        //
+        // Go through the class methods and variables to find all dependencies
         for (Node classNode : compUnit.getChildNodes()) {
             // Get class nodes
             if (classNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
-                for (Node methodNode : classNode.getChildNodes()) {
-                    // Get method nodes
-                    if (methodNode.getMetaModel() == JavaParserMetaModel.methodDeclarationMetaModel) {
-                        for (Node statementNode : methodNode.getChildNodes()) {
+                for (Node methodOrVariableNode : classNode.getChildNodes()) {
 
-                            // 1. Get parameter of method
+                    // Get field variables nodes
+                    if (methodOrVariableNode.getMetaModel() == JavaParserMetaModel.fieldDeclarationMetaModel) {
+                        for (Node fieldVar : methodOrVariableNode.getChildNodes()) {
+                            if (fieldVar.getMetaModel() == JavaParserMetaModel.variableDeclaratorMetaModel) {
+                                for (Node classOrInterfaceNode : fieldVar.getChildNodes()) {
+                                    if (classOrInterfaceNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceTypeMetaModel) {
+                                        addInnerClassToCollection(getClassOrInterfaceName(classOrInterfaceNode));
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Get method nodes
+                    if (methodOrVariableNode.getMetaModel() == JavaParserMetaModel.methodDeclarationMetaModel) {
+                        for (Node statementNode : methodOrVariableNode.getChildNodes()) {
+                            // Remove annotation node
+                            if (statementNode.getMetaModel() == JavaParserMetaModel.normalAnnotationExprMetaModel) {
+                                annotationNodesToDelete.add(statementNode);
+                            }
+
+                            // Check the parameters of the method for inner classes
                             if (statementNode.getMetaModel() == JavaParserMetaModel.parameterMetaModel) {
                                 for (Node someOtherNode : statementNode.getChildNodes()) {
                                     if (someOtherNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceTypeMetaModel) {
@@ -59,7 +80,7 @@ public class PrepareCode {
                                 }
                             }
 
-                            // 2. get statements of methods
+                            // Check the statements of methods for inner classes
                             if (statementNode.getMetaModel() == JavaParserMetaModel.blockStmtMetaModel) {
                                 getStatements(statementNode);
                             }
@@ -69,33 +90,102 @@ public class PrepareCode {
             }
         }
 
+        // Remove parent node of the class
+        for (Node nodeToDelete : parentNodesToDelete) {
+            compUnit.accept(new RemoveParentNodeVisitor(), nodeToDelete);
+        }
+        // Remove annotations
+        for (Node nodeToDelete : annotationNodesToDelete) {
+            compUnit.accept(new RemoveAnnotationNodeVisitor(), nodeToDelete);
+        }
 
+        // Remove inner classes that primitive data types, like int, string, long, etc.
+        removePrimitiveDataTypes();
 
-        System.out.println("innerClassNames-------------------------------_____----");
+        // Add inner classes
         for (PrepareCodeInnerClass innerClass : innerClasses) {
             compUnit = addInnerClass(compUnit, innerClass);
         }
         System.out.println(compUnit);
+        return compUnit;
     }
 
+    // Removes primitive types from the inner class collection
+    private void removePrimitiveDataTypes() {
+        ArrayList<PrepareCodeInnerClass> innerClassesToRemove = new ArrayList<>();
+        for (PrepareCodeInnerClass innerClass : innerClasses) {
+            switch (innerClass.className) {
+                case "String":
+                    innerClassesToRemove.add(innerClass);
+                    break;
+                case "int":
+                    innerClassesToRemove.add(innerClass);
+                    break;
+                case "byte":
+                    innerClassesToRemove.add(innerClass);
+                    break;
+                case "short":
+                    innerClassesToRemove.add(innerClass);
+                    break;
+                case "long":
+                    innerClassesToRemove.add(innerClass);
+                    break;
+                case "float":
+                    innerClassesToRemove.add(innerClass);
+                    break;
+                case "double":
+                    innerClassesToRemove.add(innerClass);
+                    break;
+                case "char":
+                    innerClassesToRemove.add(innerClass);
+                    break;
+                case "boolean":
+                    innerClassesToRemove.add(innerClass);
+                    break;
+            }
+        }
+        innerClasses.removeAll(innerClassesToRemove);
+    }
+
+    // Goes recursive through the statements and finds the inner classes which needds to be added to the compUnit
     private ArrayList<String> getStatements(Node statement) {
-        System.out.println("________" + statement.getMetaModel());
         ArrayList<String> statementList = new ArrayList<>(); // TODO evtl. entfernen
-        if(statement.getMetaModel() == JavaParserMetaModel.blockStmtMetaModel) {
+        if (statement.getMetaModel() == JavaParserMetaModel.blockStmtMetaModel) {
             for(Node blockStatement : statement.getChildNodes())
                 statementList.addAll(getStatements(blockStatement));
         }
-        else if(statement.getMetaModel() == JavaParserMetaModel.ifStmtMetaModel) {
+        else if (statement.getMetaModel() == JavaParserMetaModel.objectCreationExprMetaModel) {
+            for (Node objectExprNode : statement.getChildNodes()) {
+                statementList.addAll(getStatements(objectExprNode));
+                if (objectExprNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceTypeMetaModel) {
+                    ClassOrInterfaceType classOrInterfaceType = (ClassOrInterfaceType) objectExprNode;
+                    addInnerClassToCollection(classOrInterfaceType.getName().toString());
+                }
+            }
+            ObjectCreationExpr objectCreationExpr = (ObjectCreationExpr) statement;
+            addObjectCreationToInnerClassCollection(objectCreationExpr);
+        }
+        else if (statement.getMetaModel() == JavaParserMetaModel.ifStmtMetaModel) {
             for (Node ifNode : statement.getChildNodes()) {
                 statementList.addAll(getStatements(ifNode));
             }
         }
-        else if(statement.getMetaModel() == JavaParserMetaModel.forStmtMetaModel) {
+        else if (statement.getMetaModel() == JavaParserMetaModel.forStmtMetaModel) {
             for (Node forNode : statement.getChildNodes()) {
                 statementList.addAll(getStatements(forNode));
             }
         }
-        else if(statement.getMetaModel() == JavaParserMetaModel.binaryExprMetaModel) {
+        else if (statement.getMetaModel() == JavaParserMetaModel.unaryExprMetaModel) {
+            for (Node unaryNode : statement.getChildNodes()) {
+                statementList.addAll(getStatements(unaryNode));
+            }
+        }
+        else if (statement.getMetaModel() == JavaParserMetaModel.enclosedExprMetaModel) {
+            for (Node enclosedNode : statement.getChildNodes()) {
+                statementList.addAll(getStatements(enclosedNode));
+            }
+        }
+        else if (statement.getMetaModel() == JavaParserMetaModel.binaryExprMetaModel) {
             for (Node binaryNode : statement.getChildNodes()) {
                 statementList.addAll(getStatements(binaryNode));
             }
@@ -217,7 +307,7 @@ public class PrepareCode {
         return statementList;
     }
 
-    // Second step: Add inner class
+    // Adds inner class
     private CompilationUnit addInnerClass(CompilationUnit compUnit, PrepareCodeInnerClass innerClass) {
         // Füge eine temporäre Methode hinzu um sie gleich danach durch eine inner class zu ersetzen
         NodeList<TypeDeclaration<?>> types = compUnit.getTypes();
@@ -246,8 +336,12 @@ public class PrepareCode {
         BlockStmt block = new BlockStmt();
         // Füll die Methode mit Infos
         for (PrepareCodeICVariable variable : innerClass.variables) {
-            VariableDeclarationExpr b = new VariableDeclarationExpr(new TypeParameter("String"), "XXX_" + variable.varName);
+            VariableDeclarationExpr b = new VariableDeclarationExpr(new TypeParameter("String"), "XXX" + "_" + variable.varName);
             block.addStatement(b);
+        }
+        for (int paramNum : innerClass.constructorParamNumber) {
+            VariableDeclarationExpr c = new VariableDeclarationExpr(new TypeParameter("String"), "YYY" + "_" + paramNum);
+            block.addStatement(c);
         }
         for (PrepareCodeICMethod method : innerClass.methods) {
             VariableDeclarationExpr a = new VariableDeclarationExpr(new TypeParameter("String"), method.methodName + "_" + method.returnValue + "_" + method.params.size());
@@ -270,6 +364,17 @@ public class PrepareCode {
             }
         }
         return classNames;
+    }
+
+    private void addObjectCreationToInnerClassCollection(ObjectCreationExpr objectCreation) {
+        addInnerClassToCollection(objectCreation.getType().getName().toString());
+
+        for (PrepareCodeInnerClass innerClass : innerClasses) {
+            if (innerClass.className.equals(objectCreation.getType().getName().toString())
+                    && !innerClass.constructorParamNumber.contains(objectCreation.getArguments().size())) {
+                innerClass.constructorParamNumber.add(objectCreation.getArguments().size());
+            }
+        }
     }
 
     private void addInnerClassVarToCollection(Node fieldAccessNode) {
@@ -312,7 +417,7 @@ public class PrepareCode {
                     }
                 }
                 if (declVarPart2.getMetaModel() == JavaParserMetaModel.simpleNameMetaModel && found) {
-                    for (PrepareCodeInnerClass innerClass : innerClasses) { // TODO refactoren (for Schleife kann man entfernen)
+                    for (PrepareCodeInnerClass innerClass : innerClasses) { // TODO refactoren (for Schleife kann man ersetzen)
                         if (innerClass.className.equals(foundClassName)) {
                             innerClass.varNames.add(declVarPart2.toString());
                             break;
@@ -327,13 +432,15 @@ public class PrepareCode {
         }
     }
 
-    // For methods in in method calls
+    // For methods in method calls
     private void addInnerClassMethodCallToCollection(Node possibleMethodCallNode) {
         MethodCallExpr methodCallExpr = (MethodCallExpr) possibleMethodCallNode;
         for (PrepareCodeInnerClass innerClass : innerClasses) {
             if (methodCallExpr.getScope().isPresent() && innerClass.varNames.contains(methodCallExpr.getScope().get().toString())) {
-                // TODO falls noch nicht hinzugefügt/ Doppelte Methoden abfangen
-                innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(), "void", methodCallExpr.getArguments()));
+                // Falls die Methode noch nicht hinzugefügt wurde, füge sie hinzu
+                if (!isMethodAlreadyAdded(innerClass, methodCallExpr.getName().toString(), methodCallExpr.getArguments(), "void")) {
+                    innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(), "void", methodCallExpr.getArguments()));
+                }
             }
         }
     }
@@ -348,8 +455,10 @@ public class PrepareCode {
                         MethodCallExpr methodCallExpr = (MethodCallExpr) node2;
                         for (PrepareCodeInnerClass innerClass : innerClasses) {
                             if (methodCallExpr.getScope().isPresent() && innerClass.varNames.contains(methodCallExpr.getScope().get().toString())) {
-                                // TODO falls noch nicht hinzugefügt/ Doppelte Methoden abfangen
-                                innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(), variableDeclarator.getType().toString(), methodCallExpr.getArguments()));
+                                // Falls die Methode noch nicht hinzugefügt wurde, füge sie hinzu
+                                if (!isMethodAlreadyAdded(innerClass, methodCallExpr.getName().toString(), methodCallExpr.getArguments(), variableDeclarator.getType().toString())) {
+                                    innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(), variableDeclarator.getType().toString(), methodCallExpr.getArguments()));
+                                }
                             }
                         }
 
@@ -357,6 +466,22 @@ public class PrepareCode {
                 }
             }
         }
+    }
+
+    private boolean isMethodAlreadyAdded(PrepareCodeInnerClass innerClass, String newMethodName, NodeList<Expression> params, String returnType) {
+        boolean found = false;
+        for (PrepareCodeICMethod method : innerClass.methods) {
+            if (method.methodName.equals(newMethodName) && method.params.size() == params.size() && method.returnValue.equals(returnType)) {
+//                boolean isIdentical = true;
+//                for (int i = 0; i < method.params.size(); i++) {
+//                    if (method.params.get(i).getMetaModel() != params.get(i).getMetaModel()) {
+//                        isIdentical = false;
+//                    }
+//                }
+                found = true;
+            }
+        }
+        return found;
     }
 
     // Es kann sein das man ein Array oder Set oder so bekommt, dass muss getrennt werden
@@ -383,9 +508,22 @@ class RemoveImportNodeVisitor extends ModifierVisitor<Node> {
 /**
  * Visitor implementation for removing nodes.
  */
-class RemoveNodeVisitor extends ModifierVisitor<Node> {
+class RemoveParentNodeVisitor extends ModifierVisitor<Node> {
     @Override
     public Visitable visit(ClassOrInterfaceType n, Node args) {
+        if (n == args) {
+            return null;
+        }
+        return super.visit(n, args);
+    }
+}
+
+/**
+ * Visitor implementation for removing annotation nodes.
+ */
+class RemoveAnnotationNodeVisitor extends ModifierVisitor<Node> {
+    @Override
+    public Visitable visit(NormalAnnotationExpr n, Node args) {
         if (n == args) {
             return null;
         }
@@ -401,6 +539,7 @@ class ReplaceMethodWithInnerClass extends ModifierVisitor<Node> {
     public Visitable visit(MethodDeclaration n, Node args) {
         if (n == args) {
             ArrayList<String[]> allMethods = new ArrayList<>();
+            ArrayList<Integer> allConstructors = new ArrayList<>();
             String className = n.getName().toString();
             EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
             modifiers.add(Modifier.PUBLIC);
@@ -409,17 +548,34 @@ class ReplaceMethodWithInnerClass extends ModifierVisitor<Node> {
                 String[] methodInfoString = statement.toString().replace(";", "").split(" ");
 
                 if (methodInfoString[1].startsWith("XXX")) {
+                    // Add variable
                     String[] splitMethodInfos = methodInfoString[1].split("_"); // TODO besseren Split Character wählen
-                    //VariableDeclarator var = new VariableDeclarator(new TypeParameter("Object"), splitMethodInfos[1]);
                     newInnerClass.addField(new TypeParameter("Object"), splitMethodInfos[1]);
+                } else if (methodInfoString[1].startsWith("YYY")) {
+                    // Add constructor
+                    String[] splitMethodInfos = methodInfoString[1].split("_"); // TODO besseren Split Character wählen
+                    allConstructors.add(Integer.valueOf(splitMethodInfos[1]));
                 } else {
                     String[] splitMethodInfos = methodInfoString[1].split("_"); // TODO besseren Split Character wählen
                     allMethods.add(splitMethodInfos);
                 }
             }
 
+            // Add constructors
+            for (int paramNum : allConstructors) {
+                NodeList<Parameter> params = new NodeList<>();
+                for (int i = 0; i < paramNum; i++) {
+                    params.add(new Parameter(new TypeParameter("Object"), "test" + i));
+                }
+                ConstructorDeclaration constructor = new ConstructorDeclaration(className);
+                for (Parameter param : params) {
+                    constructor.addParameter(param);
+                }
+                newInnerClass.addMember(constructor);
+            }
+
+            // Add methods
             for (String[] methodInfo : allMethods) {
-                //newInnerClass.addMethod(methodInfo[0], Modifier.PUBLIC);
                 NodeList<Parameter> params = new NodeList<>();
                 for (int i = 0; i < Integer.valueOf(methodInfo[2]); i++) {
                     params.add(new Parameter(new TypeParameter("Object"), "test" + i));
@@ -435,8 +591,6 @@ class ReplaceMethodWithInnerClass extends ModifierVisitor<Node> {
 
                 newInnerClass.addMember(method);
             }
-            // They all need a method or an error will be thrown TODO kann man löschen
-            //newInnerClass.addMethod("test", Modifier.PUBLIC);
             return newInnerClass;
         }
         return super.visit(n, args);

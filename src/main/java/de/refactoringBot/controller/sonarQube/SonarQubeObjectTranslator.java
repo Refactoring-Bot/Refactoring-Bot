@@ -29,7 +29,7 @@ public class SonarQubeObjectTranslator {
 	/**
 	 * This method translates all SonarCubeIssues to BotIssues.
 	 * 
-	 * @param issue
+	 * @param issues
 	 * @return botIssue
 	 */
 	public List<BotIssue> translateSonarIssue(SonarQubeIssues issues, GitConfiguration gitConfig) {
@@ -61,24 +61,28 @@ public class SonarQubeObjectTranslator {
 
 			// Translate SonarCube rule
 			switch (issue.getRule()) {
-			case "squid:S1161":
-				botIssue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
-				// Add bot issue to list
-				botIssues.add(botIssue);
-				break;
-			case "squid:ModifiersOrderCheck":
-				botIssue.setRefactoringOperation(operations.REORDER_MODIFIER);
-				// Add bot issue to list
-				botIssues.add(botIssue);
-				break;
-			case "squid:S138":
-				botIssue.setRefactoringOperation(operations.EXTRACT_METHOD);
-				// Add bot issue to list
-				botIssues.add(botIssue);
-				break;
-			default:
-				botIssue.setRefactoringOperation(operations.UNKNOWN);
-				break;
+				case "common-java:DuplicatedBlocks":
+					botIssue.setRefactoringOperation(operations.REMOVE_CODE_CLONES);
+					botIssues.add(botIssue);
+					break;
+//				case "squid:S1161":
+//					botIssue.setRefactoringOperation(operations.ADD_OVERRIDE_ANNOTATION);
+//					// Add bot issue to list
+//					botIssues.add(botIssue);
+//					break;
+//				case "squid:ModifiersOrderCheck":
+//					botIssue.setRefactoringOperation(operations.REORDER_MODIFIER);
+//					// Add bot issue to list
+//					botIssues.add(botIssue);
+//					break;
+//				case "squid:S138":
+//					botIssue.setRefactoringOperation(operations.EXTRACT_METHOD);
+//					// Add bot issue to list
+//					botIssues.add(botIssue);
+//					break;
+				default:
+					botIssue.setRefactoringOperation(operations.UNKNOWN);
+					break;
 			}
 		}
 

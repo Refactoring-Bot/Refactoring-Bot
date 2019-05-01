@@ -40,7 +40,7 @@ public class SonarQubeDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("sonarcloud.io")
 				.path("api/issues/search");
 
-		apiUriBuilder.queryParam("componentRoots", sonarQubeProjectKey);
+		apiUriBuilder.queryParam("componentKeys", sonarQubeProjectKey);
 		apiUriBuilder.queryParam("statuses", "OPEN,REOPENED");
 
 		URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
