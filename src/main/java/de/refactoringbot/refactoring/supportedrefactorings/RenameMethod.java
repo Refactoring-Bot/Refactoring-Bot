@@ -64,7 +64,7 @@ public class RenameMethod implements RefactoringImpl {
 		renameRelatedMethodDeclarationsAndMethodCalls(javaFilesRelevantForRefactoring, newMethodName);
 
 		String oldMethodName = targetMethod.getNameAsString();
-		return "Renamed method '" + oldMethodName + "' to '" + newMethodName + "'.";
+		return "Renamed method '" + oldMethodName + "' to '" + newMethodName + "'";
 	}
 
 	/**
