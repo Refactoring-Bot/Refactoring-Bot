@@ -19,12 +19,7 @@ import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
-import de.refactoringbot.model.exceptions.BotRefactoringException;
-import de.refactoringbot.model.exceptions.DatabaseConnectionException;
-import de.refactoringbot.model.exceptions.GitHubAPIException;
-import de.refactoringbot.model.exceptions.GitLabAPIException;
-import de.refactoringbot.model.exceptions.GitWorkflowException;
-import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
+import de.refactoringbot.model.exceptions.*;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -118,8 +113,9 @@ public class RefactoringService {
 	private ResponseEntity<?> processAnalysisIssues(GitConfiguration config, int amountBotRequests) {
 
 		if (amountBotRequests >= config.getMaxAmountRequests()) {
-			return new ResponseEntity<String>("The maximal amount ouf open Bot-PR has been reached!",
-					HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<String>(
+                    "The maximum number of open pull requests created by the Bot has been reached!",
+                    HttpStatus.BAD_REQUEST);
 		}
 
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
@@ -263,13 +259,11 @@ public class RefactoringService {
 	 * This method configures the local workspace, refactors the issue, pushes the
 	 * changes and creates an PR.
 	 * 
-	 * @param isBotPR
 	 * @param isCommentRefactoring
 	 * @param config
 	 * @param comment
 	 * @param request
 	 * @param botIssue
-	 * @param allRefactoredIssues
 	 * @return allRefactoredIssues
 	 * @throws Exception
 	 */
