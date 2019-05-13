@@ -101,7 +101,7 @@ public class RefactoringService {
 
 		// Return all refactored issues
 		if (isCommentRefactoring) {
-			return processComments(config, allRequests, amountOfBotRequests);
+			return processComments(config, allRequests);
 		} else {
 			return processAnalysisIssues(config, amountOfBotRequests);
 		}
@@ -163,11 +163,9 @@ public class RefactoringService {
 	 * 
 	 * @param config
 	 * @param allRequests
-	 * @param amountOfBotRequests
 	 * @return response
 	 */
-	private ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests,
-			int amountBotRequests) {
+	private ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests) {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 
 		for (BotPullRequest request : allRequests.getAllPullRequests()) {
