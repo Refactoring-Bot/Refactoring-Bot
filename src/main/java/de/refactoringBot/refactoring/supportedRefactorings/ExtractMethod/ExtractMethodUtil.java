@@ -684,6 +684,20 @@ public class ExtractMethodUtil {
         if (outVariables.size() > 1) {
             return false;
         }
+        // add input variables
+        Set<LocalVariable> inVariables = new HashSet<>();
+        for (Long lineNumber = candidate.startLine; lineNumber <= candidate.endLine; lineNumber++) {
+            if (variableMap.get(lineNumber) != null) {
+                for (Map.Entry<LocalVariable, Set<Long>> variable : variableMap.get(lineNumber).in.entrySet()) {
+                    for (Long inNumber : variable.getValue()) {
+                        if (inNumber != null && inNumber < candidate.startLine) {
+                            inVariables.add(variable.getKey());
+                        }
+                    }
+                }
+            }
+        }
+        candidate.inVariables.addAll(inVariables);
         // check return
         if (!ExtractMethodUtil.isExtractableReturnCheck(candidate)) { return false; }
         // check continue and break
