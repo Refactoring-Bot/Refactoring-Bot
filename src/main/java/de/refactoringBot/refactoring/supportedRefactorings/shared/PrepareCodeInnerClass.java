@@ -6,6 +6,8 @@ public class PrepareCodeInnerClass {
 
     // The name of the inner class
     String className;
+    // Is class static?
+    boolean isStatic;
     // All variables names that are declared in the compUnit with this inner class
     ArrayList<String> varNames;
     // All methods of the inner class
@@ -21,6 +23,7 @@ public class PrepareCodeInnerClass {
         this.methods = new ArrayList<>();
         this.variables = new ArrayList<>();
         this.constructorParamNumber = new ArrayList<>();
+        this.isStatic = false;
     }
 
 }

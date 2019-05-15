@@ -55,7 +55,8 @@ public class RemoveCodeClonesCandidateSelector {
         for (RefactorCandidate candidate : this.candidates) {
             double lengthScore = this.scoreLength(candidate);
             double cloneExceedScore = this.scoreCloneExceedLength(candidate);
-            candidate.score = lengthScore * cloneExceedScore;
+            double statementScore = this.scoreStatements(candidate);
+            candidate.score = lengthScore * cloneExceedScore * statementScore;
         }
     }
 
@@ -70,5 +71,14 @@ public class RemoveCodeClonesCandidateSelector {
         } else {
             return 1;
         }
+    }
+
+    private double scoreStatements(RefactorCandidate candidate) {
+        for (StatementGraphNode node : candidate.statements) {
+            if (node.isExitNode) {
+                return 0;
+            }
+        }
+        return 1;
     }
 }

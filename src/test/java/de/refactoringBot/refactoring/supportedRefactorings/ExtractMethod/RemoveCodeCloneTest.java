@@ -1,17 +1,15 @@
 package de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod;
 
-import com.github.javaparser.JavaParser;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
-import de.refactoringBot.refactoring.supportedRefactorings.shared.PrepareCode;
+import de.refactoringBot.model.botIssue.BotIssue;
+import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.refactoring.supportedRefactorings.removeCodeClones.RemoveCodeClones;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,24 +24,25 @@ public class RemoveCodeCloneTest {
     }
 
     @Test
-    public void refactorCodeClone() throws FileNotFoundException {
-        // Read file
-//        FileInputStream in = new FileInputStream(this.codeCloneExamplePath);
-//        CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
-//
-//        PrepareCode removeCodeClones = new PrepareCode();
-//        removeCodeClones.prepareCode(compilationUnit);
+    public void refactorCodeClone() {
+        // Zum Testen Strings ersetzen
+        String gitConfigRepoFolder = "C:\\Users\\Dennis\\Documents258";
+        String gitConfigAnalysisServiceKey = "net.sourceforge.pmd:pmd";
+        String issueFilePath = "pmd-apex/src/main/java/net/sourceforge/pmd/lang/apex/ast/DumpFacade.java";
 
-//        removeCodeClones test = new removeCodeClones();
-//        try {
-//            test.performRefactoring(null, null);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        RemoveCodeClones removeCodeClones = new RemoveCodeClones();
+        BotIssue issue = new BotIssue();
+        issue.setFilePath(issueFilePath);
+        GitConfiguration gitConfig = new GitConfiguration();
+        gitConfig.setRepoFolder(gitConfigRepoFolder);
+        gitConfig.setAnalysisServiceProjectKey(gitConfigAnalysisServiceKey);
+        try {
+            removeCodeClones.performRefactoring(issue, gitConfig);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        ExtractMethod extractMethod = new ExtractMethod();
-        String commitMessage = extractMethod.refactorMethod(this.codeCloneExamplePath, 67);
-        Assert.assertEquals(commitMessage, "extracted method");
+        Assert.assertEquals("test", "test");
     }
 
     @After

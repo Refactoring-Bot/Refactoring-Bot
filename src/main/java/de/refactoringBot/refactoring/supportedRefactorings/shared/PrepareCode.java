@@ -1,5 +1,6 @@
 package de.refactoringBot.refactoring.supportedRefactorings.shared;
 
+import java.lang.reflect.Method;
 import java.util.*;
 
 import com.github.javaparser.ast.*;
@@ -13,19 +14,26 @@ import com.github.javaparser.ast.type.TypeParameter;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 import com.github.javaparser.ast.visitor.Visitable;
 import com.github.javaparser.metamodel.JavaParserMetaModel;
-import sun.reflect.annotation.AnnotationType;
 
+/**
+ * Class for dependencies in a compilationUnit
+ */
 public class PrepareCode {
 
     private ArrayList<PrepareCodeInnerClass> innerClasses = new ArrayList<>();
+    private ArrayList<String> staticVariablesFromImports = new ArrayList<>();
+    private ArrayList<String> existingStaticVariablesList = new ArrayList<>();
+    private String classNameOfFile = "";
 
     public CompilationUnit prepareCode(CompilationUnit compUnit) {
         // Remove imports
         ArrayList<Node> importNodesToDelete = new ArrayList<>(compUnit.getImports());
         for (Node nodeToDelete : importNodesToDelete) {
-            compUnit.accept(new RemoveImportNodeVisitor(), nodeToDelete);
+            ImportDeclaration test = (ImportDeclaration) nodeToDelete;
+            if (!test.getName().toString().startsWith("java")) {
+                compUnit.accept(new RemoveImportNodeVisitor(), nodeToDelete);
+            }
         }
-        compUnit.addImport("java.util.*");
 
         // Remove parent class and annotations
         ArrayList<Node> parentNodesToDelete = new ArrayList<>();
@@ -33,6 +41,13 @@ public class PrepareCode {
         for (Node classNode : compUnit.getChildNodes()) {
             if (classNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
                 for (Node childNode : classNode.getChildNodes()) {
+
+                    // Get name of class
+                    if (childNode.getMetaModel() == JavaParserMetaModel.simpleNameMetaModel) {
+                        SimpleName className = (SimpleName) childNode;
+                        this.classNameOfFile = className.getIdentifier();
+                    }
+
                     if (childNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceTypeMetaModel) {
                         // parent class node
                         parentNodesToDelete.add(childNode);
@@ -54,9 +69,16 @@ public class PrepareCode {
                     if (methodOrVariableNode.getMetaModel() == JavaParserMetaModel.fieldDeclarationMetaModel) {
                         for (Node fieldVar : methodOrVariableNode.getChildNodes()) {
                             if (fieldVar.getMetaModel() == JavaParserMetaModel.variableDeclaratorMetaModel) {
-                                for (Node classOrInterfaceNode : fieldVar.getChildNodes()) {
-                                    if (classOrInterfaceNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceTypeMetaModel) {
-                                        addInnerClassToCollection(getClassOrInterfaceName(classOrInterfaceNode));
+                                for (Node childNode : fieldVar.getChildNodes()) {
+                                    if (childNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceTypeMetaModel) {
+                                        addInnerClassToCollection(getClassOrInterfaceName(childNode));
+                                    } else if (childNode.getMetaModel() == JavaParserMetaModel.methodCallExprMetaModel) {
+                                        checkIfMethodCallIsStatic(fieldVar, childNode);
+                                    } else if (childNode.getMetaModel() == JavaParserMetaModel.simpleNameMetaModel) {
+                                        SimpleName name = (SimpleName) childNode;
+                                        if (name.toString().equals(name.toString().toUpperCase())) {
+                                            existingStaticVariablesList.add(name.toString());
+                                        }
                                     }
                                 }
                             }
@@ -99,47 +121,90 @@ public class PrepareCode {
             compUnit.accept(new RemoveAnnotationNodeVisitor(), nodeToDelete);
         }
 
-        // Remove inner classes that primitive data types, like int, string, long, etc.
-        removePrimitiveDataTypes();
+        // Remove unnecessary inner classes
+        removeUnnecessaryInnerClasses();
+        removeUnnecessaryMethods();
+
+        // Add static variables
+        for (String name : staticVariablesFromImports) {
+            compUnit = addStaticVariable(compUnit, name);
+        }
 
         // Add inner classes
         for (PrepareCodeInnerClass innerClass : innerClasses) {
             compUnit = addInnerClass(compUnit, innerClass);
         }
+
+        // Print transformed compUnit
         System.out.println(compUnit);
         return compUnit;
     }
 
-    // Removes primitive types from the inner class collection
-    private void removePrimitiveDataTypes() {
+    // Remove unnecessary methods
+    private void removeUnnecessaryMethods() {
+        for (PrepareCodeInnerClass innerClass : innerClasses) {
+            ArrayList<Integer> indexesToRemove = new ArrayList<>();
+            for (int i = 0; i < innerClass.methods.size(); i++) {
+                for (int j = i + 1; j < innerClass.methods.size(); j++) {
+                    if (innerClass.methods.get(i).methodName.equals(innerClass.methods.get(j).methodName) &&
+                    innerClass.methods.get(i).params.size() == innerClass.methods.get(j).params.size()) {
+                        if (innerClass.methods.get(i).returnValue.equals("void")) {
+                            if (!indexesToRemove.contains(i)) {
+                                indexesToRemove.add(i);
+                            }
+                        } else if (innerClass.methods.get(j).returnValue.equals("void")) {
+                            if (!indexesToRemove.contains(j)) {
+                                indexesToRemove.add(j);
+                            }
+                        }
+                    }
+                }
+            }
+            Collections.sort(indexesToRemove);
+            Collections.reverse(indexesToRemove);
+            for (int index : indexesToRemove) {
+                innerClass.methods.remove(index);
+            }
+        }
+    }
+
+    // Removes primitive types, specific classes and class name of file from the inner class collection
+    private void removeUnnecessaryInnerClasses() {
         ArrayList<PrepareCodeInnerClass> innerClassesToRemove = new ArrayList<>();
         for (PrepareCodeInnerClass innerClass : innerClasses) {
+            if (this.classNameOfFile.equals(innerClass.className)) {
+                innerClassesToRemove.add(innerClass);
+                continue;
+            } else if (innerClass.className.contains("?")) {
+                innerClassesToRemove.add(innerClass);
+                continue;
+            }
             switch (innerClass.className) {
+                case "System":
+                case "System.out":
+                case "Map":
+                case "Set":
+                case "List":
+                case "ArrayList":
+                case "Array":
+                case "Object":
+                case "Throwable":
                 case "String":
-                    innerClassesToRemove.add(innerClass);
-                    break;
                 case "int":
-                    innerClassesToRemove.add(innerClass);
-                    break;
+                case "Integer":
                 case "byte":
-                    innerClassesToRemove.add(innerClass);
-                    break;
+                case "Byte":
                 case "short":
-                    innerClassesToRemove.add(innerClass);
-                    break;
+                case "Short":
                 case "long":
-                    innerClassesToRemove.add(innerClass);
-                    break;
+                case "Long":
                 case "float":
-                    innerClassesToRemove.add(innerClass);
-                    break;
+                case "Float":
                 case "double":
-                    innerClassesToRemove.add(innerClass);
-                    break;
+                case "Double":
                 case "char":
-                    innerClassesToRemove.add(innerClass);
-                    break;
                 case "boolean":
+                case "Boolean":
                     innerClassesToRemove.add(innerClass);
                     break;
             }
@@ -147,9 +212,9 @@ public class PrepareCode {
         innerClasses.removeAll(innerClassesToRemove);
     }
 
-    // Goes recursive through the statements and finds the inner classes which needds to be added to the compUnit
+    // Goes recursive through the statements and finds the inner classes which needs to be added to the compUnit
     private ArrayList<String> getStatements(Node statement) {
-        ArrayList<String> statementList = new ArrayList<>(); // TODO evtl. entfernen
+        ArrayList<String> statementList = new ArrayList<>();
         if (statement.getMetaModel() == JavaParserMetaModel.blockStmtMetaModel) {
             for(Node blockStatement : statement.getChildNodes())
                 statementList.addAll(getStatements(blockStatement));
@@ -169,6 +234,12 @@ public class PrepareCode {
             for (Node ifNode : statement.getChildNodes()) {
                 statementList.addAll(getStatements(ifNode));
             }
+        }
+        else if (statement.getMetaModel() == JavaParserMetaModel.nameExprMetaModel) {
+            for (Node nameNode : statement.getChildNodes()) {
+                statementList.addAll(getStatements(nameNode));
+            }
+            addStaticClassVariablesFromImports(statement);
         }
         else if (statement.getMetaModel() == JavaParserMetaModel.forStmtMetaModel) {
             for (Node forNode : statement.getChildNodes()) {
@@ -196,6 +267,7 @@ public class PrepareCode {
             }
             // Add methods to the inner class collection
             addInnerClassMethodCallToCollection(statement);
+            checkIfMethodCallIsStatic(statement.getParentNode().get(), statement);
         }
         else if (statement.getMetaModel() == JavaParserMetaModel.assignExprMetaModel) {
             for (Node assignExprNode : statement.getChildNodes()) {
@@ -238,15 +310,16 @@ public class PrepareCode {
                 statementList.addAll(getStatements(switchEntryNode));
             }
         }
-//        else if(statement instanceof AssertStatement) {
-//            AssertStatement assertStatement = (AssertStatement)statement;
-//            statementList.add(assertStatement);
-//        }
-//        else if(statement instanceof LabeledStatement) {
-//            LabeledStatement labeledStatement = (LabeledStatement)statement;
-//            //handling of LabeledStatement
-//            statementList.addAll(getStatements(labeledStatement.getBody()));
-//        }
+        else if(statement.getMetaModel() == JavaParserMetaModel.assertStmtMetaModel) {
+            for (Node assertNode : statement.getChildNodes()) {
+                statementList.addAll(getStatements(assertNode));
+            }
+        }
+        else if(statement.getMetaModel() == JavaParserMetaModel.labeledStmtMetaModel) {
+            for (Node node : statement.getChildNodes()) {
+                statementList.addAll(getStatements(node));
+            }
+        }
         else if(statement.getMetaModel() == JavaParserMetaModel.returnStmtMetaModel) {
             for (Node returnNode : statement.getChildNodes()) {
                 statementList.addAll(getStatements(returnNode));
@@ -257,26 +330,31 @@ public class PrepareCode {
 //            //handling of SynchronizedStatement
 //            statementList.addAll(getStatements(synchronizedStatement.getBody()));
 //        }
-//        else if(statement instanceof ThrowStatement) {
-//            ThrowStatement throwStatement = (ThrowStatement)statement;
-//            statementList.add(throwStatement);
-//        }
-//        else if(statement instanceof TryStatement) {
-//            TryStatement tryStatement = (TryStatement)statement;
-//            statementList.addAll(getStatements(tryStatement.getBody()));
-//			/*List<CatchClause> catchClauses = tryStatement.catchClauses();
-//			for(CatchClause catchClause : catchClauses) {
-//				statementList.addAll(getStatements(catchClause.getBody()));
-//			}
-//			Block finallyBlock = tryStatement.getFinally();
-//			if(finallyBlock != null)
-//				statementList.addAll(getStatements(finallyBlock));*/
-//        }
+        else if(statement.getMetaModel() == JavaParserMetaModel.throwStmtMetaModel) {
+            for (Node node : statement.getChildNodes()) {
+                statementList.addAll(getStatements(node));
+            }
+        }
+        else if(statement.getMetaModel() == JavaParserMetaModel.tryStmtMetaModel) {
+            for (Node node : statement.getChildNodes()) {
+                statementList.addAll(getStatements(node));
+            }
+        }
+        else if (statement.getMetaModel() == JavaParserMetaModel.variableDeclaratorMetaModel) {
+            for (Node node : statement.getChildNodes()) {
+                statementList.addAll(getStatements(node));
+            }
+            for (Node classOrInterfaceNode : statement.getChildNodes()) {
+                if (classOrInterfaceNode.getMetaModel() == JavaParserMetaModel.methodCallExprMetaModel) {
+                    checkIfMethodCallIsStatic(statement, classOrInterfaceNode);
+                }
+            }
+        }
         else if(statement.getMetaModel() == JavaParserMetaModel.variableDeclarationExprMetaModel) {
             for (Node varDeclNode : statement.getChildNodes()) {
                 statementList.addAll(getStatements(varDeclNode));
             }
-            //statementList.addAll(getClassNamesFromVariableDeclr(statement)); TODO evtl. löschen
+            //statementList.addAll(getClassNamesFromVariableDeclr(statement));
 
             // Add inner classes to the inner class collection
             ArrayList<String> classNames = getClassNamesFromVariableDeclr(statement);
@@ -296,15 +374,26 @@ public class PrepareCode {
 //            SuperConstructorInvocation superConstructorInvocation = (SuperConstructorInvocation)statement;
 //            statementList.add(superConstructorInvocation);
 //        }
-//        else if(statement instanceof BreakStatement) {
-//            BreakStatement breakStatement = (BreakStatement)statement;
-//            statementList.add(breakStatement);
-//        }
-//        else if(statement instanceof ContinueStatement) {
-//            ContinueStatement continueStatement = (ContinueStatement)statement;
-//            statementList.add(continueStatement);
-//        }
+        else if(statement.getMetaModel() == JavaParserMetaModel.breakStmtMetaModel) {
+            for (Node node : statement.getChildNodes()) {
+                statementList.addAll(getStatements(node));
+            }
+        }
+        else if(statement.getMetaModel() == JavaParserMetaModel.continueStmtMetaModel) {
+            for (Node node : statement.getChildNodes()) {
+                statementList.addAll(getStatements(node));
+            }
+        }
         return statementList;
+    }
+
+    private CompilationUnit addStaticVariable(CompilationUnit compUnit, String name) {
+        NodeList<TypeDeclaration<?>> types = compUnit.getTypes();
+        for (TypeDeclaration<?> type : types) {
+            // Add extracted method
+            type.addField(new TypeParameter("Object"), name, Modifier.STATIC, Modifier.PUBLIC);
+        }
+        return compUnit;
     }
 
     // Adds inner class
@@ -331,26 +420,11 @@ public class PrepareCode {
             }
         }
 
-        // Füll die Methode mit Infos
-        MethodDeclaration methodInfo = (MethodDeclaration) lastMethodNode;
-        BlockStmt block = new BlockStmt();
-        // Füll die Methode mit Infos
-        for (PrepareCodeICVariable variable : innerClass.variables) {
-            VariableDeclarationExpr b = new VariableDeclarationExpr(new TypeParameter("String"), "XXX" + "_" + variable.varName);
-            block.addStatement(b);
-        }
-        for (int paramNum : innerClass.constructorParamNumber) {
-            VariableDeclarationExpr c = new VariableDeclarationExpr(new TypeParameter("String"), "YYY" + "_" + paramNum);
-            block.addStatement(c);
-        }
-        for (PrepareCodeICMethod method : innerClass.methods) {
-            VariableDeclarationExpr a = new VariableDeclarationExpr(new TypeParameter("String"), method.methodName + "_" + method.returnValue + "_" + method.params.size());
-            block.addStatement(a);
-        }
-        methodInfo.setBody(block);
-
         // Ersetze die Methode durch inner class
-        compUnit.accept(new ReplaceMethodWithInnerClass(), lastMethodNode);
+        ReplaceMethodWithInnerClass visitor = new ReplaceMethodWithInnerClass();
+        //visitor.isStatic = innerClass.isStatic;
+        visitor.innerClass = innerClass;
+        compUnit.accept(visitor, lastMethodNode);
         return compUnit;
     }
 
@@ -377,13 +451,43 @@ public class PrepareCode {
         }
     }
 
+    private void addStaticClassVariablesFromImports(Node nameNode) {
+        NameExpr nameExpr = (NameExpr) nameNode;
+        boolean isStatic = nameExpr.getName().toString().equals(nameExpr.getName().toString().toUpperCase());
+        if (isStatic && !staticVariablesFromImports.contains(nameExpr.getName().toString()) && !existingStaticVariablesList.contains(nameExpr.getName().toString())) {
+            staticVariablesFromImports.add(nameExpr.getName().toString());
+        }
+    }
+
     private void addInnerClassVarToCollection(Node fieldAccessNode) {
         FieldAccessExpr fieldAccessExpr = (FieldAccessExpr) fieldAccessNode;
+        String firstChar = fieldAccessExpr.getScope().toString().substring(0,1);
+        boolean hasUppercase = !firstChar.equals(firstChar.toLowerCase());
+        // If scope is static
+        if (hasUppercase) {
+            addInnerClassToCollection(fieldAccessExpr.getScope().toString());
+        }
+
         for (PrepareCodeInnerClass innerClass : innerClasses) {
-            if (innerClass.varNames.contains(fieldAccessExpr.getScope().toString())) {
+            if (innerClass.varNames.contains(fieldAccessExpr.getScope().toString()) && !isVarAlreadyAdded(fieldAccessExpr.getName().toString())) {
+                innerClass.variables.add(new PrepareCodeICVariable(fieldAccessExpr.getName().toString()));
+            }
+            if (hasUppercase && innerClass.className.equals(fieldAccessExpr.getScope().toString()) && !isVarAlreadyAdded(fieldAccessExpr.getName().toString())) {
+                innerClass.isStatic = true;
                 innerClass.variables.add(new PrepareCodeICVariable(fieldAccessExpr.getName().toString()));
             }
         }
+    }
+
+    private boolean isVarAlreadyAdded(String varName) {
+        for (PrepareCodeInnerClass innerClass : innerClasses) {
+            for (PrepareCodeICVariable var : innerClass.variables) {
+                if (var.varName.equals(varName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void addInnerClassToCollection(String newClassName) {
@@ -396,6 +500,52 @@ public class PrepareCode {
 
         if (!found) {
             innerClasses.add(new PrepareCodeInnerClass(newClassName));
+        }
+    }
+
+    // Adds static modifier to inner class
+    private void checkIfMethodCallIsStatic(Node parentNode, Node node) {
+        MethodCallExpr methodCallExpr = (MethodCallExpr) node;
+
+        String varDelrType = "void";
+        if (parentNode.getMetaModel() == JavaParserMetaModel.variableDeclaratorMetaModel) {
+            VariableDeclarator variableDeclarator = (VariableDeclarator) parentNode;
+            varDelrType = variableDeclarator.getType().toString();
+        }
+
+        // Check if the first Character is upper case, then the class is static
+        if (methodCallExpr.getScope().isPresent()) {
+            String scopeFirstChar = methodCallExpr.getScope().get().toString().substring(0, 1);
+            boolean hasUppercase = !scopeFirstChar.equals(scopeFirstChar.toLowerCase());
+            //boolean hasLowercase = !scopeFirstChar.equals(scopeFirstChar.toUpperCase());
+            if (hasUppercase) {
+                addInnerClassToCollection(methodCallExpr.getScope().get().toString());
+                for (PrepareCodeInnerClass innerClass : innerClasses) {
+                    if (innerClass.className.equals(methodCallExpr.getScope().get().toString())) {
+                        innerClass.isStatic = true;
+                        if (!isMethodAlreadyAdded(innerClass, methodCallExpr.getName().toString(), methodCallExpr.getArguments(), varDelrType)) {
+                            innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(),
+                                    varDelrType,
+                                    methodCallExpr.getArguments(),
+                                    innerClass.isStatic));
+                        }
+                    }
+                }
+            } else {
+                for (PrepareCodeInnerClass innerClass : innerClasses) {
+                    innerClass.varNames.add(methodCallExpr.getScope().get().toString());
+                    for (String varName : innerClass.varNames) {
+                        if (varName.equals(methodCallExpr.getScope().get().toString())) {
+                            if (!isMethodAlreadyAdded(innerClass, methodCallExpr.getName().toString(), methodCallExpr.getArguments(), varDelrType)) {
+                                innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(),
+                                        varDelrType,
+                                        methodCallExpr.getArguments(),
+                                        false));
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -417,7 +567,7 @@ public class PrepareCode {
                     }
                 }
                 if (declVarPart2.getMetaModel() == JavaParserMetaModel.simpleNameMetaModel && found) {
-                    for (PrepareCodeInnerClass innerClass : innerClasses) { // TODO refactoren (for Schleife kann man ersetzen)
+                    for (PrepareCodeInnerClass innerClass : innerClasses) {
                         if (innerClass.className.equals(foundClassName)) {
                             innerClass.varNames.add(declVarPart2.toString());
                             break;
@@ -439,7 +589,10 @@ public class PrepareCode {
             if (methodCallExpr.getScope().isPresent() && innerClass.varNames.contains(methodCallExpr.getScope().get().toString())) {
                 // Falls die Methode noch nicht hinzugefügt wurde, füge sie hinzu
                 if (!isMethodAlreadyAdded(innerClass, methodCallExpr.getName().toString(), methodCallExpr.getArguments(), "void")) {
-                    innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(), "void", methodCallExpr.getArguments()));
+                    innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(),
+                            "void",
+                            methodCallExpr.getArguments(),
+                            false));
                 }
             }
         }
@@ -457,7 +610,10 @@ public class PrepareCode {
                             if (methodCallExpr.getScope().isPresent() && innerClass.varNames.contains(methodCallExpr.getScope().get().toString())) {
                                 // Falls die Methode noch nicht hinzugefügt wurde, füge sie hinzu
                                 if (!isMethodAlreadyAdded(innerClass, methodCallExpr.getName().toString(), methodCallExpr.getArguments(), variableDeclarator.getType().toString())) {
-                                    innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(), variableDeclarator.getType().toString(), methodCallExpr.getArguments()));
+                                    innerClass.methods.add(new PrepareCodeICMethod(methodCallExpr.getName().toString(),
+                                            variableDeclarator.getType().toString(),
+                                            methodCallExpr.getArguments(),
+                                            false));
                                 }
                             }
                         }
@@ -479,6 +635,7 @@ public class PrepareCode {
 //                    }
 //                }
                 found = true;
+                break;
             }
         }
         return found;
@@ -535,34 +692,28 @@ class RemoveAnnotationNodeVisitor extends ModifierVisitor<Node> {
  * Visitor implementation for adding method call of the extracted method.
  */
 class ReplaceMethodWithInnerClass extends ModifierVisitor<Node> {
+    PrepareCodeInnerClass innerClass;
     @Override
     public Visitable visit(MethodDeclaration n, Node args) {
         if (n == args) {
-            ArrayList<String[]> allMethods = new ArrayList<>();
-            ArrayList<Integer> allConstructors = new ArrayList<>();
             String className = n.getName().toString();
             EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
             modifiers.add(Modifier.PUBLIC);
+            if (innerClass.isStatic) {
+                modifiers.add(Modifier.STATIC);
+            }
             ClassOrInterfaceDeclaration newInnerClass = new ClassOrInterfaceDeclaration(modifiers, false, className);
-            for (Statement statement : n.getBody().get().getStatements()) {
-                String[] methodInfoString = statement.toString().replace(";", "").split(" ");
-
-                if (methodInfoString[1].startsWith("XXX")) {
-                    // Add variable
-                    String[] splitMethodInfos = methodInfoString[1].split("_"); // TODO besseren Split Character wählen
-                    newInnerClass.addField(new TypeParameter("Object"), splitMethodInfos[1]);
-                } else if (methodInfoString[1].startsWith("YYY")) {
-                    // Add constructor
-                    String[] splitMethodInfos = methodInfoString[1].split("_"); // TODO besseren Split Character wählen
-                    allConstructors.add(Integer.valueOf(splitMethodInfos[1]));
+            for (PrepareCodeICVariable var : innerClass.variables) {
+                if (innerClass.isStatic) {
+                    newInnerClass.addField(new TypeParameter("Object"), var.varName, Modifier.PUBLIC, Modifier.STATIC);
                 } else {
-                    String[] splitMethodInfos = methodInfoString[1].split("_"); // TODO besseren Split Character wählen
-                    allMethods.add(splitMethodInfos);
+                    newInnerClass.addField(new TypeParameter("Object"), var.varName, Modifier.PUBLIC);
                 }
+
             }
 
             // Add constructors
-            for (int paramNum : allConstructors) {
+            for (int paramNum : innerClass.constructorParamNumber) {
                 NodeList<Parameter> params = new NodeList<>();
                 for (int i = 0; i < paramNum; i++) {
                     params.add(new Parameter(new TypeParameter("Object"), "test" + i));
@@ -575,17 +726,28 @@ class ReplaceMethodWithInnerClass extends ModifierVisitor<Node> {
             }
 
             // Add methods
-            for (String[] methodInfo : allMethods) {
+            for (PrepareCodeICMethod methodInfo : innerClass.methods) {
                 NodeList<Parameter> params = new NodeList<>();
-                for (int i = 0; i < Integer.valueOf(methodInfo[2]); i++) {
+                for (int i = 0; i < methodInfo.params.size(); i++) {
                     params.add(new Parameter(new TypeParameter("Object"), "test" + i));
                 }
-                MethodDeclaration method = new MethodDeclaration(modifiers, methodInfo[0], new TypeParameter(methodInfo[1]), params);
+                if (methodInfo.returnValue.equals("void")) {
+                    methodInfo.returnValue = "Object";
+                }
+                MethodDeclaration method = new MethodDeclaration(modifiers, methodInfo.methodName, new TypeParameter(methodInfo.returnValue), params);
 
                 // Add return statement
-                if (!methodInfo[1].equals("void")) {
+                if (!methodInfo.returnValue.equals("void")) {
                     BlockStmt blockStmt = new BlockStmt();
-                    blockStmt.addStatement(new ReturnStmt("null"));
+                    if (methodInfo.returnValue.equals("int")) {
+                        blockStmt.addStatement(new ReturnStmt("1"));
+                    } else if (methodInfo.returnValue.equals("long")) {
+                        blockStmt.addStatement(new ReturnStmt("1l"));
+                    } else if (methodInfo.returnValue.equals("boolean")) {
+                        blockStmt.addStatement(new ReturnStmt("true"));
+                    } else {
+                        blockStmt.addStatement(new ReturnStmt("null"));
+                    }
                     method.setBody(blockStmt);
                 }
 
@@ -596,3 +758,4 @@ class ReplaceMethodWithInnerClass extends ModifierVisitor<Node> {
         return super.visit(n, args);
     }
 }
+

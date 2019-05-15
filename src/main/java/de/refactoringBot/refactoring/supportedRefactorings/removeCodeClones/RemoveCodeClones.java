@@ -5,12 +5,10 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.stmt.BlockStmt;
-import com.github.javaparser.ast.stmt.ExpressionStmt;
-import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.visitor.ModifierVisitor;
 import com.github.javaparser.ast.visitor.Visitable;
 import com.github.javaparser.metamodel.JavaParserMetaModel;
@@ -18,12 +16,17 @@ import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinte
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.LineMap;
+import de.refactoringBot.api.sonarQube.SonarQubeDataGrabber;
 import de.refactoringBot.model.botIssue.BotIssue;
 import de.refactoringBot.model.configuration.GitConfiguration;
+import de.refactoringBot.model.sonarQube.Block;
+import de.refactoringBot.model.sonarQube.Blocks;
+import de.refactoringBot.model.sonarQube.Duplicates;
 import de.refactoringBot.refactoring.RefactoringImpl;
 import de.refactoringBot.refactoring.supportedRefactorings.ExtractMethod.*;
 import de.refactoringBot.refactoring.supportedRefactorings.shared.PrepareCode;
 import org.springframework.stereotype.Component;
+
 import java.io.*;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
@@ -41,10 +44,14 @@ import java.util.*;
 public class RemoveCodeClones extends ModifierVisitor<Void> implements RefactoringImpl {
 
     ArrayList<Node> cloneNodes = new ArrayList<Node>();
+    ArrayList<Node> cloneNodeLiterals = new ArrayList<>();
     String tempFolderName = "/tempFolderForPreparedCode";
 
+    CloneInfo cloneInfo = new CloneInfo();
     String extractedMethodName = "extractedMethod";
     public Set<LocalVariable> extractedMethodOutVariables = new HashSet<>();
+    ArrayList<LocalVariable> params = new ArrayList<>();
+    ArrayList<LocalVariable> literalParams = new ArrayList<>();
 
     private CFGContainer cfgContainer;
     private LineMap lineMap;
@@ -65,9 +72,24 @@ public class RemoveCodeClones extends ModifierVisitor<Void> implements Refactori
         String path = issue.getFilePath();
         path = gitConfig.getRepoFolder() + "/" + path;
 
+        // Get clone information from SonarQube
+        Duplicates duplicates = new Duplicates();
+        SonarQubeDataGrabber grabber = new SonarQubeDataGrabber();
+        try {
+            duplicates = grabber.getDuplicatesData(gitConfig.getAnalysisServiceProjectKey(), issue.getFilePath());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (checkIfDuplicatesRemovable(gitConfig.getRepoFolder(), duplicates)) {
+            return "Could not refactor!";
+        }
+        analyseDuplicates(gitConfig.getRepoFolder(), duplicates);
+        checkLiterals();
+
         // Get file name of file that will be refactored
         String[] splitFilePath = issue.getFilePath().split("\\\\");
         String fileName = splitFilePath[splitFilePath.length - 1];
+        this.cloneInfo.mainExtractFile = fileName.replace(".java", "");
 
         // Create temp folder for prepared code file
         String pathForPreparedCode = gitConfig.getRepoFolder() + tempFolderName;
@@ -76,19 +98,8 @@ public class RemoveCodeClones extends ModifierVisitor<Void> implements Refactori
         // Read file
         FileInputStream in = new FileInputStream(path);
         CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
-
-        // Search for clones in the original file
-        CodeCloneInfo cloneInfo = new CodeCloneInfo();
-        for (Node childNode : compilationUnit.getChildNodes()) {
-            if (childNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
-                cloneInfo = this.searchChildNodes(childNode.getChildNodes(), true);
-            }
-        }
-
-        // If no clones were found
-        if (cloneInfo == null) {
-            return "No code clones found";
-        }
+        in.close();
+        getParametersAndPackageName(compilationUnit);
 
         // Write new file with prepared code of the compilationUnit
         PrepareCode prepareCode = new PrepareCode();
@@ -100,29 +111,15 @@ public class RemoveCodeClones extends ModifierVisitor<Void> implements Refactori
         // Get new compilationUnit of the new prepare code file
         FileInputStream in2 = new FileInputStream(pathForPreparedCode + "/" + fileName );
         CompilationUnit preparedCompilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in2));
+        in2.close();
 
-        // Search the code clone in the prepared code file
-        CodeCloneInfo cloneInfoOfPreparedCode = new CodeCloneInfo();
-        for (Node childNode : preparedCompilationUnit.getChildNodes()) {
-            if (childNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
-                cloneInfoOfPreparedCode = this.searchChildNodes(childNode.getChildNodes(), false);
-            }
-        }
-
-        // Get best candidate to extract code in the new prepared code file
-        // for code clone 1
+        // Get the difference of the lines between the original file and the prepared file
+        PreparedCodeCloneInfo prepCloneInfo = getPreparedCodeCloneLines(preparedCompilationUnit);
         RefactorCandidate bestCandidate1 = this.getCandidates(pathForPreparedCode + "/" + fileName,
-                cloneInfoOfPreparedCode.clone1BeginLine, cloneInfoOfPreparedCode.clone1BeginLine + cloneInfoOfPreparedCode.clone1Range);
-        // for code clone 2
-        RefactorCandidate bestCandidate2 = this.getCandidates(pathForPreparedCode + "/" + fileName,
-                cloneInfoOfPreparedCode.clone2BeginLine, cloneInfoOfPreparedCode.clone2BeginLine + cloneInfoOfPreparedCode.clone2Range);
-        this.extractedMethodOutVariables = bestCandidate1.outVariables;
+                prepCloneInfo.startLine, prepCloneInfo.endLine);
 
-        // Calculate correct lines
-        cloneInfo.clone1BeginLine = bestCandidate1.startLine + (cloneInfo.clone1BeginLine - cloneInfoOfPreparedCode.clone1BeginLine);
-        cloneInfo.clone1Range = bestCandidate1.endLine - bestCandidate1.startLine;
-        cloneInfo.clone2BeginLine = bestCandidate2.startLine + (cloneInfo.clone2BeginLine - cloneInfoOfPreparedCode.clone2BeginLine);
-        cloneInfo.clone2Range = bestCandidate2.endLine - bestCandidate2.startLine;
+        // Get output variables from best candidate
+        this.extractedMethodOutVariables = bestCandidate1.outVariables;
 
         // Delete tempFolder and prepared code file
         try {
@@ -137,20 +134,310 @@ public class RemoveCodeClones extends ModifierVisitor<Void> implements Refactori
             System.err.println(x);
         }
 
-        // Get original compUnit
-        FileInputStream in3 = new FileInputStream(path);
-        CompilationUnit originalCompUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in3));
+        // Find parameters for extracted method
+        params = this.findParamsForExtractedMethod(prepCloneInfo);
 
         // Remove clone nodes
-        this.removeCodeClones(originalCompUnit, cloneInfo);
+        this.extractCloneNodes(prepCloneInfo, bestCandidate1);
+        this.extractLiteralParameters();
+        this.removeCodeClones();
 
         // Create extracted method
-        this.createExtractedMethod(originalCompUnit, path);
+        this.createExtractedMethod(path);
 
         // Return commit message
         return "Removed code clones";
     }
 
+    /**
+     * Get parameters of the constructor of the main file and the package main
+     *
+     * @param compUnit
+     */
+    private void getParametersAndPackageName(CompilationUnit compUnit) {
+        this.cloneInfo.mainExtractPackage = compUnit.getPackageDeclaration().get().getName().toString();
+        for (Node node : compUnit.getChildNodes()) {
+            if (node.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
+                for (Node node1 : node.getChildNodes()) {
+                    if (node1.getMetaModel() == JavaParserMetaModel.constructorDeclarationMetaModel) {
+                        ConstructorDeclaration constr = (ConstructorDeclaration) node1;
+                        for (Parameter parameter : constr.getParameters()) {
+                            this.cloneInfo.constructorParams.add(parameter.getName().toString());
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     *  Calculate the line difference
+     */
+    private PreparedCodeCloneInfo getPreparedCodeCloneLines(CompilationUnit preparedCompUnit) {
+        MethodDeclaration preparedMethodWithClone = null;
+        for (TypeDeclaration typeDec : preparedCompUnit.getTypes()) {
+            List<BodyDeclaration> members = typeDec.getMembers();
+            if (members != null) {
+                for (BodyDeclaration member : members) {
+                    if (member.isMethodDeclaration()) {
+                        MethodDeclaration methodDeclaration = (MethodDeclaration) member;
+                        MethodDeclaration originalMethodDecl = this.cloneInfo.methodDeclarationOfFirstFile;
+                        if (methodDeclaration.getName().toString().equals(originalMethodDecl.getName().toString()) &&
+                                methodDeclaration.getType().toString().equals(originalMethodDecl.getType().toString()) &&
+                                methodDeclaration.getParameters().size() == originalMethodDecl.getParameters().size()) {
+                            boolean paramsIdentical = true;
+                            for (int i = 0; i < methodDeclaration.getParameters().size(); i++) {
+                                if (!methodDeclaration.getParameters().get(i).toString().equals(originalMethodDecl.getParameters().get(i).toString())) {
+                                    paramsIdentical = false;
+                                }
+                            }
+                            if (paramsIdentical) {
+                                preparedMethodWithClone = methodDeclaration;
+                                break;
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+
+
+        PreparedCodeCloneInfo prepCloneInfo = new PreparedCodeCloneInfo();
+        prepCloneInfo.methodDeclaration = preparedMethodWithClone;
+        NodeList<Statement> prepStatementList = preparedMethodWithClone.getBody().get().getStatements();
+        NodeList<Statement> origStatementList = this.cloneInfo.methodDeclarationOfFirstFile.getBody().get().getStatements();
+        boolean foundStartLine = false;
+        for (int i = 0; i < prepStatementList.size(); i++) {
+            if (!foundStartLine && origStatementList.get(i).getBegin().get().line >= this.cloneInfo.cloneBlocks.getBlocks().get(0).getFrom()) {
+                if (compareStatements(origStatementList.get(i), prepStatementList.get(i))) {
+                    prepCloneInfo.startLine = prepStatementList.get(i).getBegin().get().line;
+                    foundStartLine = true;
+                }
+            } else if (origStatementList.get(i).getBegin().get().line <= this.cloneInfo.cloneBlocks.getBlocks().get(0).getFrom() + this.cloneInfo.cloneBlocks.getBlocks().get(0).getSize()) {
+                if (compareStatements(origStatementList.get(i), prepStatementList.get(i))) {
+                    prepCloneInfo.endLine = prepStatementList.get(i).getEnd().get().line;
+                }
+            }
+        }
+        return prepCloneInfo;
+    }
+
+    /**
+     * Return true if statements are identical
+     */
+    private boolean compareStatements(Statement stmt1, Statement stmt2) {
+        return stmt1.toString().equals(stmt2.toString());
+    }
+
+    /**
+     * Sort out all literals that are not different
+     */
+    private void checkLiterals() {
+        ArrayList<Integer> indexesToRemove = new ArrayList<>();
+        for (int i = 0; i < this.cloneInfo.cloneBlocks.getBlocks().get(0).getLiterals().size(); i++) {
+            LiteralInfo lastLiteral = this.cloneInfo.cloneBlocks.getBlocks().get(0).getLiterals().get(i);
+            boolean allEqual = true;
+            for (Block block : this.cloneInfo.cloneBlocks.getBlocks()) {
+                if (!lastLiteral.value.equals(block.getLiterals().get(i).value)) {
+                    allEqual = false;
+                    break;
+                }
+            }
+            if (allEqual) {
+                indexesToRemove.add(i);
+            }
+        }
+
+        // Remove all equal literals
+        Collections.reverse(indexesToRemove);
+        for (int literalIndex : indexesToRemove) {
+            for (Block block : this.cloneInfo.cloneBlocks.getBlocks()) {
+                block.getLiterals().remove(literalIndex);
+            }
+        }
+    }
+
+    /**
+     * Correct the duplicate lines and find all literals
+     */
+    private void analyseDuplicates(String repoFolderPath, Duplicates duplicates) throws IOException {
+        for (Block block : this.cloneInfo.cloneBlocks.getBlocks()) {
+            // Set file path of block
+            block.setFilePath(repoFolderPath + "/" + duplicates.getDuplicateFiles()
+                    .getFileInfo(block.getRef()).getFileName());
+
+            // Read file
+            FileInputStream in = new FileInputStream(block.getFilePath());
+            CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+            in.close();
+            Block tempBlock = getMethodDeclarationOfDuplicate(compilationUnit, block);
+            block.setMethodStartLine(tempBlock.getMethodStartLine());
+            block.setLiterals(tempBlock.getLiterals());
+        }
+    }
+
+    /**
+     * Get method start line and all literals of a clone block
+     *
+     * @param compUnit
+     * @param block
+     * @return
+     */
+    private Block getMethodDeclarationOfDuplicate(CompilationUnit compUnit, Block block) {
+        for (Node childNode : compUnit.getChildNodes()) {
+            if (childNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
+                // Get method declaration with clone
+                for (Node node : childNode.getChildNodes()) {
+                    if (node.getMetaModel() == JavaParserMetaModel.methodDeclarationMetaModel) {
+                        MethodDeclaration method = (MethodDeclaration) node;
+                        if (method.getBegin().get().line <= block.getFrom() && method.getEnd().get().line >= block.getFrom() + block.getSize()) {
+                            // Set method begin line
+                            block.setMethodStartLine(method.getBegin().get().line);
+                            // Get all literals
+                            block.setLiterals(RemoveCodeClonesUtil.getAllLiterals(method.getBody().get(), block.getFrom(), block.getFrom() + block.getSize()));
+                            return block;
+                        }
+                    }
+                }
+            }
+        }
+        return block;
+    }
+
+    /**
+     * Check if duplicates are removable
+     *
+     * @param repoFilePath
+     * @param duplicates
+     * @return
+     * @throws IOException
+     */
+    private boolean checkIfDuplicatesRemovable(String repoFilePath, Duplicates duplicates) throws IOException {
+        boolean foundRemovableDuplicates = false;
+        boolean inFile1 = true;
+
+        // Are all clone blocks in one file?
+        Blocks firstBlocks = duplicates.getDuplications().get(0);
+        for (Block block : firstBlocks.getBlocks()) {
+            if (block.getRef() != 1) {
+                inFile1 = false;
+            }
+        }
+
+        // Get main file
+        String filePath = duplicates.getDuplicateFiles().getFileInfo(duplicates.getDuplications().get(0).getBlocks().get(0).getRef()).getFileName();
+
+        // Read file
+        FileInputStream in = new FileInputStream(repoFilePath + "/" + filePath);
+        CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+        in.close();
+
+        ArrayList<MethodDeclaration> methods = new ArrayList<>();
+        for (Node childNode : compilationUnit.getChildNodes()) {
+            if (childNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
+
+                // Get all methods
+                for (Node node : childNode.getChildNodes()) {
+                    if (node.getMetaModel() == JavaParserMetaModel.methodDeclarationMetaModel) {
+                        MethodDeclaration method = (MethodDeclaration) node;
+                        if (method.getEnd().get().line - method.getBegin().get().line > 7) {
+                            methods.add(method);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Get only the first clone group and the method declaration of the first file (--> extracted method will be placed in file 1)
+        for (MethodDeclaration method : methods) {
+            if (method.getBegin().get().line <= duplicates.getDuplications().get(0).getBlocks().get(0).getFrom() &&
+            method.getEnd().get().line >= duplicates.getDuplications().get(0).getBlocks().get(0).getFrom() + duplicates.getDuplications().get(0).getBlocks().get(0).getSize()) {
+                this.cloneInfo.cloneBlocks = firstBlocks;
+                this.cloneInfo.allInFile1 = inFile1;
+                this.cloneInfo.methodDeclarationOfFirstFile = method;
+                return true;
+            }
+        }
+
+        return foundRemovableDuplicates;
+    }
+
+    /**
+     * Analyze a clone to get params for extracted method
+     *
+     * @param cloneInfo
+     * @return
+     */
+    private ArrayList<LocalVariable> findParamsForExtractedMethod(PreparedCodeCloneInfo cloneInfo) {
+        ArrayList<LocalVariable> params = new ArrayList<>();
+        ArrayList<Node> test = searchLine(cloneInfo.methodDeclaration, cloneInfo.startLine);
+
+        // Search method parameters
+        for (Parameter param : cloneInfo.methodDeclaration.getParameters()) {
+            if (searchVar(cloneInfo.methodDeclaration, param.getName(), cloneInfo.startLine, cloneInfo.endLine).size() > 0) {
+                params.add(new LocalVariable(param.getName().toString(), param.getType().toString()));
+            }
+        }
+
+        // Search local variables
+        for (Node varDecl : test) {
+            VariableDeclarator var = (VariableDeclarator) varDecl;
+            if (searchVar(cloneInfo.methodDeclaration, var.getName(), cloneInfo.startLine, cloneInfo.endLine).size() > 0) {
+                params.add(new LocalVariable(var.getName().toString(), var.getType().toString()));
+            }
+        }
+        return params;
+    }
+
+    /**
+     * Get all nodes until a certain line
+     *
+     * @param node
+     * @param line
+     * @return
+     */
+    private ArrayList<Node> searchLine(Node node, long line) {
+        ArrayList<Node> nodeList = new ArrayList<>();
+        for (Node childNode : node.getChildNodes()) {
+            if (childNode.getMetaModel() == JavaParserMetaModel.variableDeclaratorMetaModel && childNode.getBegin().get().line < line) {
+                nodeList.add(childNode);
+            }
+            nodeList.addAll(searchLine(childNode, line));
+        }
+        return nodeList;
+    }
+
+    /**
+     * Get all variables in between some lines
+     *
+     * @param node
+     * @param varName
+     * @param startLine
+     * @param endLine
+     * @return
+     */
+    private ArrayList<Node> searchVar(Node node, SimpleName varName, long startLine, long endLine) {
+        ArrayList<Node> nodeList = new ArrayList<>();
+        for (Node childNode : node.getChildNodes()) {
+            if (childNode.getMetaModel() == JavaParserMetaModel.simpleNameMetaModel && ((SimpleName) childNode).getIdentifier().equals(varName.getIdentifier())
+                    && childNode.getBegin().get().line >= startLine && childNode.getBegin().get().line <= endLine) {
+                nodeList.add(childNode);
+            }
+            nodeList.addAll(searchVar(childNode, varName, startLine, endLine));
+        }
+        return nodeList;
+    }
+
+    /**
+     * Get candidates that are possible to extract
+     *
+     * @param path
+     * @param cloneBeginLine
+     * @param cloneEndLine
+     * @return
+     */
     private RefactorCandidate getCandidates(String path, Long cloneBeginLine, Long cloneEndLine) {
         // parse Java
         ExtractMethodUtil.ParseResult parseResult = ExtractMethodUtil.parseJava(path);
@@ -198,11 +485,15 @@ public class RemoveCodeClones extends ModifierVisitor<Void> implements Refactori
                 return bestCandidate;
             }
         }
-        return null; // TODO null Rückgabe abfangen
+        return null;
     }
 
-    /*
+    /**
      * Search the code for clones without the information where they start.
+     *
+     * @param childNodes
+     * @param keepCloneNodes
+     * @return
      */
     private CodeCloneInfo searchChildNodes(List<Node> childNodes, boolean keepCloneNodes) {
 
@@ -260,6 +551,9 @@ public class RemoveCodeClones extends ModifierVisitor<Void> implements Refactori
                         // Save begin of the clones
                         cloneInfo.clone1BeginLine = c1.getBegin().get().line;
                         cloneInfo.clone2BeginLine = c2.getBegin().get().line;
+                        // Save method declaration
+                        cloneInfo.method1 = method1;
+                        cloneInfo.method2 = method2;
                     }
 
                     // Add comment lines to range
@@ -308,82 +602,307 @@ public class RemoveCodeClones extends ModifierVisitor<Void> implements Refactori
         }
     }
 
-    /*
-     * Searches after the code clone nodes and removes the nodes. It adds also a
-     * method call for the extracted method at the first code clone line of the
-     * methods.
+    /**
+     * Remove code clones
+     *
+     * @throws IOException
      */
-    private void removeCodeClones(CompilationUnit compilationUnit, CodeCloneInfo cloneInfo) {
+    private void removeCodeClones() throws IOException {
+        HashMap<Integer, ArrayList<Block>> blockChunks = new HashMap();
 
-        ArrayList<Node> nodesToDelete1 = new ArrayList<Node>();
-        ArrayList<Node> nodesToDelete2 = new ArrayList<Node>();
+        // Cluster all blocks which are in the same file to refactor them at the same time
+        for (Block block : cloneInfo.cloneBlocks.getBlocks()) {
+            if (!blockChunks.containsKey(block.getRef())) {
+                ArrayList<Block> temp = new ArrayList<>();
+                temp.add(block);
+                blockChunks.put(block.getRef(), temp);
+            } else {
+                ArrayList<Block> temp = blockChunks.get(block.getRef());
+                temp.add(block);
+                blockChunks.replace(block.getRef(), temp);
+            }
+        }
 
-        for (Node node : compilationUnit.getChildNodes()) {
-            if (node.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
-                for (Node childNode : node.getChildNodes()) {
-                    if (childNode.getMetaModel() == JavaParserMetaModel.methodDeclarationMetaModel) {
-                        for (Node node2 : childNode.getChildNodes()) {
-                            if (node2.getMetaModel() == JavaParserMetaModel.blockStmtMetaModel) {
+        // Remove block clusters at the same time
+        for (ArrayList<Block> blocks : blockChunks.values()) {
+            FileInputStream in = new FileInputStream(blocks.get(0).getFilePath());
+            CompilationUnit compUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+            in.close();
 
-                                for (Node node3 : node2.getChildNodes()) {
-                                    // Code Clone 1 nodes
-                                    if (node3.getBegin().get().line >= cloneInfo.clone1BeginLine
-                                            && node3.getBegin().get().line <= cloneInfo.clone1BeginLine + cloneInfo.clone1Range) {
-                                        nodesToDelete1.add(node3);
-                                    }
-                                    // Code Clone 2 nodes
-                                    if (node3.getBegin().get().line >= cloneInfo.clone2BeginLine
-                                            && node3.getBegin().get().line <= cloneInfo.clone2BeginLine + cloneInfo.clone2Range) {
-                                        nodesToDelete2.add(node3);
-                                    }
-                                }
+            // Get class name
+            String[] splitFilePath = blocks.get(0).getFilePath().split("/");
+            String fileName = splitFilePath[splitFilePath.length - 1];
 
+            removeNodesAndAddMethodCall(compUnit, blocks, fileName.replace(".java", ""));
+        }
+    }
+
+    /**
+     * Get all clone nodes that are save to extract from the best candidate
+     *
+     * @param prepCloneInfo
+     * @param candidate
+     */
+    private void extractCloneNodes(PreparedCodeCloneInfo prepCloneInfo, RefactorCandidate candidate) {
+        for (Node node : prepCloneInfo.methodDeclaration.getBody().get().getChildNodes()) {
+            if (node.getBegin().get().line >= candidate.startLine && node.getBegin().get().line <= candidate.endLine) {
+                this.cloneNodes.add(node);
+            }
+        }
+    }
+
+    /**
+     * Sort out all literals that are not in the clone
+     */
+    private void extractLiteralParameters() {
+        ArrayList<Integer> indexesToRemove = new ArrayList<>();
+        for (int i = 0; i < this.cloneInfo.cloneBlocks.getBlocks().get(0).getLiterals().size(); i++) {
+            boolean foundLiteral = false;
+            for (Node cloneNode : this.cloneNodes) {
+                if (cloneNode.getBegin().get().line == this.cloneInfo.cloneBlocks.getBlocks().get(0).getLiterals().get(i).position.line) {
+                    literalParams.add(new LocalVariable(this.cloneInfo.cloneBlocks.getBlocks().get(0).getLiterals().get(i).value,
+                            this.cloneInfo.cloneBlocks.getBlocks().get(0).getLiterals().get(i).type));
+                    foundLiteral = true;
+                    break;
+                }
+            }
+
+            // Remove all literals that are not in the clone
+            if (!foundLiteral) {
+                indexesToRemove.add(i);
+            }
+        }
+
+        // Remove all equal literals
+        Collections.reverse(indexesToRemove);
+        for (int literalIndex : indexesToRemove) {
+            for (Block block : this.cloneInfo.cloneBlocks.getBlocks()) {
+                block.getLiterals().remove(literalIndex);
+            }
+        }
+
+        // Get literal clone nodes for replacing later
+        for (Node cloneNode : this.cloneNodes) {
+            ArrayList<Node> allLiteralNodes = RemoveCodeClonesUtil.getAllLiteralNodes(cloneNode);
+            for (Node literalNode : allLiteralNodes) {
+                for (LiteralInfo literalInfo : this.cloneInfo.cloneBlocks.getBlocks().get(0).getLiterals()) {
+                    if (literalNode.getBegin().get().line == literalInfo.position.line && literalNode.toString().equals(literalInfo.value)) {
+                        cloneNodeLiterals.add(literalNode);
+                        break;
+                    }
+                }
+            }
+        }
+
+    }
+
+    /**
+     * Removes nodes and adds method call to the extracted method
+     *
+     * @param cu
+     * @param blocks
+     * @param className
+     * @throws IOException
+     */
+    private void removeNodesAndAddMethodCall(CompilationUnit cu, ArrayList<Block> blocks, String className) throws IOException {
+        ArrayList<Node> nodesToDelete = new ArrayList<>();
+        ArrayList<Integer> indexesForMethodCall = new ArrayList<>();
+
+        for (Block block : blocks) {
+            indexesForMethodCall.add(nodesToDelete.size());
+            MethodDeclaration foundMethod = new MethodDeclaration();
+            for (Node childNode : cu.getChildNodes()) {
+                if (childNode.getMetaModel() == JavaParserMetaModel.classOrInterfaceDeclarationMetaModel) {
+
+                    // Get method with clone
+                    for (Node node : childNode.getChildNodes()) {
+                        if (node.getMetaModel() == JavaParserMetaModel.methodDeclarationMetaModel) {
+                            MethodDeclaration method = (MethodDeclaration) node;
+                            if (method.getBegin().get().line == block.getMethodStartLine()) {
+                                foundMethod = method;
+                                break;
                             }
                         }
                     }
                 }
             }
 
-        }
-
-        removeNodesAndAddMethodCall(compilationUnit, nodesToDelete1);
-        removeNodesAndAddMethodCall(compilationUnit, nodesToDelete2);
-
-    }
-
-    /*
-     * Removes nodes and adds the method call for the extracted method.
-     */
-    private void removeNodesAndAddMethodCall(CompilationUnit cu, ArrayList<Node> nodesToDelete) {
-        boolean methodCallAdded = false;
-        for (Node node : nodesToDelete) {
-            if (!methodCallAdded) {
-                // Add method call of extracted method
-                cu.accept(new AddMethodCallVisitor(), node);
-                methodCallAdded = true;
-            } else {
-                // visit and delete Clone nodes
-                cu.accept(new RemoveNodeVisitor(), node);
+            // Get nodes to delete
+            for (Node cloneNode : this.cloneNodes) {
+                Node temp = cloneNode.clone();
+                String tempString = temp.toString();
+                for (Comment comment : temp.getAllContainedComments()) {
+                    tempString = tempString.replace(comment.getContent(), "");
+                }
+                tempString = tempString.replace(" ", "");
+                tempString = tempString.replaceAll("\\r\\n|\\r|\\n", " ");
+                for (Node node : foundMethod.getBody().get().getChildNodes()) {
+                    Node temp2 = node.clone();
+                    String temp2String = temp2.toString();
+                    for (Comment comment : temp2.getAllContainedComments()) {
+                        temp2String = temp2String.replace(comment.getContent(), "");
+                    }
+                    temp2String = temp2String.replace(" ", "");
+                    temp2String = temp2String.replaceAll("\\r\\n|\\r|\\n", " ");
+                    // if equal
+                    if (tempString.equals(temp2String)) {
+                        nodesToDelete.add(node);
+                        break;
+                    // if they have different literals
+                    } else {
+                        for (int i = 0; i < this.cloneInfo.cloneBlocks.getBlocks().get(0).getLiterals().size(); i++) {
+                            if (cloneNode.getBegin().get().line == this.cloneInfo.cloneBlocks.getBlocks().get(0).getLiterals().get(i).position.line) {
+                                if (node.getBegin().get().line == block.getLiterals().get(i).position.line) {
+                                    nodesToDelete.add(node);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
+
+        int blockIndex = 0;
+        for (int i = 0; i < nodesToDelete.size(); i++) {
+            if (indexesForMethodCall.contains(i)) {
+                // Add method call of extracted method
+                changeLiteralParameter(blockIndex);
+                AddMethodCallVisitor visitor = new AddMethodCallVisitor();
+                // If the extracted method and methodcall are in the same file
+                if (className.equals(this.cloneInfo.mainExtractFile)) {
+                    visitor.className = null;
+                } else {
+                    visitor.className = this.cloneInfo.mainExtractFile;
+                    visitor.constructorParams = this.cloneInfo.constructorParams;
+                    // Add import statement
+                    cu.addImport(this.cloneInfo.mainExtractPackage + "." + this.cloneInfo.mainExtractFile);
+                }
+                cu.accept(visitor, nodesToDelete.get(i));
+                blockIndex++;
+            } else {
+                // visit and delete Clone nodes
+                if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.expressionStmtMetaModel) {
+                    cu.accept(new RemoveNodeVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.forStmtMetaModel) {
+                    cu.accept(new RemoveForStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.ifStmtMetaModel) {
+                    cu.accept(new RemoveIfStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.switchStmtMetaModel) {
+                    cu.accept(new RemoveSwitchStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.continueStmtMetaModel) {
+                    cu.accept(new RemoveContinueStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.breakStmtMetaModel) {
+                    cu.accept(new RemoveBreakStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.tryStmtMetaModel) {
+                    cu.accept(new RemoveTryStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.throwStmtMetaModel) {
+                    cu.accept(new RemoveThrowStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.returnStmtMetaModel) {
+                    cu.accept(new RemoveReturnStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.whileStmtMetaModel) {
+                    cu.accept(new RemoveWhileStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.switchEntryStmtMetaModel) {
+                    cu.accept(new RemoveSwitchEntryStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.doStmtMetaModel) {
+                    cu.accept(new RemoveDoStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.forEachStmtMetaModel) {
+                    cu.accept(new RemoveForEachStmtVisitor(), nodesToDelete.get(i));
+                } else if (nodesToDelete.get(i).getMetaModel() == JavaParserMetaModel.synchronizedStmtMetaModel) {
+                    cu.accept(new RemoveSynchronizeStmtVisitor(), nodesToDelete.get(i));
+                }
+            }
+        }
+
+        // Write into file
+        PrintWriter out = new PrintWriter(blocks.get(0).getFilePath());
+        out.println(cu);
+        out.close();
     }
 
-    /*
-     * Creates extracted method and writes the new file with the refactored code.
+    /**
+     * Replace literals with variables
+     *
+     * @param blockIndex
      */
-    private void createExtractedMethod(CompilationUnit compilationUnit, String path)
-            throws FileNotFoundException, IOException {
+    private void changeLiteralParameter(int blockIndex) {
+        ArrayList<LocalVariable> newLiterals = new ArrayList<>();
+        for (LiteralInfo literalInfo : this.cloneInfo.cloneBlocks.getBlocks().get(blockIndex).getLiterals()) {
+            newLiterals.add(new LocalVariable(literalInfo.value, literalInfo.type));
+        }
+        literalParams = newLiterals;
+    }
+
+    /**
+     * Create extracted method in the main file
+     *
+     * @param path
+     * @throws IOException
+     */
+    private void createExtractedMethod(String path)
+            throws IOException {
+
+        FileInputStream in = new FileInputStream(path);
+        CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(JavaParser.parse(in));
+        in.close();
+
         // Go through all the types in the file
         NodeList<TypeDeclaration<?>> types = compilationUnit.getTypes();
         for (TypeDeclaration<?> type : types) {
 
             // Add extracted method
-            MethodDeclaration extractedMethod = type.addMethod(extractedMethodName, Modifier.PRIVATE);
+            MethodDeclaration extractedMethod = type.addMethod(extractedMethodName, Modifier.PUBLIC);
+
+            // Add parameters to method
+            for (LocalVariable param : params) {
+                extractedMethod.addParameter(param.type, param.name);
+            }
+            for (int i = 0; i < literalParams.size(); i++) {
+                extractedMethod.addParameter(literalParams.get(i).type, "literalParam" + i);
+            }
+
+            // Replace all different literals in the clone nodes
+            for (int i = 0; i < this.cloneNodeLiterals.size(); i++) {
+                Node cloneNodeLiteral = this.cloneNodeLiterals.get(i);
+                for (Node cloneNode : this.cloneNodes) {
+                    if (cloneNode.getBegin().get().line == cloneNodeLiteral.getBegin().get().line) {
+                        if (cloneNodeLiteral.getMetaModel() == JavaParserMetaModel.integerLiteralExprMetaModel) {
+                            ChangeIntLiteralVisitor visitor = new ChangeIntLiteralVisitor();
+                            visitor.varName = "literalParam" + i;
+                            cloneNode.accept(visitor, cloneNodeLiteral);
+                            break;
+                        } else if (cloneNodeLiteral.getMetaModel() == JavaParserMetaModel.stringLiteralExprMetaModel) {
+                            ChangeStringLiteralVisitor visitor = new ChangeStringLiteralVisitor();
+                            visitor.varName = "literalParam" + i;
+                            cloneNode.accept(visitor, cloneNodeLiteral);
+                            break;
+                        } else if (cloneNodeLiteral.getMetaModel() == JavaParserMetaModel.longLiteralExprMetaModel) {
+                            ChangeLongLiteralVisitor visitor = new ChangeLongLiteralVisitor();
+                            visitor.varName = "literalParam" + i;
+                            cloneNode.accept(visitor, cloneNodeLiteral);
+                            break;
+                        } else if (cloneNodeLiteral.getMetaModel() == JavaParserMetaModel.doubleLiteralExprMetaModel) {
+                            ChangeDoubleLiteralVisitor visitor = new ChangeDoubleLiteralVisitor();
+                            visitor.varName = "literalParam" + i;
+                            cloneNode.accept(visitor, cloneNodeLiteral);
+                            break;
+                        } else if (cloneNodeLiteral.getMetaModel() == JavaParserMetaModel.charLiteralExprMetaModel) {
+                            ChangeCharLiteralVisitor visitor = new ChangeCharLiteralVisitor();
+                            visitor.varName = "literalParam" + i;
+                            cloneNode.accept(visitor, cloneNodeLiteral);
+                            break;
+                        }
+                    }
+                }
+            }
 
             // Add return type
-            LocalVariable var = extractedMethodOutVariables.iterator().next();
+            LocalVariable var = new LocalVariable("test", "test");
             if (extractedMethodOutVariables.size() > 0) {
-                extractedMethod.setType(var.type);
+                var = extractedMethodOutVariables.iterator().next();
+                // if java.lang.Boolean
+                String varType = var.type.replace("java.lang.", "");
+                extractedMethod.setType(varType);
             }
             BlockStmt block = new BlockStmt();
             for (Node n : cloneNodes) {
@@ -399,11 +918,13 @@ public class RemoveCodeClones extends ModifierVisitor<Void> implements Refactori
         }
         // Write into file
         PrintWriter out = new PrintWriter(path);
+        // out.println(LexicalPreservingPrinter.print(compilationUnit));
         out.println(compilationUnit);
         out.close();
     }
 
-    // ------------------------------------------------------------------------------------------
+
+    // -------------------------------------- Visitor classes ----------------------------------------------------
 
     /**
      * Visitor implementation for removing nodes.
@@ -418,20 +939,246 @@ public class RemoveCodeClones extends ModifierVisitor<Void> implements Refactori
         }
     }
 
+    class RemoveForStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(ForStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveIfStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(IfStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveSwitchStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(SwitchStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveContinueStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(ContinueStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveBreakStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(BreakStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveTryStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(TryStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveThrowStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(ThrowStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveReturnStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(ReturnStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveWhileStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(WhileStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveSwitchEntryStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(SwitchEntryStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveDoStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(DoStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveForEachStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(ForEachStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class RemoveSynchronizeStmtVisitor extends ModifierVisitor<Node> {
+        @Override
+        public Visitable visit(SynchronizedStmt n, Node args) {
+            if (n == args) {
+                return null;
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class ChangeIntLiteralVisitor extends ModifierVisitor<Node> {
+        String varName;
+        @Override
+        public Visitable visit(IntegerLiteralExpr n, Node args) {
+            if (n == args) {
+                return new NameExpr(varName);
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class ChangeStringLiteralVisitor extends ModifierVisitor<Node> {
+        String varName;
+        @Override
+        public Visitable visit(StringLiteralExpr n, Node args) {
+            if (n == args) {
+                return new NameExpr(varName);
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class ChangeLongLiteralVisitor extends ModifierVisitor<Node> {
+        String varName;
+        @Override
+        public Visitable visit(LongLiteralExpr n, Node args) {
+            if (n == args) {
+                return new NameExpr(varName);
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class ChangeDoubleLiteralVisitor extends ModifierVisitor<Node> {
+        String varName;
+        @Override
+        public Visitable visit(DoubleLiteralExpr n, Node args) {
+            if (n == args) {
+                return new NameExpr(varName);
+            }
+            return super.visit(n, args);
+        }
+    }
+
+    class ChangeCharLiteralVisitor extends ModifierVisitor<Node> {
+        String varName;
+        @Override
+        public Visitable visit(CharLiteralExpr n, Node args) {
+            if (n == args) {
+                return new NameExpr(varName);
+            }
+            return super.visit(n, args);
+        }
+    }
+
     /**
      * Visitor implementation for adding method call of the extracted method.
      */
     class AddMethodCallVisitor extends ModifierVisitor<Node> {
+        String className;
+        ArrayList<String> constructorParams;
         @Override
         public Visitable visit(ExpressionStmt n, Node args) {
             if (n == args) {
-                // If the extracted method has a return value
-                if (extractedMethodOutVariables.size() > 0) {
-                    LocalVariable var = extractedMethodOutVariables.iterator().next();
-                    return new ExpressionStmt(new AssignExpr(new NameExpr(var.type + " " + var.name), new MethodCallExpr(new ThisExpr(), extractedMethodName), AssignExpr.Operator.ASSIGN));
-                } else {
-                    return new ExpressionStmt(new MethodCallExpr(new ThisExpr(), extractedMethodName));
+                NodeList<Expression> paramsForExtractedMethod = new NodeList<>();
+                for (LocalVariable param : params) {
+                    paramsForExtractedMethod.add(new NameExpr(param.name));
                 }
+                for (LocalVariable param : literalParams) {
+                    paramsForExtractedMethod.add(new NameExpr(param.name));
+                }
+
+                // If the extracted method has a return value
+                if (className == null) {
+                    if (extractedMethodOutVariables.size() > 0) {
+                        LocalVariable var = extractedMethodOutVariables.iterator().next();
+                        // if java.lang.Boolean
+                        String varType = var.type.replace("java.lang.", "");
+                        return new ExpressionStmt(new AssignExpr(new NameExpr(varType + " " + var.name), new MethodCallExpr(new ThisExpr(), extractedMethodName, paramsForExtractedMethod), AssignExpr.Operator.ASSIGN));
+                    } else {
+                        return new ExpressionStmt(new MethodCallExpr(new ThisExpr(), extractedMethodName, paramsForExtractedMethod));
+                    }
+                } else {
+                    String classNameExpr = "new " + className + "(";
+                    for (int i = 0; i < constructorParams.size(); i++) {
+                        if (constructorParams.get(i).equals("int")) {
+                            classNameExpr = classNameExpr + "1";
+                        } else if (constructorParams.get(i).equals("String")) {
+                            classNameExpr = classNameExpr + "test";
+                        } else if (constructorParams.get(i).equals("boolean")) {
+                            classNameExpr = classNameExpr + "true";
+                        } else {
+                            classNameExpr = classNameExpr + "null";
+                        }
+                        classNameExpr = classNameExpr + constructorParams.get(i);
+                        if (i != constructorParams.size() - 1) {
+                            classNameExpr = classNameExpr + ",";
+                        }
+                    }
+                    classNameExpr = classNameExpr + ")";
+                    if (extractedMethodOutVariables.size() > 0) {
+                        LocalVariable var = extractedMethodOutVariables.iterator().next();
+                        // if java.lang.Boolean
+                        String varType = var.type.replace("java.lang.", "");
+                        return new ExpressionStmt(new AssignExpr(new NameExpr(varType + " " + var.name), new MethodCallExpr(new NameExpr(classNameExpr), extractedMethodName, paramsForExtractedMethod), AssignExpr.Operator.ASSIGN));
+                    } else {
+                        return new ExpressionStmt(new MethodCallExpr(new NameExpr(classNameExpr), extractedMethodName, paramsForExtractedMethod));
+                    }
+                }
+
             }
             return super.visit(n, args);
         }

@@ -2,6 +2,7 @@ package de.refactoringBot.api.sonarQube;
 
 import java.net.URI;
 
+import de.refactoringBot.model.sonarQube.Duplicates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -55,6 +56,41 @@ public class SonarQubeDataGrabber {
 		// Send request
 		try {
 			return rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody();
+		} catch (RestClientException e) {
+			logger.error(e.getMessage(), e);
+			throw new Exception("Could not access SonarCube API!");
+		}
+	}
+
+	/**
+	 * This method gets all duplicates of a project.
+	 *
+	 * @param sonarQubeProjectKey
+	 * @param filePath
+	 * @return Duplicates
+	 * @throws Exception
+	 */
+	public Duplicates getDuplicatesData(String sonarQubeProjectKey, String filePath) throws Exception {
+		// Build URI
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("sonarcloud.io")
+				.path("api/duplications/show");
+
+		filePath = filePath.replace("\\", "/");
+		String keyParam = sonarQubeProjectKey + ":" + filePath;
+		apiUriBuilder.queryParam("key", keyParam);
+
+		URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
+
+		// Create REST-Template
+		RestTemplate rest = new RestTemplate();
+		// Build Header
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+
+		// Send request
+		try {
+			return rest.exchange(sonarQubeURI, HttpMethod.GET, entity, Duplicates.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
 			throw new Exception("Could not access SonarCube API!");
