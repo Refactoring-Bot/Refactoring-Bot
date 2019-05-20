@@ -41,7 +41,7 @@ public class GithubObjectTranslator {
 	private final GithubDataGrabber grabber;
 	private final ModelMapper modelMapper;
 	private final GitService gitService;
-	private static final String PULL_REQUEST_DESCRIPTION = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this pull request by creating line specific (review) comments inside the 'Files changed' tab of this pull request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
+	private static final String PULL_REQUEST_DESCRIPTION = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this pull request by creating line specific comments inside the 'Files changed' tab of this pull request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
 
 	@Autowired
 	public GithubObjectTranslator(GithubDataGrabber grabber, ModelMapper modelMapper, GitService gitService) {
@@ -168,27 +168,6 @@ public class GithubObjectTranslator {
 
 	/**
 	 * This method creates an object that can be used to create a Pull-Request on
-	 * GitHub after a request comment refactoring.
-	 * 
-	 * @param gitConfig
-	 * @return createRequest
-	 */
-	public GithubCreateRequest makeCreateRequest(BotPullRequest refactoredRequest, GitConfiguration gitConfig,
-			String botBranchName) {
-		GithubCreateRequest createRequest = new GithubCreateRequest();
-
-		// Fill object with data
-		createRequest.setTitle("Bot Pull-Request Refactoring for PullRequest #" + refactoredRequest.getRequestNumber());
-		createRequest.setBody(PULL_REQUEST_DESCRIPTION);
-		createRequest.setHead(gitConfig.getBotName() + ":" + botBranchName);
-		createRequest.setBase(refactoredRequest.getBranchName());
-		createRequest.setMaintainer_can_modify(true);
-
-		return createRequest;
-	}
-
-	/**
-	 * This method creates an object that can be used to create a Pull-Request on
 	 * GitHub after a analysis service refactoring.
 	 * 
 	 * @param gitConfig
@@ -200,7 +179,7 @@ public class GithubObjectTranslator {
 		GithubCreateRequest createRequest = new GithubCreateRequest();
 
 		// Fill object with data
-		createRequest.setTitle("Bot Pull-Request Refactoring with '" + gitConfig.getAnalysisService() + "'");
+		createRequest.setTitle(issue.getCommitMessage());
 		createRequest.setBody(PULL_REQUEST_DESCRIPTION);
 		createRequest.setHead(gitConfig.getBotName() + ":" + newBranch);
 		createRequest.setBase("master");

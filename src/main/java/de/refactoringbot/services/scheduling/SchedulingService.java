@@ -37,7 +37,7 @@ public class SchedulingService {
 	 * This method performs a scheduled refactoring on all configurations with a
 	 * delay of 1 minute. It only performs refactorings with comments.
 	 */
-	@Scheduled(fixedDelay = 60000)
+	@Scheduled(fixedDelayString = "${scheduling.delayInMS:10000}")
 	public void performCommentRefactorings() {
 		
 		if(!isSchedulingEnabled) {

@@ -50,7 +50,7 @@ public class AddOverrideAnnotation implements RefactoringImpl {
 		out.close();
 
 		// Return commit message
-		return "Added override annotation to method " + methodDeclarationToModify.getNameAsString();
+		return "Added override annotation to method '" + methodDeclarationToModify.getNameAsString() + "'";
 	}
 
 	/**

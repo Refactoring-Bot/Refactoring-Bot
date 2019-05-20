@@ -40,7 +40,7 @@ public class GitlabObjectTranslator {
 
 	private final GitlabDataGrabber grabber;
 	private final ModelMapper modelMapper;
-	private static final String PULL_REQUEST_DESCRIPTION = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this merge request by creating line specific (review) comments inside the 'Changes' tab of this merge request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
+	private static final String PULL_REQUEST_DESCRIPTION = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this merge request by creating line specific comments inside the 'Changes' tab of this merge request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
 
 	@Autowired
 	public GitlabObjectTranslator(GitlabDataGrabber grabber, ModelMapper modelMapper) {
@@ -167,31 +167,6 @@ public class GitlabObjectTranslator {
 		}
 
 		return translatedComments;
-	}
-
-	/**
-	 * This method creates an object that can be used to create a Pull-Request on
-	 * GitLab after a comment refactoring.
-	 * 
-	 * @param request
-	 * @param gitConfig
-	 * @param botBranchName
-	 * @return createRequest
-	 */
-	public GitLabCreateRequest makeCreateRequest(BotPullRequest refactoredRequest, GitConfiguration gitConfig,
-			String botBranchName) {
-		GitLabCreateRequest createRequest = new GitLabCreateRequest();
-
-		// Fill object with data
-		createRequest
-				.setTitle("Bot Merge-Request Refactoring for Merge-Request #" + refactoredRequest.getRequestNumber());
-		createRequest.setDescription(PULL_REQUEST_DESCRIPTION);
-		createRequest.setSource_branch(botBranchName);
-		createRequest.setTarget_branch(refactoredRequest.getBranchName());
-		createRequest.setAllow_collaboration(true);
-		createRequest.setTarget_project_id(getProjectId(gitConfig.getRepoApiLink()));
-
-		return createRequest;
 	}
 
 	/**
