@@ -49,7 +49,7 @@ public class TestDataClassImmediatelyReturnExpression {
 		return result;
 	}
 
-	public static int getLineOfResultAssignmentWithLineComment() {
+	public static int getLineOfResultAssignmentWithLineEndComment() {
 		int result = 53; // comment
 		return result;
 	}
