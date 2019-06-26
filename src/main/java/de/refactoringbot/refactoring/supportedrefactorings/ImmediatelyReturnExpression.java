@@ -79,9 +79,12 @@ public class ImmediatelyReturnExpression implements RefactoringImpl {
 		return "Immediately return the expression assigned to variable '" + variableName + "'.";
 	}
 
-	protected VariableDeclarator findVariableDeclarator(int lineWithStmtToBeReturned, CompilationUnit cu) {
+	protected VariableDeclarator findVariableDeclarator(int lineWithStmtToBeReturned, CompilationUnit cu) throws BotRefactoringException {
 		VariableDeclarationExpr variableDeclarationExpr = RefactoringHelper
 				.getVariableDeclarationExprByLineNumber(lineWithStmtToBeReturned, cu);
+		if (variableDeclarationExpr == null) {
+			throw new BotRefactoringException("Could not find a variable declaration at the specified line.");
+		}
 		if (variableDeclarationExpr.getVariables().size() > 1) {
 			throw new UnsupportedOperationException(
 					"Refactoring not yet supported for multiple variables declared at the same line.");

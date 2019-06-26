@@ -106,10 +106,10 @@ public class ImmediatelyReturnExpressionTest extends AbstractRefactoringTests {
 	}
 
 	@Test
-	public void testResultAssignmentWithLineComment() throws Exception {
+	public void testResultAssignmentWithLineEndComment() throws Exception {
 		// arrange
 		int lineOfResultAssignment = TestDataClassImmediatelyReturnExpression
-				.getLineOfResultAssignmentWithLineComment();
+				.getLineOfResultAssignmentWithLineEndComment();
 
 		// act
 		File modifiedTempFile = performRefactoring(lineOfResultAssignment);
