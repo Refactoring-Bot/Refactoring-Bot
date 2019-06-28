@@ -19,11 +19,9 @@ import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
-import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
 import de.refactoringbot.model.github.repository.GithubRepository;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabCreateRequest;
-import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequest;
 import de.refactoringbot.model.gitlab.pullrequest.GitLabPullRequests;
 import de.refactoringbot.model.gitlab.repository.GitLabRepository;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
@@ -110,38 +108,6 @@ public class ApiGrabber {
 		case gitlab:
 			gitlabGrabber.respondToUser(gitConfig, request.getRequestNumber(), comment.getDiscussionID(),
 					comment.getCommentID(), gitlabTranslator.getReplyComment(null));
-			break;
-		}
-	}
-
-	/**
-	 * This method creates a pull request of a filehoster.
-	 * 
-	 * @param request
-	 * @param gitConfig
-	 * @throws Exception
-	 */
-	public void makeCreateRequest(BotPullRequest request, BotPullRequestComment comment, GitConfiguration gitConfig,
-			String botBranchName) throws Exception {
-		// Pick filehoster
-		switch (gitConfig.getRepoService()) {
-		case github:
-			// Create PR Object
-			GithubCreateRequest createRequest = githubTranslator.makeCreateRequest(request, gitConfig, botBranchName);
-			// Create PR on filehoster
-			GithubPullRequest newGithubRequest = githubGrabber.createRequest(createRequest, gitConfig);
-			githubGrabber.responseToBotComment(
-					githubTranslator.createReplyComment(comment, newGithubRequest.getHtmlUrl()), gitConfig,
-					request.getRequestNumber());
-			break;
-		case gitlab:
-			// Create PR Object
-			GitLabCreateRequest gitlabCreateRequest = gitlabTranslator.makeCreateRequest(request, gitConfig,
-					botBranchName);
-			// Create PR on filehoster
-			GitLabPullRequest newGitLabRequest = gitlabGrabber.createRequest(gitlabCreateRequest, gitConfig);
-			gitlabGrabber.respondToUser(gitConfig, request.getRequestNumber(), comment.getDiscussionID(),
-					comment.getCommentID(), gitlabTranslator.getReplyComment(newGitLabRequest.getWebUrl()));
 			break;
 		}
 	}

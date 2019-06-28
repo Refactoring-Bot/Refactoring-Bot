@@ -19,12 +19,7 @@ import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
-import de.refactoringbot.model.exceptions.BotRefactoringException;
-import de.refactoringbot.model.exceptions.DatabaseConnectionException;
-import de.refactoringbot.model.exceptions.GitHubAPIException;
-import de.refactoringbot.model.exceptions.GitLabAPIException;
-import de.refactoringbot.model.exceptions.GitWorkflowException;
-import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
+import de.refactoringbot.model.exceptions.*;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -101,7 +96,7 @@ public class RefactoringService {
 
 		// Return all refactored issues
 		if (isCommentRefactoring) {
-			return processComments(config, allRequests, amountOfBotRequests);
+			return processComments(config, allRequests);
 		} else {
 			return processAnalysisIssues(config, amountOfBotRequests);
 		}
@@ -116,7 +111,15 @@ public class RefactoringService {
 	 * @return response
 	 */
 	private ResponseEntity<?> processAnalysisIssues(GitConfiguration config, int amountBotRequests) {
+
+		if (amountBotRequests >= config.getMaxAmountRequests()) {
+            return new ResponseEntity<String>(
+                    "The maximum number of open pull requests created by the Bot has been reached!",
+                    HttpStatus.BAD_REQUEST);
+		}
+
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
+
 		try {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
@@ -133,7 +136,7 @@ public class RefactoringService {
 					// If issue was not already refactored
 					if (isAnalysisIssueValid(botIssue)) {
 						// Perform refactoring
-						allRefactoredIssues.add(refactorIssue(false, false, config, null, null, botIssue));
+						allRefactoredIssues.add(refactorIssue(false, config, null, null, botIssue));
 						amountBotRequests++;
 					}
 				} catch (Exception e) {
@@ -156,57 +159,61 @@ public class RefactoringService {
 	 * 
 	 * @param config
 	 * @param allRequests
-	 * @param amountOfBotRequests
 	 * @return response
 	 */
-	private ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests,
-			int amountBotRequests) {
+	private ResponseEntity<?> processComments(GitConfiguration config, BotPullRequests allRequests) {
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 
 		for (BotPullRequest request : allRequests.getAllPullRequests()) {
-			for (BotPullRequestComment comment : request.getAllComments()) {
-				if (isAlreadyRefactored(config, comment)) {
-					continue;
-				}
-
-				BotIssue botIssue;
-
-				if (grammarService.isBotMentionedInComment(comment.getCommentBody(), config)
-						&& !grammarService.isCommentByBot(comment.getUsername(), config)) {
-					// If can NOT parse comment with ANTLR
-					if (!grammarService.checkComment(comment.getCommentBody(), config)) {
-						// Try to parse with wit.ai
-						try {
-							botIssue = witService.createBotIssue(config, comment);
-							logger.info("Comment translated with 'wit.ai': " + comment.getCommentBody());
-						} catch (IOException e) {
-							logger.error(e.getMessage(), e);
-							botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
-							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
-							return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-						} catch (ReviewCommentUnclearException e) {
-							logger.warn(
-									"Comment translation with 'wit.ai' failed! Comment: " + comment.getCommentBody());
-							botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
-							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
-							continue;
-						}
-					} else {
-						// Try to refactor with ANTRL4
-						try {
-							// If ANTLR can parse -> create Issue
-							botIssue = grammarService.createIssueFromComment(comment, config);
-							logger.info("Comment translated with 'ANTLR': " + comment.getCommentBody());
-						} catch (Exception g) {
-							logger.error(g.getMessage(), g);
-							// If refactoring failed
-							botIssue = createBotIssueFromInvalidComment(comment, g.getMessage());
-							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
-							continue;
-						}
+			// Check only PR's of the Bot
+			if (request.getCreatorName().equals(config.getBotName())) {
+				for (BotPullRequestComment comment : request.getAllComments()) {
+					if (isAlreadyRefactored(config, comment)) {
+						continue;
 					}
-					// Refactor the created BotIssue
-					allRefactoredIssues.add(refactorComment(config, botIssue, request, comment, amountBotRequests));
+
+					BotIssue botIssue;
+
+					if (grammarService.isBotMentionedInComment(comment.getCommentBody(), config)
+							&& !grammarService.isCommentByBot(comment.getUsername(), config)) {
+						// If can NOT parse comment with ANTLR
+						if (!grammarService.checkComment(comment.getCommentBody(), config)) {
+							// Try to parse with wit.ai
+							try {
+								botIssue = witService.createBotIssue(config, comment);
+								logger.info("Comment translated with 'wit.ai': " + comment.getCommentBody());
+							} catch (IOException e) {
+								logger.error(e.getMessage(), e);
+								botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
+								allRefactoredIssues
+										.add(processFailedRefactoring(config, comment, request, botIssue, true));
+								return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+							} catch (ReviewCommentUnclearException e) {
+								logger.warn("Comment translation with 'wit.ai' failed! Comment: "
+										+ comment.getCommentBody());
+								botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
+								allRefactoredIssues
+										.add(processFailedRefactoring(config, comment, request, botIssue, true));
+								continue;
+							}
+						} else {
+							// Try to refactor with ANTRL4
+							try {
+								// If ANTLR can parse -> create Issue
+								botIssue = grammarService.createIssueFromComment(comment, config);
+								logger.info("Comment translated with 'ANTLR': " + comment.getCommentBody());
+							} catch (Exception g) {
+								logger.error(g.getMessage(), g);
+								// If refactoring failed
+								botIssue = createBotIssueFromInvalidComment(comment, g.getMessage());
+								allRefactoredIssues
+										.add(processFailedRefactoring(config, comment, request, botIssue, true));
+								continue;
+							}
+						}
+						// Refactor the created BotIssue
+						allRefactoredIssues.add(refactorComment(config, botIssue, request, comment));
+					}
 				}
 			}
 		}
@@ -226,24 +233,13 @@ public class RefactoringService {
 	 * @return refactoredIssue
 	 */
 	private RefactoredIssue refactorComment(GitConfiguration config, BotIssue botIssue, BotPullRequest request,
-			BotPullRequestComment comment, int amountBotRequests) {
+			BotPullRequestComment comment) {
 
 		RefactoredIssue refactoredIssue = null;
 
-		// Refactor the created BotIssue
 		try {
-			// For Requests created by someone else
-			if (!request.getCreatorName().equals(config.getBotName())) {
-				if (amountBotRequests >= config.getMaxAmountRequests()) {
-					return null;
-				}
-				// Perform refactoring
-				refactoredIssue = refactorIssue(false, true, config, comment, request, botIssue);
-				amountBotRequests++;
-				// For Requests created by the bot
-			} else {
-				refactoredIssue = refactorIssue(true, true, config, comment, request, botIssue);
-			}
+			// Perform refactoring
+			refactoredIssue = refactorIssue(true, config, comment, request, botIssue);
 		} catch (BotRefactoringException e) {
 			// If refactoring failed
 			botIssue.setErrorMessage(e.getMessage());
@@ -263,70 +259,41 @@ public class RefactoringService {
 	 * This method configures the local workspace, refactors the issue, pushes the
 	 * changes and creates an PR.
 	 * 
-	 * @param isBotPR
 	 * @param isCommentRefactoring
 	 * @param config
 	 * @param comment
 	 * @param request
 	 * @param botIssue
-	 * @param allRefactoredIssues
 	 * @return allRefactoredIssues
 	 * @throws Exception
 	 */
-	private RefactoredIssue refactorIssue(boolean isBotPR, boolean isCommentRefactoring, GitConfiguration config,
+	private RefactoredIssue refactorIssue(boolean isCommentRefactoring, GitConfiguration config,
 			BotPullRequestComment comment, BotPullRequest request, BotIssue botIssue) throws Exception {
 		// If refactoring via comment
 		if (isCommentRefactoring) {
-			// If PR owner = bot
-			if (isBotPR) {
-				// Change to existing Refactoring-Branch
-				gitService.switchBranch(config, request.getBranchName());
-				
-				// Add current filepaths to Issue
-				botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
+			// Change to existing Refactoring-Branch
+			gitService.switchBranch(config, request.getBranchName());
 
-				// Try to refactor
-				botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
+			// Add current filepaths to Issue
+			botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 
-				// If successful
-				if (botIssue.getCommitMessage() != null) {
-					// Create Refactored-Object
-					RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
+			// Try to refactor
+			botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
 
-					// Push changes
-					gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
-					// Reply to User
-					apiGrabber.replyToUserInsideBotRequest(request, comment, config);
+			// If successful
+			if (botIssue.getCommitMessage() != null) {
+				// Create Refactored-Object
+				RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
 
-					// Save and return refactored issue
-					return issueRepo.save(refactoredIssue);
-				}
-				// If PR owner != bot
-			} else {
-				// Create refactoring branch with Filehoster-Service + Comment-ID
-				String newBranch = config.getRepoService() + "_Refactoring_" + comment.getCommentID().toString();
-				// Check if branch already exists (throws exception if it does)
-				apiGrabber.checkBranch(config, newBranch);
-				// Create new Branch
-				gitService.createBranch(config, request.getBranchName(), newBranch, "upstream");
-				// Add current filepaths to Issue
-				botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
-				// Try to refactor
-				botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
+				// Push changes
+				gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
+				// Reply to User
+				apiGrabber.replyToUserInsideBotRequest(request, comment, config);
 
-				// If successful
-				if (botIssue.getCommitMessage() != null) {
-					// Create Refactored-Object
-					RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
-
-					// Push changes + create Pull-Request
-					gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
-					apiGrabber.makeCreateRequest(request, comment, config, newBranch);
-
-					// Save and return refactored issue
-					return issueRepo.save(refactoredIssue);
-				}
+				// Save and return refactored issue
+				return issueRepo.save(refactoredIssue);
 			}
+
 			// If analysis service refactoring
 		} else {
 			// Create new branch for refactoring
@@ -494,23 +461,25 @@ public class RefactoringService {
 
 		return issue;
 	}
-	
+
 	/**
 	 * This method updates a BotIssue with up-to-date file paths.
+	 * 
 	 * @param botIssue
 	 * @param isCommentRefactoring
 	 * @param config
 	 * @return botIssue
 	 * @throws IOException
 	 */
-	private BotIssue addUpToDateFilePaths(BotIssue botIssue, Boolean isCommentRefactoring, GitConfiguration config) throws IOException {
+	private BotIssue addUpToDateFilePaths(BotIssue botIssue, Boolean isCommentRefactoring, GitConfiguration config)
+			throws IOException {
 		botIssue.setAllJavaFiles(fileService.getAllJavaFiles(config.getRepoFolder()));
 		botIssue.setJavaRoots(fileService.findJavaRoots(botIssue.getAllJavaFiles()));
-		
+
 		if (!isCommentRefactoring) {
 			botIssue.setFilePath(apiGrabber.getAnalysisServiceAbsoluteIssuePath(config, botIssue.getFilePath()));
 		}
-		
+
 		return botIssue;
 	}
 }
