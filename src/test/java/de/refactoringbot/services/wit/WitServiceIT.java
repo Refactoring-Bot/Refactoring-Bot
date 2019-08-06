@@ -3,8 +3,6 @@ package de.refactoringbot.services.wit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.IOException;
-
 import org.assertj.core.api.SoftAssertions;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,6 +17,7 @@ import de.refactoringbot.api.wit.WitDataGrabber;
 import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
+import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
 import de.refactoringbot.refactoring.RefactoringOperations;
 
@@ -165,7 +164,7 @@ public class WitServiceIT {
 	}
 
 	private BotIssue createBotIssueForCommentBody(String commentBody)
-			throws ReviewCommentUnclearException, IOException {
+			throws ReviewCommentUnclearException, WitAPIException {
 		// arrange
 		BotPullRequestComment comment = new BotPullRequestComment();
 		comment.setCommentID(1);

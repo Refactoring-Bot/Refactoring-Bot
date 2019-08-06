@@ -25,6 +25,7 @@ import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
 import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
+import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -186,14 +187,8 @@ public class RefactoringService {
 							// Try to parse with wit.ai
 							try {
 								botIssue = witService.createBotIssue(comment);
-								logger.info("Comment translated with 'wit.ai': " + comment.getCommentBody());
-							} catch (IOException e) {
-								logger.error(e.getMessage(), e);
-								botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
-								allRefactoredIssues
-										.add(processFailedRefactoring(config, comment, request, botIssue, true));
-								return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-							} catch (ReviewCommentUnclearException e) {
+								logger.info("Comment translated with 'wit.ai': {}", comment.getCommentBody());
+							} catch (ReviewCommentUnclearException | WitAPIException e) {
 								logger.warn("Comment translation with 'wit.ai' failed! Comment: "
 										+ comment.getCommentBody());
 								botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
@@ -206,7 +201,7 @@ public class RefactoringService {
 							try {
 								// If ANTLR can parse -> create Issue
 								botIssue = grammarService.createIssueFromComment(comment, config);
-								logger.info("Comment translated with 'ANTLR': " + comment.getCommentBody());
+								logger.info("Comment translated with 'ANTLR': {}", comment.getCommentBody());
 							} catch (Exception g) {
 								logger.error(g.getMessage(), g);
 								// If refactoring failed

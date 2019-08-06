@@ -1,7 +1,5 @@
 package de.refactoringbot.services.wit;
 
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,22 +41,18 @@ public class WitService {
 	 * @param comment
 	 * @return botIssue
 	 * @throws ReviewCommentUnclearException
+	 * @throws WitAPIException
 	 */
 	public BotIssue createBotIssue(BotPullRequestComment comment)
-			throws ReviewCommentUnclearException, IOException {
-		try {
-			BotIssue issue = new BotIssue();
+			throws ReviewCommentUnclearException, WitAPIException {
+		BotIssue issue = new BotIssue();
 
-			issue.setCommentServiceID(comment.getCommentID().toString());
-			issue.setLine(comment.getPosition());
-			issue.setFilePath(comment.getFilepath());
+		issue.setCommentServiceID(comment.getCommentID().toString());
+		issue.setLine(comment.getPosition());
+		issue.setFilePath(comment.getFilepath());
 
-			mapCommentBodyToIssue(issue, comment.getCommentBody());
-			return issue;
-		} catch (WitAPIException | ReviewCommentUnclearException e) {
-			logger.error(e.getMessage());
-			throw new ReviewCommentUnclearException(e.getMessage());
-		}
+		mapCommentBodyToIssue(issue, comment.getCommentBody());
+		return issue;
 	}
 
 	/**
@@ -71,14 +65,12 @@ public class WitService {
 	 */
 	private void mapCommentBodyToIssue(BotIssue issue, String commentBody)
 			throws WitAPIException, ReviewCommentUnclearException {
-		// Anonymize possible sensitive data
 		commentBody = dataAnonymizer.anonymizeComment(commentBody);
+		logger.info("Anonymized comment: {}", commentBody);
 
-		logger.info("Anonymized comment: " + commentBody);
-		// Get Wit-Object from Wit-API
 		WitObject witObject = witDataGrabber.getWitObjectFromComment(commentBody);
 
-		// If wit returns multiple operations or none refactorings
+		// If wit returns multiple operations or no refactoring at all
 		if (witObject.getEntities().getRefactoring().size() != 1) {
 			throw new ReviewCommentUnclearException("Not sure what refactoring to execute!");
 		}
@@ -87,66 +79,79 @@ public class WitService {
 		WitEntity refactoring = witObject.getEntities().getRefactoring().get(0);
 
 		if (refactoring.getValue().equals("ADD-ANNOTATION")) {
-			// If 0/2+ possilbe annotations returned
-			if (witObject.getEntities().getJavaAnnotations().size() != 1) {
-				throw new ReviewCommentUnclearException(
-						"You proposed a 'add annotation' refactoring without telling me what annotation to add!");
-			}
-			// Read unique java annotation
-			WitEntity javaAnnot = witObject.getEntities().getJavaAnnotations().get(0);
-			// If override annotation returned
-			if (javaAnnot.getValue().equals("Override")) {
-				issue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
-				// If some unknown annotation returned
-			} else {
-				throw new ReviewCommentUnclearException("Adding '" + javaAnnot.getValue() + "' is not supported!");
-			}
-		}
-
-		else if (refactoring.getValue().equals("REORDER-MODIFIER")) {
-			// Annotations or refactoring strings are not involved
-			if (witObject.getEntities().getRefactoringString().size() != 0
-					|| witObject.getEntities().getJavaAnnotations().size() != 0) {
-				logger.warn(
-						"Wit detected an 'reorder string' and/or 'annotation' on a 'reorder modifier' refactoring! Comment: "
-								+ commentBody);
-			}
-			issue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
-		}
-
-		else if (refactoring.getValue().equals("RENAME-METHOD")) {
-			// If new method name is uncertain
-			if (witObject.getEntities().getRefactoringString().size() != 1) {
-				throw new ReviewCommentUnclearException(
-						"You proposed a 'rename method' refactoring without telling me the new method name!");
-			}
-			// Annotations are not involved
-			if (witObject.getEntities().getJavaAnnotations().size() != 0) {
-				logger.warn("Wit detected an 'annotation' on a 'rename method' refactoring! Comment: " + commentBody);
-			}
-			// Read unique refactoring string (method name object)
-			WitEntity refStr = witObject.getEntities().getRefactoringString().get(0);
-			issue.setRefactoringOperation(RefactoringOperations.RENAME_METHOD);
-			issue.setRefactorString(refStr.getValue());
-		}
-
-		else if (refactoring.getValue().equals("REMOVE-PARAMETER")) {
-			// If parameter name is uncertain
-			if (witObject.getEntities().getRefactoringString().size() != 1) {
-				throw new ReviewCommentUnclearException(
-						"You proposed a 'remove parameter' refactoring without telling me the name of the parameter you want to remove!");
-			}
-			// Annotations are not involved
-			if (witObject.getEntities().getJavaAnnotations().size() != 0) {
-				logger.warn(
-						"Wit detected an 'annotation' on a 'remove parameter' refactoring! Comment: " + commentBody);
-			}
-			// Read unique refactoring string (parameter name object)
-			WitEntity refStr = witObject.getEntities().getRefactoringString().get(0);
-			issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
-			issue.setRefactorString(refStr.getValue());
+			handleCommentForAddAnnotation(issue, witObject);
+		} else if (refactoring.getValue().equals("REORDER-MODIFIER")) {
+			handleCommentForReorderModifier(issue, commentBody, witObject);
+		} else if (refactoring.getValue().equals("RENAME-METHOD")) {
+			handleCommentForRenameMethod(issue, commentBody, witObject);
+		} else if (refactoring.getValue().equals("REMOVE-PARAMETER")) {
+			handleCommentForRemoveParameter(issue, commentBody, witObject);
 		} else {
 			throw new ReviewCommentUnclearException("I don't know what refactoring you want me to perform!");
 		}
+	}
+
+	private void handleCommentForAddAnnotation(BotIssue issue, WitObject witObject)
+			throws ReviewCommentUnclearException {
+		boolean isAnnotationAmbiguous = (witObject.getEntities().getJavaAnnotations().size() != 1); 
+		if (isAnnotationAmbiguous) {
+			throw new ReviewCommentUnclearException(
+					"You proposed a 'add annotation' refactoring without telling me what annotation to add!");
+		}
+
+		WitEntity javaAnnot = witObject.getEntities().getJavaAnnotations().get(0);
+
+		if (javaAnnot.getValue().equals("Override")) {
+			issue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
+		} else {
+			throw new ReviewCommentUnclearException("Adding '" + javaAnnot.getValue() + "' is not supported!");
+		}
+	}
+
+	private void handleCommentForReorderModifier(BotIssue issue, String commentBody, WitObject witObject) {
+		// Annotations or refactoring strings are not involved
+		if (!witObject.getEntities().getRefactoringString().isEmpty()
+				|| !witObject.getEntities().getJavaAnnotations().isEmpty()) {
+			logger.warn(
+					"Wit detected an 'reorder string' and/or 'annotation' on a 'reorder modifier' refactoring! Comment: {} ",
+					commentBody);
+		}
+		issue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
+	}
+
+	private void handleCommentForRenameMethod(BotIssue issue, String commentBody, WitObject witObject)
+			throws ReviewCommentUnclearException {
+		boolean isNewMethodNameAmbiguous = (witObject.getEntities().getRefactoringString().size() != 1);
+		if (isNewMethodNameAmbiguous) {
+			throw new ReviewCommentUnclearException(
+					"You proposed a 'rename method' refactoring without telling me the new method name!");
+		}
+		
+		// Annotations are not involved
+		if (!witObject.getEntities().getJavaAnnotations().isEmpty()) {
+			logger.warn("Wit detected an 'annotation' on a 'rename method' refactoring! Comment: {}", commentBody);
+		}
+		
+		WitEntity refStr = witObject.getEntities().getRefactoringString().get(0);
+		issue.setRefactoringOperation(RefactoringOperations.RENAME_METHOD);
+		issue.setRefactorString(refStr.getValue());
+	}
+
+	private void handleCommentForRemoveParameter(BotIssue issue, String commentBody, WitObject witObject)
+			throws ReviewCommentUnclearException {
+		boolean isParameterNameAmbiguous = (witObject.getEntities().getRefactoringString().size() != 1);
+		if (isParameterNameAmbiguous) {
+			throw new ReviewCommentUnclearException(
+					"You proposed a 'remove parameter' refactoring without telling me the name of the parameter you want to remove!");
+		}
+		
+		// Annotations are not involved
+		if (!witObject.getEntities().getJavaAnnotations().isEmpty()) {
+			logger.warn("Wit detected an 'annotation' on a 'remove parameter' refactoring! Comment: {}", commentBody);
+		}
+
+		WitEntity refStr = witObject.getEntities().getRefactoringString().get(0);
+		issue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
+		issue.setRefactorString(refStr.getValue());
 	}
 }
