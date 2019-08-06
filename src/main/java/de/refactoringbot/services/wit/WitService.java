@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import de.refactoringbot.api.wit.WitDataGrabber;
 import de.refactoringbot.model.botissue.BotIssue;
-import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
 import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -41,12 +40,11 @@ public class WitService {
 	 * This method creates a BotIssue from a message with the help of the wit.ai
 	 * service.
 	 * 
-	 * @param gitConfig
 	 * @param comment
 	 * @return botIssue
 	 * @throws ReviewCommentUnclearException
 	 */
-	public BotIssue createBotIssue(GitConfiguration gitConfig, BotPullRequestComment comment)
+	public BotIssue createBotIssue(BotPullRequestComment comment)
 			throws ReviewCommentUnclearException, IOException {
 		try {
 			BotIssue issue = new BotIssue();
@@ -58,7 +56,7 @@ public class WitService {
 			mapCommentBodyToIssue(issue, comment.getCommentBody());
 			return issue;
 		} catch (WitAPIException | ReviewCommentUnclearException e) {
-			logger.error(e.getMessage(), e);
+			logger.error(e.getMessage());
 			throw new ReviewCommentUnclearException(e.getMessage());
 		}
 	}

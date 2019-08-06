@@ -19,7 +19,12 @@ import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
-import de.refactoringbot.model.exceptions.*;
+import de.refactoringbot.model.exceptions.BotRefactoringException;
+import de.refactoringbot.model.exceptions.DatabaseConnectionException;
+import de.refactoringbot.model.exceptions.GitHubAPIException;
+import de.refactoringbot.model.exceptions.GitLabAPIException;
+import de.refactoringbot.model.exceptions.GitWorkflowException;
+import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -180,7 +185,7 @@ public class RefactoringService {
 						if (!grammarService.checkComment(comment.getCommentBody(), config)) {
 							// Try to parse with wit.ai
 							try {
-								botIssue = witService.createBotIssue(config, comment);
+								botIssue = witService.createBotIssue(comment);
 								logger.info("Comment translated with 'wit.ai': " + comment.getCommentBody());
 							} catch (IOException e) {
 								logger.error(e.getMessage(), e);
