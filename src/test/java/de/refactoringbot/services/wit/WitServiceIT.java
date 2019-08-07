@@ -11,6 +11,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -31,13 +32,16 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 @EnableConfigurationProperties
 public class WitServiceIT {
 
-	@Autowired
-	BotConfiguration botConfig;
-	@Autowired
-	WitService witService;
-
 	public final static String WIT_CLIENT_TOKEN_ENV_NAME = "WIT_CLIENT_TOKEN";
-
+	
+	private WitService witService;
+	@Mock
+	private WitDataGrabber witDataGrabber;
+	@Mock
+	private BotConfiguration botConfig;
+	@Autowired
+	DataAnonymizerService dataAnonymizer;
+	
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
@@ -48,14 +52,15 @@ public class WitServiceIT {
 	}
 
 	@Before
-	public void initMocks() {
+	public void init() {		
+		witDataGrabber = new WitDataGrabber(botConfig);
+		witService = new WitService(witDataGrabber, dataAnonymizer);
 		String tokenValue = System.getenv(WIT_CLIENT_TOKEN_ENV_NAME);
-		botConfig = Mockito.mock(BotConfiguration.class);
 		Mockito.when(botConfig.getWitClientToken()).thenReturn(tokenValue);
 	}
 
 	@Test
-	public void testAddOverrideAnnotationComment() throws Exception {
+	public void testAddOverrideAnnotationComment() throws Exception {		
 		// arrange + act
 		BotIssue issue = createBotIssueForCommentBody("Hey @Bot, add an override annotation here, ok?");
 
