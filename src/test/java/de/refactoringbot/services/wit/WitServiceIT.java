@@ -1,13 +1,17 @@
 package de.refactoringbot.services.wit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.Assert.assertNotNull;
 
 import org.assertj.core.api.SoftAssertions;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,9 +36,24 @@ public class WitServiceIT {
 	@Autowired
 	WitService witService;
 
+	public final static String WIT_CLIENT_TOKEN_ENV_NAME = "WIT_CLIENT_TOKEN";
+
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
-	
+
+	@BeforeClass
+	public static void beforeClass() {
+		assumeThat(System.getenv("TRAVIS")).isNotNull();
+		assumeThat(System.getenv(WIT_CLIENT_TOKEN_ENV_NAME)).isNotNull();
+	}
+
+	@Before
+	public void initMocks() {
+		String tokenValue = System.getenv(WIT_CLIENT_TOKEN_ENV_NAME);
+		botConfig = Mockito.mock(BotConfiguration.class);
+		Mockito.when(botConfig.getWitClientToken()).thenReturn(tokenValue);
+	}
+
 	@Test
 	public void testAddOverrideAnnotationComment() throws Exception {
 		// arrange + act
@@ -76,17 +95,18 @@ public class WitServiceIT {
 		assertNotNull(issue);
 		assertThat(issue.getRefactoringOperation()).isEqualTo(RefactoringOperations.REORDER_MODIFIER);
 	}
-	
+
 	@Test
 	public void testReorderModifierComment2() throws Exception {
 		// arrange + act
-		BotIssue issue = createBotIssueForCommentBody("@Bot please put the modifiers in an order that complies with the JLS.!");
+		BotIssue issue = createBotIssueForCommentBody(
+				"@Bot please put the modifiers in an order that complies with the JLS.!");
 
 		// assert
 		assertNotNull(issue);
 		assertThat(issue.getRefactoringOperation()).isEqualTo(RefactoringOperations.REORDER_MODIFIER);
 	}
-	
+
 	@Test
 	public void testRenameMethodComment() throws Exception {
 		// arrange + act
@@ -143,7 +163,7 @@ public class WitServiceIT {
 		softAssertions.assertThat(issue.getRefactorString()).isEqualTo("unusedParam");
 		softAssertions.assertAll();
 	}
-	
+
 	@Test
 	public void testRemoveParameterComment2() throws Exception {
 		// arrange + act
@@ -156,7 +176,7 @@ public class WitServiceIT {
 		softAssertions.assertThat(issue.getRefactorString()).isEqualTo("param");
 		softAssertions.assertAll();
 	}
-	
+
 	@Test
 	public void testRemoveParamterUnclearParam() throws Exception {
 		exception.expect(ReviewCommentUnclearException.class);
