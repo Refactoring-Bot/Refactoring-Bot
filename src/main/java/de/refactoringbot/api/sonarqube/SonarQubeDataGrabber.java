@@ -68,10 +68,10 @@ public class SonarQubeDataGrabber {
 
 			try {
 				// Send request
-				SonarQubeIssues response = rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class)
+				SonarQubeIssues issueBucket = rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class)
 						.getBody();
-				issues.add(response);
-				if (response.getIssues().size() < maxNumberOfIssuesInASingleCall) {
+				issues.add(issueBucket);
+				if (issueBucket.getIssues().size() < maxNumberOfIssuesInASingleCall) {
 					break;
 				}
 			} catch (RestClientException e) {
