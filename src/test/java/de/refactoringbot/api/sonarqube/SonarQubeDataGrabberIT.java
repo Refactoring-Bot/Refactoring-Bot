@@ -1,10 +1,12 @@
 package de.refactoringbot.api.sonarqube;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import java.net.URISyntaxException;
 import java.util.List;
 
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,6 +36,15 @@ public class SonarQubeDataGrabberIT {
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
+	@BeforeClass
+	public static void beforeClass() {
+		/*
+		 * This test gets skipped if it is not executed on the build server. To
+		 * successfully run it on a local machine, this method must not be executed.
+		 */
+		assumeThat(System.getenv("TRAVIS")).isNotNull();
+	}
+	
 	@Test
 	public void testCheckSonarData() throws Exception {
 		// arrange

@@ -33,7 +33,7 @@ import de.refactoringbot.refactoring.RefactoringOperations;
 public class WitServiceIT {
 
 	public final static String WIT_CLIENT_TOKEN_ENV_NAME = "WIT_CLIENT_TOKEN";
-	
+
 	private WitService witService;
 	@Mock
 	private WitDataGrabber witDataGrabber;
@@ -41,18 +41,23 @@ public class WitServiceIT {
 	private BotConfiguration botConfig;
 	@Autowired
 	DataAnonymizerService dataAnonymizer;
-	
+
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
 
 	@BeforeClass
 	public static void beforeClass() {
+		/*
+		 * This test gets skipped if it is not executed on the build server. To
+		 * successfully run it on a local machine, this method must not be executed and
+		 * a client token for wit API access must be provided in the mock.
+		 */
 		assumeThat(System.getenv("TRAVIS")).isNotNull();
 		assumeThat(System.getenv(WIT_CLIENT_TOKEN_ENV_NAME)).isNotNull();
 	}
 
 	@Before
-	public void init() {		
+	public void init() {
 		witDataGrabber = new WitDataGrabber(botConfig);
 		witService = new WitService(witDataGrabber, dataAnonymizer);
 		String tokenValue = System.getenv(WIT_CLIENT_TOKEN_ENV_NAME);
@@ -60,7 +65,7 @@ public class WitServiceIT {
 	}
 
 	@Test
-	public void testAddOverrideAnnotationComment() throws Exception {		
+	public void testAddOverrideAnnotationComment() throws Exception {
 		// arrange + act
 		BotIssue issue = createBotIssueForCommentBody("Hey @Bot, add an override annotation here, ok?");
 
