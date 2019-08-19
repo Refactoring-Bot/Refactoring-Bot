@@ -1,6 +1,6 @@
 language: java
 jdk:
-  - oraclejdk9
+  - oraclejdk12
 addons:
   sonarcloud:
     organization: "refactoring-bot"

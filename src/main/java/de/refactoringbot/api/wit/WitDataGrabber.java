@@ -24,8 +24,12 @@ import de.refactoringbot.model.wit.WitObject;
 @Component
 public class WitDataGrabber {
 
+	private BotConfiguration botConfig;
+	
 	@Autowired
-	BotConfiguration botConfig;
+	public WitDataGrabber(BotConfiguration botConfig) {
+		this.botConfig = botConfig;
+	}
 
 	private static final String USER_AGENT = "Mozilla/5.0";
 
