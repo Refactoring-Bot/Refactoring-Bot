@@ -249,6 +249,8 @@ public class ApiGrabber {
 		case sonarqube:
 			// Get issues and translate them
 			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig);
+			//TODO: evtl hier die issues priorisieren und danach gruppieren, man muss halt die Liste umschreiben, damit
+				//TODO: der Wert des Code-Smells noch mit abgespeichert wird
 			List<BotIssue> botIssues = new ArrayList<>();
 			for (SonarQubeIssues i : issues) {
 				botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));

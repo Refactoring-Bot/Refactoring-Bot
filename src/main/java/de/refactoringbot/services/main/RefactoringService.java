@@ -85,7 +85,7 @@ public class RefactoringService {
 	 * @throws Exception
 	 */
 	public ResponseEntity<?> performRefactoring(Long configID, boolean isCommentRefactoring) throws Exception {
-
+		//TODO: evtl wichtig für Gruppenprio
 		// Check and create configuration
 		GitConfiguration config = checkConfigurationExistance(configID);
 
@@ -129,6 +129,7 @@ public class RefactoringService {
 		try {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
+			//TODO: oder hier die Code-Smells priorisieren und gruppieren
 
 			// Iterate all issues
 			for (BotIssue botIssue : botIssues) {
