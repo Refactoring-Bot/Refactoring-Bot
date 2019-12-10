@@ -2,9 +2,7 @@ package de.refactoringbot.services.main;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,6 +128,9 @@ public class RefactoringService {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
 			//TODO: oder hier die Code-Smells priorisieren und gruppieren
+				botIssues = prioritization(botIssues);
+				grouping(botIssues);
+				groupPrioritization();
 
 			// Iterate all issues
 			for (BotIssue botIssue : botIssues) {
@@ -159,6 +160,36 @@ public class RefactoringService {
 			logger.error(e.getMessage(), e);
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
+	}
+
+		/**
+		 * This method prioritize the Bot-Issues
+		 * TODO: beschreiben nach welchen Kriterien priorisiert wird
+		 * @return
+		 */
+	private List<BotIssue> prioritization(List<BotIssue> botList){
+			List<BotIssue> prioList = new ArrayList<BotIssue>();
+
+			return prioList;
+	}
+
+		/**
+		 * This method groups the prioritised Bot-Issues
+		 * TODO: beschreiben wie du gruppierst
+		 * TODO: Rückgabewert ändern
+		 * @param prioList
+		 */
+	private void grouping(List<BotIssue> prioList){
+
+	}
+
+		/**
+		 * This method prioritises the Bot-Issue-Groups
+		 * TODO: rückgabewert unb Parameter ändern
+		 * TODO: beschreiben was du machst
+		 */
+	private void groupPrioritization(){
+
 	}
 
 	/**
