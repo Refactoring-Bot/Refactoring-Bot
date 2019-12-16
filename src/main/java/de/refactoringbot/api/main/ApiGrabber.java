@@ -7,6 +7,7 @@ import java.util.List;
 
 import javax.naming.OperationNotSupportedException;
 
+import de.refactoringbot.model.sonarqube.SonarIssue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -251,6 +252,12 @@ public class ApiGrabber {
 			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig);
 			//TODO: evtl hier die issues priorisieren und danach gruppieren, man muss halt die Liste umschreiben, damit
 				//TODO: der Wert des Code-Smells noch mit abgespeichert wird
+
+
+				//here the sonarqube issues will be sorted
+				// this part belongs to the first prioritization of the code-smells
+				issues = codeSmellPrioritization(issues);
+
 			List<BotIssue> botIssues = new ArrayList<>();
 			for (SonarQubeIssues i : issues) {
 				botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
@@ -261,6 +268,33 @@ public class ApiGrabber {
 					"Analysis-Service '" + gitConfig.getAnalysisService() + "' is not supported!");
 		}
 	}
+
+		/**
+		 * TODO: von public auf private nach den tests
+		 *
+		 * This Method sorts the sonarqube issues
+		 * it will be the first part of the code-smell prioritization
+		 *
+		 * @param issues
+		 * @return
+		 */
+		public List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues){
+				//TODO: von dem String auf ein Date Objekt übersetzten und dann nach dem Date sortieren
+				//in die Mail an Betreuer schreiben, dass des mit dem Bot nicht klappt.
+				//dann ob die SonarIssues die Code-Smells sind und fragen was die SonarQubeIssues sind
+				//dann schreiben wie du es vor hattest, dass die SonarIssues von den SonarQubeIssues sortiert werden
+				List<SonarIssue> sonarIssues = new ArrayList<>();
+
+				for (SonarQubeIssues sonarQubeIssues : issues){
+						sonarIssues = sonarQubeIssues.getIssues();
+						sonarIssues.add(sonarIssues.get(0));
+						sonarIssues.set(0, sonarIssues.get(1));
+						sonarIssues.set(1, sonarIssues.get(2));
+						sonarIssues.remove(2);
+				}
+
+				return issues;
+		}
 
 	/**
 	 * This method returns the absolute path of a anaylsis service issue. This is
@@ -317,8 +351,10 @@ public class ApiGrabber {
 	/**
 	 * This method checks the analysis service data.
 	 * 
-	 * @param analysisService
-	 * @param analysisServiceProjectKey
+	 * @param configuration
+	 * analysisService
+	 * param
+	 * analysisServiceProjectKey
 	 * 
 	 * @throws SonarQubeAPIException
 	 * @throws URISyntaxException 
