@@ -280,18 +280,20 @@ public class ApiGrabber {
 		 */
 		public List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues){
 				//TODO: von dem String auf ein Date Objekt übersetzten und dann nach dem Date sortieren
-				//in die Mail an Betreuer schreiben, dass des mit dem Bot nicht klappt.
-				//dann ob die SonarIssues die Code-Smells sind und fragen was die SonarQubeIssues sind
-				//dann schreiben wie du es vor hattest, dass die SonarIssues von den SonarQubeIssues sortiert werden
-				List<SonarIssue> sonarIssues = new ArrayList<>();
+				//https://stackoverflow.com/questions/4216745/java-string-to-date-conversion
+				//aus IntelliJ starten
+
+				System.out.println(issues.get(0).getIssues().get(0).getCreationDate());
+
+				/*List<SonarIssue> sonarIssues = new ArrayList<>();
+				SonarIssue change = new SonarIssue();
 
 				for (SonarQubeIssues sonarQubeIssues : issues){
 						sonarIssues = sonarQubeIssues.getIssues();
-						sonarIssues.add(sonarIssues.get(0));
+						change = sonarIssues.get(0);
 						sonarIssues.set(0, sonarIssues.get(1));
-						sonarIssues.set(1, sonarIssues.get(2));
-						sonarIssues.remove(2);
-				}
+						sonarIssues.set(1, change);
+				}*/
 
 				return issues;
 		}
