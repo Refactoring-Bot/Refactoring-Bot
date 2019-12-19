@@ -290,15 +290,17 @@ public class ApiGrabber {
 				for (SonarQubeIssues sonarQubeIssues : issues){
 						//TODO: löschen
 						for (SonarIssue issue : sonarQubeIssues.getIssues()){
-								System.out.println("issue id: " + issue.getKey() + "Creation date: " + issue.getCreationDate() + "issue count:");
+								System.out.println("issue id: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count:");
 						}
 
 						//erstes sortieren nach Datum
 						sonarQubeIssues.setIssues(dateSort(sonarQubeIssues));
+						//TODO: schauen, ob erstes Objekt in der list zuerst gerefactored wird und dann die liste so hin drehen, dass neuestes zuerst steht
+						//TODO: schauen wie Date sortiert
 
 						//TODO: löschen
 						for (SonarIssue issue : sonarQubeIssues.getIssues()){
-								System.out.println("issue id: " + issue.getKey() + "Creation date: " + issue.getCreationDate() + "issue count:");
+								System.out.println("issue id: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count:");
 						}
 				}
 
