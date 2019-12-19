@@ -111,7 +111,7 @@ public class RefactoringService {
 	 * service.
 	 * 
 	 * @param config
-	 * @param allIssues
+	 * param allIssues
 	 * @return response
 	 */
 	private ResponseEntity<?> processAnalysisIssues(GitConfiguration config, int amountBotRequests) {
@@ -128,9 +128,11 @@ public class RefactoringService {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
 			//TODO: oder hier die Code-Smells priorisieren und gruppieren
-				botIssues = prioritization(botIssues);
-				grouping(botIssues);
-				groupPrioritization();
+				System.out.println("Bot issues: " + botIssues.toString());
+
+				//botIssues = prioritization(botIssues);brauche ich wahrscheinlich nicht
+				//grouping(botIssues);
+				//groupPrioritization();
 
 			// Iterate all issues
 			for (BotIssue botIssue : botIssues) {
@@ -258,10 +260,10 @@ public class RefactoringService {
 	 * returns a RefactoredIssue after a successful or failed refactoring.
 	 * 
 	 * @param config
-	 * @param issue
+	 * param issue
 	 * @param request
 	 * @param comment
-	 * @param amountBotRequests
+	 * param amountBotRequests
 	 * @return refactoredIssue
 	 */
 	private RefactoredIssue refactorComment(GitConfiguration config, BotIssue botIssue, BotPullRequest request,
@@ -421,7 +423,7 @@ public class RefactoringService {
 	 * This method checks if a from a AnalysisServiceIssue translated BotIssue is
 	 * valid, e.g. not already refactored.
 	 * 
-	 * @param config
+	 * param config
 	 * @param issue
 	 * @return
 	 */

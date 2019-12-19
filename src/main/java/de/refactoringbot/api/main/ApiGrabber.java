@@ -2,8 +2,10 @@ package de.refactoringbot.api.main;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import javax.naming.OperationNotSupportedException;
 
@@ -279,23 +281,81 @@ public class ApiGrabber {
 		 * @return
 		 */
 		public List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues){
-				//TODO: von dem String auf ein Date Objekt übersetzten und dann nach dem Date sortieren
+				//TODO: für den counter sort ein verfahren verwenden, indem die reihenfolge bei gleichem count die selbe wie am anfang ist
+				//TODO: erstes Sortierverfahren in Paper miteinbringen
+				//TODO: Methode an codeconventions anpassen
 				//https://stackoverflow.com/questions/4216745/java-string-to-date-conversion
-				//aus IntelliJ starten
 
-				System.out.println(issues.get(0).getIssues().get(0).getCreationDate());
+				Date creationDate;
+				DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+'SSSS");
+				//in der Map wird die Id des Befundes mit dem zugehörigen Datum gespeichert
+				Map<String, Date> sonarIssueMap = new HashMap<>();
 
-				/*List<SonarIssue> sonarIssues = new ArrayList<>();
+				//in dieser Liste wird in der Schleife pro durchlauf die aktuellen Befunde gespeichert
+				List<SonarIssue> sonarIssues;
+				//in dieser Liste werden die sortierten SonarIssues gespeichert
+				List<SonarIssue> sortedIssues;
 				SonarIssue change = new SonarIssue();
 
+				//erste Schleife durchläuft alle Projekte
 				for (SonarQubeIssues sonarQubeIssues : issues){
+						//leere für jedes Projekt die Map
+						sonarIssueMap.clear();
+						System.out.println("Map: " + sonarIssueMap.toString());
+						//die aktuellen Befunde werden geholt
 						sonarIssues = sonarQubeIssues.getIssues();
-						change = sonarIssues.get(0);
-						sonarIssues.set(0, sonarIssues.get(1));
-						sonarIssues.set(1, change);
-				}*/
+						//TODO:löschen
+						System.out.println("Issues unsorted" + sonarIssues.toString());
+						//zweite Schleife durchläuft alle Befunde der Projekte
+						for (SonarIssue sonarIssue : sonarIssues){
+								try {
+										//für jeden Befund wird ein Date erzeugt
+										creationDate = format.parse(sonarIssue.getCreationDate());
+										//TODO: löschen
+										System.out.println(sonarIssue.toString() + "creation Date " + creationDate);
+										sonarIssueMap.put(sonarIssue.getKey(), creationDate);
 
+								} catch (ParseException e) {
+										e.printStackTrace();
+								}
+						}
+						sonarIssueMap = sortByValue(sonarIssueMap);
+						//neue Liste für jedes Projekt
+						sortedIssues = new ArrayList<>();
+
+						//schleifen um die sonarIssues Liste in die richtige Reihenfolge zu bringen
+						for (Map.Entry<String, Date> entry : sonarIssueMap.entrySet() ){
+							for (SonarIssue issue : sonarIssues){
+									if (entry.getKey().equals(issue.getKey())){
+											sortedIssues.add(issue);
+									}
+							}
+						}
+
+						System.out.println("Issues sorted" + sortedIssues.toString());
+				}
+				//TODO: die aktuellen issues.getIssues() durch die sortierte Liste sonarIssues ersetzen
 				return issues;
+		}
+
+		/**
+		 * Methode aus https://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values
+		 * sort Maps by value
+		 * @param map
+		 * @param <K>
+		 * @param <V>
+		 * @return
+		 */
+		private static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
+				List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
+				list.sort(Map.Entry.comparingByValue());
+
+				Map<K, V> result = new LinkedHashMap<>();
+				for (Map.Entry<K, V> entry : list) {
+						result.put(entry.getKey(), entry.getValue());
+				}
+
+				return result;
 		}
 
 	/**
