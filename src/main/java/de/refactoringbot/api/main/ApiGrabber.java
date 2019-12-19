@@ -286,56 +286,67 @@ public class ApiGrabber {
 				//TODO: Methode an codeconventions anpassen
 				//https://stackoverflow.com/questions/4216745/java-string-to-date-conversion
 
-				Date creationDate;
-				DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+'SSSS");
-				//in der Map wird die Id des Befundes mit dem zugehörigen Datum gespeichert
-				Map<String, Date> sonarIssueMap = new HashMap<>();
-
-				//in dieser Liste wird in der Schleife pro durchlauf die aktuellen Befunde gespeichert
-				List<SonarIssue> sonarIssues;
-				//in dieser Liste werden die sortierten SonarIssues gespeichert
-				List<SonarIssue> sortedIssues;
-				SonarIssue change = new SonarIssue();
-
 				//erste Schleife durchläuft alle Projekte
 				for (SonarQubeIssues sonarQubeIssues : issues){
-						//leere für jedes Projekt die Map
-						sonarIssueMap.clear();
-						System.out.println("Map: " + sonarIssueMap.toString());
-						//die aktuellen Befunde werden geholt
-						sonarIssues = sonarQubeIssues.getIssues();
-						//TODO:löschen
-						System.out.println("Issues unsorted" + sonarIssues.toString());
-						//zweite Schleife durchläuft alle Befunde der Projekte
-						for (SonarIssue sonarIssue : sonarIssues){
-								try {
-										//für jeden Befund wird ein Date erzeugt
-										creationDate = format.parse(sonarIssue.getCreationDate());
-										//TODO: löschen
-										System.out.println(sonarIssue.toString() + "creation Date " + creationDate);
-										sonarIssueMap.put(sonarIssue.getKey(), creationDate);
+						//TODO: löschen
+						for (SonarIssue issue : sonarQubeIssues.getIssues()){
+								System.out.println("issue id: " + issue.getKey() + "Creation date: " + issue.getCreationDate() + "issue count:");
+						}
 
-								} catch (ParseException e) {
-										e.printStackTrace();
+						//erstes sortieren nach Datum
+						sonarQubeIssues.setIssues(dateSort(sonarQubeIssues));
+
+						//TODO: löschen
+						for (SonarIssue issue : sonarQubeIssues.getIssues()){
+								System.out.println("issue id: " + issue.getKey() + "Creation date: " + issue.getCreationDate() + "issue count:");
+						}
+				}
+
+				return issues;
+		}
+
+		/**
+		 * sort the SonarIssues with its creation date
+		 * @param sqIssues
+		 * @return
+		 */
+		private List<SonarIssue> dateSort(SonarQubeIssues sqIssues){
+				Date creationDate;
+				DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+'SSSS");
+				//in dieser Liste wird in der Schleife pro durchlauf die aktuellen Befunde gespeichert
+				List<SonarIssue> sonarIssues;
+				//in der Map wird die Id des Befundes mit dem zugehörigen Datum gespeichert
+				Map<String, Date> sonarIssueMap = new HashMap<>();
+				//in dieser Liste werden die sortierten SonarIssues gespeichert
+				List<SonarIssue> sortedIssues;
+
+				//die aktuellen Befunde werden geholt
+				sonarIssues = sqIssues.getIssues();
+
+				//zweite Schleife durchläuft alle Befunde der Projekte
+				for (SonarIssue sonarIssue : sonarIssues){
+						try {
+								//für jeden Befund wird ein Date erzeugt
+								creationDate = format.parse(sonarIssue.getCreationDate());
+								sonarIssueMap.put(sonarIssue.getKey(), creationDate);
+
+						} catch (ParseException e) {
+								e.printStackTrace();
+						}
+				}
+				sonarIssueMap = sortByValue(sonarIssueMap);
+				//neue Liste für jedes Projekt
+				sortedIssues = new ArrayList<>();
+
+				//schleifen um die sonarIssues Liste in die richtige Reihenfolge zu bringen
+				for (Map.Entry<String, Date> entry : sonarIssueMap.entrySet() ){
+						for (SonarIssue issue : sonarIssues){
+								if (entry.getKey().equals(issue.getKey())){
+										sortedIssues.add(issue);
 								}
 						}
-						sonarIssueMap = sortByValue(sonarIssueMap);
-						//neue Liste für jedes Projekt
-						sortedIssues = new ArrayList<>();
-
-						//schleifen um die sonarIssues Liste in die richtige Reihenfolge zu bringen
-						for (Map.Entry<String, Date> entry : sonarIssueMap.entrySet() ){
-							for (SonarIssue issue : sonarIssues){
-									if (entry.getKey().equals(issue.getKey())){
-											sortedIssues.add(issue);
-									}
-							}
-						}
-
-						System.out.println("Issues sorted" + sortedIssues.toString());
 				}
-				//TODO: die aktuellen issues.getIssues() durch die sortierte Liste sonarIssues ersetzen
-				return issues;
+			return sortedIssues;
 		}
 
 		/**
