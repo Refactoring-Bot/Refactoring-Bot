@@ -9,6 +9,7 @@ import de.refactoringbot.model.sonarqube.SonarQubeIssues;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,6 +74,7 @@ public class CodeSmellPrioritizationTest {
 				ApiGrabber grabber = new ApiGrabber();
 				list = grabber.codeSmellPrioritization(list);
 				sonarIssues = list.get(0).getIssues();
+				Collections.reverse(list2.get(0).getIssues());
 
 				for (int i = 0; i < sonarIssues.size(); i++){
 						System.out.println("sorted list: " + sonarIssues.get(i).getKey() + " controll list: " + sonarIssues2.get(i).getKey());

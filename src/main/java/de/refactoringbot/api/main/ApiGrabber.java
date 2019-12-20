@@ -282,7 +282,6 @@ public class ApiGrabber {
 		 */
 		public List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues){
 				//TODO: für den counter sort ein verfahren verwenden, indem die reihenfolge bei gleichem count die selbe wie am anfang ist
-				//TODO: erstes Sortierverfahren in Paper miteinbringen
 				//TODO: Methode an codeconventions anpassen
 				//https://stackoverflow.com/questions/4216745/java-string-to-date-conversion
 
@@ -348,6 +347,8 @@ public class ApiGrabber {
 								}
 						}
 				}
+				Collections.reverse(sortedIssues);
+
 			return sortedIssues;
 		}
 

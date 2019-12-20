@@ -128,9 +128,8 @@ public class RefactoringService {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
 			//TODO: oder hier die Code-Smells priorisieren und gruppieren
-				System.out.println("Bot issues: " + botIssues.toString());
 
-				//botIssues = prioritization(botIssues);brauche ich wahrscheinlich nicht
+				//botIssues = prioritization(botIssues);brauche ich wahrscheinlich nicht schon in APIGrabber priorisiert
 				//grouping(botIssues);
 				//groupPrioritization();
 
@@ -146,6 +145,7 @@ public class RefactoringService {
 					// If issue was not already refactored
 					if (isAnalysisIssueValid(botIssue)) {
 						// Perform refactoring
+							System.out.println("BotIssue String: " + botIssue.getRefactorString());
 						allRefactoredIssues.add(refactorIssue(false, config, null, null, botIssue));
 						amountBotRequests++;
 					}
@@ -167,6 +167,7 @@ public class RefactoringService {
 		/**
 		 * This method prioritize the Bot-Issues
 		 * TODO: beschreiben nach welchen Kriterien priorisiert wird
+		 * TODO: bevor die Liste gelöscht wird schauen, ob bot issues in richtiger reihenfolge sind
 		 * @return
 		 */
 	private List<BotIssue> prioritization(List<BotIssue> botList){
