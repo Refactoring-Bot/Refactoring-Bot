@@ -14,6 +14,7 @@ public class BotIssue {
 	private String commitMessage;
 	private List<String> allJavaFiles;
 	private List<String> javaRoots;
+	private int countChanges;
 
 	/**
 	 * The refactoring operation describes the refactoring that will be performed.
@@ -107,5 +108,9 @@ public class BotIssue {
 	public void setJavaRoots(List<String> javaRoots) {
 		this.javaRoots = javaRoots;
 	}
+
+	public void setCountChanges(int count){this.countChanges = count;}
+
+	public int getCountChanges(){return countChanges;}
 
 }

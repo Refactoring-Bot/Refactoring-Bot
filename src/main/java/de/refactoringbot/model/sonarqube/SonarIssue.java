@@ -62,6 +62,8 @@ public class SonarIssue {
 	private String resolution;
 	@JsonProperty("closeDate")
 	private String closeDate;
+	@JsonProperty("countChanges")
+	private int countChanges;
 	@JsonIgnore
 	private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -284,6 +286,12 @@ public class SonarIssue {
 	public void setCloseDate(String closeDate) {
 		this.closeDate = closeDate;
 	}
+
+	@JsonProperty("countChanges")
+	public void setCountChanges(int count){this.countChanges = count;}
+
+	@JsonProperty("countChanges")
+	public int getCountChanges(){return countChanges;}
 
 	@JsonAnyGetter
 	public Map<String, Object> getAdditionalProperties() {
