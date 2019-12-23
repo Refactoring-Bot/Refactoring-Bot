@@ -145,7 +145,7 @@ public class RefactoringService {
 					// If issue was not already refactored
 					if (isAnalysisIssueValid(botIssue)) {
 						// Perform refactoring
-							System.out.println("BotIssue String: " + botIssue.getRefactorString());
+							System.out.println("BotIssue Operation: " + botIssue.getRefactoringOperation());
 						allRefactoredIssues.add(refactorIssue(false, config, null, null, botIssue));
 						amountBotRequests++;
 					}
@@ -319,7 +319,7 @@ public class RefactoringService {
 			if (botIssue.getCommitMessage() != null) {
 				// Create Refactored-Object
 				RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
-
+				//TODO: hier gruppen pushen
 				// Push changes
 				gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
 				// Reply to User

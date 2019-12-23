@@ -289,7 +289,7 @@ public class ApiGrabber {
 				for (SonarQubeIssues sonarQubeIssues : issues){
 						//TODO: löschen
 						for (SonarIssue issue : sonarQubeIssues.getIssues()){
-								System.out.println("issue id: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count:");
+								System.out.println("issue id: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count: " + issue.getCountChanges());
 						}
 
 						//erstes sortieren nach Datum
@@ -299,7 +299,13 @@ public class ApiGrabber {
 
 						//TODO: löschen
 						for (SonarIssue issue : sonarQubeIssues.getIssues()){
-								System.out.println("issue id: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count:");
+								System.out.println("issue id after dateSort: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count: " + issue.getCountChanges());
+						}
+						sonarQubeIssues.setIssues(countSort(sonarQubeIssues));
+
+						//TODO: löschen
+						for (SonarIssue issue : sonarQubeIssues.getIssues()){
+								System.out.println("issue id after countSort: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count: " + issue.getCountChanges());
 						}
 				}
 
@@ -308,8 +314,9 @@ public class ApiGrabber {
 
 		/**
 		 * sort the SonarIssues with its creation date
+		 * TODO: warum so implementiert?
 		 * @param sqIssues
-		 * @return
+		 * @return sortedIssues: the List that is sorted after the date
 		 */
 		private List<SonarIssue> dateSort(SonarQubeIssues sqIssues){
 				Date creationDate;
@@ -353,12 +360,49 @@ public class ApiGrabber {
 		}
 
 		/**
-		 * Methode aus https://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values
+		 * sort the sonarIssues with its count on changes in commits
+		 * @param issues
+		 * @return sortedIssues: the List that is sorted after the countChanges
+		 */
+		private List<SonarIssue> countSort(SonarQubeIssues issues){
+				int count;
+				List<SonarIssue> issueList = issues.getIssues();
+				//in dieser Liste werden die sortierten SonarIssues gespeichert
+				List<SonarIssue> sortedIssues = new ArrayList<>();
+
+				sortedIssues = bubbleSort(issueList);
+
+				return sortedIssues;
+		}
+
+		/**
+		 * sort a list with the bubble sort
+		 * @param list
+		 * @return list, the sorted list
+		 */
+		private List<SonarIssue> bubbleSort(List<SonarIssue> list){
+				SonarIssue temp;
+
+				for (int i = 0; i < list.size() - 2; i++){
+						for (int j = 0; j < list.size() - i - 2; j++){
+								if (list.get(j).getCountChanges() < list.get(j + 1).getCountChanges()){
+										temp = list.get(j);
+										list.set(j, list.get(j + 1));
+										list.set(j + 1, temp);
+								}
+						}
+				}
+
+				return list;
+		}
+
+		/**
+		 * Methode aus https://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values TODO: zuletzt besucht am:
 		 * sort Maps by value
 		 * @param map
 		 * @param <K>
 		 * @param <V>
-		 * @return
+		 * @return result: the sorted result
 		 */
 		private static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
 				List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());

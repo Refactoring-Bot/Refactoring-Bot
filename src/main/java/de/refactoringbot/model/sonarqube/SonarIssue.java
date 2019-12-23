@@ -15,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "key", "rule", "severity", "component", "project", "line", "hash", "textRange", "flows", "status",
 		"message", "effort", "debt", "assignee", "tags", "creationDate", "updateDate", "type", "organization",
-		"fromHotspot", "resolution", "closeDate" })
+		"fromHotspot", "resolution", "closeDate", "countChanges" })
 public class SonarIssue {
 
 	@JsonProperty("key")
