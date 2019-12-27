@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import de.refactoringbot.model.botissuegroup.BotIssueGroup;
+import de.refactoringbot.model.botissuegroup.BotIssueGroupType;
+import de.refactoringbot.model.exceptions.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,13 +20,6 @@ import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
-import de.refactoringbot.model.exceptions.BotRefactoringException;
-import de.refactoringbot.model.exceptions.DatabaseConnectionException;
-import de.refactoringbot.model.exceptions.GitHubAPIException;
-import de.refactoringbot.model.exceptions.GitLabAPIException;
-import de.refactoringbot.model.exceptions.GitWorkflowException;
-import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
-import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -127,10 +123,8 @@ public class RefactoringService {
 		try {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
-			//TODO: oder hier die Code-Smells priorisieren und gruppieren
-
-				//botIssues = prioritization(botIssues);brauche ich wahrscheinlich nicht schon in APIGrabber priorisiert
-				//grouping(botIssues);
+			//TODO: mit den issueGroups weiterarbeiten und code genau anschauen und anpassen
+				List<BotIssueGroup> issueGroups = grouping(botIssues);
 				//groupPrioritization();
 
 			// Iterate all issues
@@ -142,10 +136,10 @@ public class RefactoringService {
 				}
 
 				try {
+						System.out.println("BotIssue Operation: " + botIssue.getRefactoringOperation());
 					// If issue was not already refactored
 					if (isAnalysisIssueValid(botIssue)) {
 						// Perform refactoring
-							System.out.println("BotIssue Operation: " + botIssue.getRefactoringOperation());
 						allRefactoredIssues.add(refactorIssue(false, config, null, null, botIssue));
 						amountBotRequests++;
 					}
@@ -165,25 +159,47 @@ public class RefactoringService {
 	}
 
 		/**
-		 * This method prioritize the Bot-Issues
-		 * TODO: beschreiben nach welchen Kriterien priorisiert wird
-		 * TODO: bevor die Liste gelöscht wird schauen, ob bot issues in richtiger reihenfolge sind
-		 * @return
-		 */
-	private List<BotIssue> prioritization(List<BotIssue> botList){
-			List<BotIssue> prioList = new ArrayList<BotIssue>();
-
-			return prioList;
-	}
-
-		/**
 		 * This method groups the prioritised Bot-Issues
 		 * TODO: beschreiben wie du gruppierst
-		 * TODO: Rückgabewert ändern
+		 * TODO: Rückgabewert ändern und auf private setzten
 		 * @param prioList
 		 */
-	private void grouping(List<BotIssue> prioList){
+	public List<BotIssueGroup> grouping(List<BotIssue> prioList) throws BotIssueTypeException {
+		List<BotIssueGroup> issueGroups = new ArrayList<>();
+		BotIssueGroup addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		BotIssueGroup rename = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		BotIssueGroup reorder = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		BotIssueGroup removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		BotIssueGroup removePar = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		BotIssueGroup unknown = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		//TODO: bei probedurchlauf checken ob liste sortiert ist
 
+			//order each BotIssue to a group
+			for (BotIssue issue : prioList){
+				if (issue.getRefactoringOperation().equals(RefactoringOperations.ADD_OVERRIDE_ANNOTATION)){
+					addOverride.addIssue(issue);
+				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.RENAME_METHOD)){
+						rename.addIssue(issue);
+				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REORDER_MODIFIER)){
+						reorder.addIssue(issue);
+				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE)){
+						removeCom.addIssue(issue);
+				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_PARAMETER)){
+						removePar.addIssue(issue);
+				} else {
+						unknown.addIssue(issue);
+				}
+				//TODO: bei listen auf größe überprüfen
+			}
+
+			//TODO: gruppen erst adden wenn voll oder am ende vom alg, sonst probleme so wie es grad ist
+			issueGroups.add(addOverride);
+			issueGroups.add(rename);
+			issueGroups.add(reorder);
+			issueGroups.add(removeCom);
+			issueGroups.add(removePar);
+			issueGroups.add(unknown);
+			return issueGroups;
 	}
 
 		/**

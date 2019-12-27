@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import de.refactoringbot.model.sonarqube.SonarIssue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -198,6 +199,48 @@ public class GithubDataGrabber {
 			throw new GitHubAPIException("Could not get Branch from Github!", e);
 		}
 	}
+
+		/**
+		 * counts the commits of a single piece of code
+		 * TODO: bis jetzt schaut er nur auf dem master nach den commits für zusätzliche branches editieren
+		 *
+		 * @param issue
+		 * @return count, the count of commits
+		 * TODO: ein/ fehlt
+		public int countCommitsFromHistory(SonarIssue issue, GitConfiguration gitConfig)
+				throws URISyntaxException, BotRefactoringException, GitHubAPIException {
+				int count = 0;
+				//TODO: hier morgen weiter machen mit dem zugriff auf die github history der codestelle
+				URI configUri = createURIFromApiLink(gitConfig.getForkApiLink());// Build URI
+				UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
+						.host(configUri.getHost()).path(configUri.getPath() + "/commits/");
+
+				//apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
+
+				URI pullsUri = apiUriBuilder.build().encode().toUri();
+
+				RestTemplate rest = new RestTemplate();
+
+				HttpHeaders headers = new HttpHeaders();
+				headers.set("User-Agent", USER_AGENT);
+				HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+
+				try {
+						// Send Request to the GitHub-API
+						rest.exchange(pullsUri, HttpMethod.GET, entity, String.class).getBody();
+						throw new BotRefactoringException(
+								"Issue was already refactored in the past! The bot database might have been resetted but not the fork itself.");
+				} catch (RestClientException e) {
+						// If branch does not exist -> return
+						if (e.getMessage().equals("404 Not Found")) {
+								return 0;
+						}
+						logger.error(e.getMessage(), e);
+						throw new GitHubAPIException("Could not get Branch from Github!", e);
+				}
+
+				return count;
+		}*/
 
 	/**
 	 * This method returns all PullRequest from Github.

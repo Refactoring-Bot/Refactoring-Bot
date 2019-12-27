@@ -1,6 +1,7 @@
 package de.refactoringbot.api.main;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -241,7 +242,7 @@ public class ApiGrabber {
 
 	/**
 	 * This method gets all issues of a Project from a analysis service.
-	 * 
+	 * TODO: test für diese methode schreiben um zu sehen, in welcher reihenfolge die BotIssues dann stehen
 	 * @param gitConfig
 	 * @return botIssues
 	 * @throws Exception
@@ -252,9 +253,13 @@ public class ApiGrabber {
 		case sonarqube:
 			// Get issues and translate them
 			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig);
-			//TODO: evtl hier die issues priorisieren und danach gruppieren, man muss halt die Liste umschreiben, damit
+				//TODO: evtl hier die issues priorisieren und danach gruppieren, man muss halt die Liste umschreiben, damit
 				//TODO: der Wert des Code-Smells noch mit abgespeichert wird
-
+				for (SonarQubeIssues sqIssue : issues){
+						for (SonarIssue issue : sqIssue.getIssues()){
+								//issue.setCountChanges(githubGrabber.countCommitsFromHistory(issue, gitConfig));
+						}
+				}
 
 				//here the sonarqube issues will be sorted
 				// this part belongs to the first prioritization of the code-smells
@@ -281,9 +286,7 @@ public class ApiGrabber {
 		 * @return
 		 */
 		public List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues){
-				//TODO: für den counter sort ein verfahren verwenden, indem die reihenfolge bei gleichem count die selbe wie am anfang ist
 				//TODO: Methode an codeconventions anpassen
-				//https://stackoverflow.com/questions/4216745/java-string-to-date-conversion
 
 				//erste Schleife durchläuft alle Projekte
 				for (SonarQubeIssues sonarQubeIssues : issues){
@@ -315,6 +318,7 @@ public class ApiGrabber {
 		/**
 		 * sort the SonarIssues with its creation date
 		 * TODO: warum so implementiert?
+		 * TODO: warum nicht nach update date sortieren?
 		 * @param sqIssues
 		 * @return sortedIssues: the List that is sorted after the date
 		 */

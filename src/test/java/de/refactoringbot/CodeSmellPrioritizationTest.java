@@ -1,9 +1,6 @@
 package de.refactoringbot;
 
 import de.refactoringbot.api.main.ApiGrabber;
-import de.refactoringbot.api.sonarqube.SonarQubeDataGrabber;
-import de.refactoringbot.model.sonarqube.Flow;
-import de.refactoringbot.model.sonarqube.Location;
 import de.refactoringbot.model.sonarqube.SonarIssue;
 import de.refactoringbot.model.sonarqube.SonarQubeIssues;
 import org.junit.Test;
