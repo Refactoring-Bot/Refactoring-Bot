@@ -7,6 +7,7 @@ import java.util.*;
 import de.refactoringbot.model.botissuegroup.BotIssueGroup;
 import de.refactoringbot.model.botissuegroup.BotIssueGroupType;
 import de.refactoringbot.model.exceptions.*;
+import de.refactoringbot.model.refactoredissuegroup.RefactoredIssueGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -118,40 +119,53 @@ public class RefactoringService {
                     HttpStatus.BAD_REQUEST);
 		}
 
-		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
+		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();//TODO: rausfinden wo das überall verwendet wird, damit nachher die gruppen einen pullrequest bekommen und mein code keine auswirkungen auf andere stellen hat
+		List<RefactoredIssueGroup> groupsOfRefactoredIssues = new ArrayList<>();
+		RefactoredIssueGroup refactoredIssueGroup;
 
 		try {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
 			//TODO: mit den issueGroups weiterarbeiten und code genau anschauen und anpassen
 				List<BotIssueGroup> issueGroups = grouping(botIssues);
-				//groupPrioritization();
+				//groupPrioritization(); evtl erst die refactored groups priorisieren
 
 			// Iterate all issues
-			for (BotIssue botIssue : botIssues) {
+			for (BotIssueGroup botIssueGroup : issueGroups) {
+				List<BotIssue> issueList = botIssueGroup.getBotIssueGroup();
+				allRefactoredIssues.clear(); //TODO: schauen, dass das keine negativen auswirkungen hat
+					refactoredIssueGroup = new RefactoredIssueGroup();
+
 				// When Bot-Pull-Request-Limit reached -> return
 				if (amountBotRequests >= config.getMaxAmountRequests()) {
 					// Return all refactored issues
-					return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+					//return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);//TODO: rausfinden was die ResponseEntity ist und evtl durch die gruppen ersetzten
+						return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
 				}
 
-				try {
-						System.out.println("BotIssue Operation: " + botIssue.getRefactoringOperation());
-					// If issue was not already refactored
-					if (isAnalysisIssueValid(botIssue)) {
-						// Perform refactoring
-						allRefactoredIssues.add(refactorIssue(false, config, null, null, botIssue));
-						amountBotRequests++;
-					}
-				} catch (Exception e) {
-					// Create failed Refactored-Object
-					botIssue.setErrorMessage("Bot could not refactor this issue! Internal server error!");
-					allRefactoredIssues.add(processFailedRefactoring(config, null, null, botIssue, false));
-					logger.error(e.getMessage(), e);
+				for (BotIssue botIssue : issueList){
+						try {
+								System.out.println("BotIssue Operation: " + botIssue.getRefactoringOperation());
+								// If issue was not already refactored
+								if (isAnalysisIssueValid(botIssue)) {
+										// Perform refactoring
+										allRefactoredIssues.add(refactorIssue(false, config, null, null, botIssue));
+										//amountBotRequests++; Gilt nur wenn für einzelne issues pull request erstellt wird
+								}
+						} catch (Exception e) {
+								// Create failed Refactored-Object
+								botIssue.setErrorMessage("Bot could not refactor this issue! Internal server error!");
+								allRefactoredIssues.add(processFailedRefactoring(config, null, null, botIssue, false));
+								logger.error(e.getMessage(), e);
+						}
 				}
+					refactoredIssueGroup.addIssues(allRefactoredIssues);
+					groupsOfRefactoredIssues.add(refactoredIssueGroup);
+					amountBotRequests++; //gilt wenn für gruppen pull requests erstellt werden
 			}
 
-			return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+			//return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
+				return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
