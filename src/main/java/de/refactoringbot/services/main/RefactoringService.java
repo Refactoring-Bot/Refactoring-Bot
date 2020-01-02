@@ -120,7 +120,8 @@ public class RefactoringService {
 		}
 
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();//TODO: rausfinden wo das überall verwendet wird, damit nachher die gruppen einen pullrequest bekommen und mein code keine auswirkungen auf andere stellen hat
-		List<RefactoredIssueGroup> groupsOfRefactoredIssues = new ArrayList<>();
+		RefactoredIssueGroup allRefactoredIssueGroup = new RefactoredIssueGroup();
+			List<RefactoredIssueGroup> groupsOfRefactoredIssues = new ArrayList<>();
 		RefactoredIssueGroup refactoredIssueGroup;
 
 		try {
@@ -143,22 +144,29 @@ public class RefactoringService {
 						return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
 				}
 
-				for (BotIssue botIssue : issueList){
+				//for (BotIssue botIssue : issueList){
 						try {
-								System.out.println("BotIssue Operation: " + botIssue.getRefactoringOperation());
+								//System.out.println("BotIssue Operation: " + botIssueGroup.getBotIssueGroup().get(0).getRefactoringOperation());
 								// If issue was not already refactored
-								if (isAnalysisIssueValid(botIssue)) {
+								if (isAnalysisIssueValid(botIssueGroup)) {
 										// Perform refactoring
-										allRefactoredIssues.add(refactorIssue(false, config, null, null, botIssue));
+										allRefactoredIssueGroup = refactorIssue(false, config, null, null, botIssueGroup);
+										for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()){
+												allRefactoredIssues.add(issue);
+										}
 										//amountBotRequests++; Gilt nur wenn für einzelne issues pull request erstellt wird
 								}
 						} catch (Exception e) {
 								// Create failed Refactored-Object
-								botIssue.setErrorMessage("Bot could not refactor this issue! Internal server error!");
-								allRefactoredIssues.add(processFailedRefactoring(config, null, null, botIssue, false));
+								botIssueGroup.addIssue(new BotIssue());
+								botIssueGroup.getBotIssueGroup().get(0).setErrorMessage("Bot could not refactor this issue! Internal server error!");
+								allRefactoredIssueGroup = processFailedRefactoring(config, null, null, botIssueGroup, false);
+								for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()){
+										allRefactoredIssues.add(issue);
+								}
 								logger.error(e.getMessage(), e);
 						}
-				}
+				//}
 					refactoredIssueGroup.addIssues(allRefactoredIssues);
 					groupsOfRefactoredIssues.add(refactoredIssueGroup);
 					amountBotRequests++; //gilt wenn für gruppen pull requests erstellt werden
@@ -323,7 +331,7 @@ public class RefactoringService {
 	/**
 	 * This method configures the local workspace, refactors the issue, pushes the
 	 * changes and creates an PR.
-	 * 
+	 *
 	 * @param isCommentRefactoring
 	 * @param config
 	 * @param comment
@@ -349,7 +357,6 @@ public class RefactoringService {
 			if (botIssue.getCommitMessage() != null) {
 				// Create Refactored-Object
 				RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
-				//TODO: hier gruppen pushen
 				// Push changes
 				gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
 				// Reply to User
@@ -388,6 +395,80 @@ public class RefactoringService {
 		botIssue.setErrorMessage("Could not create a commit message!");
 		return processFailedRefactoring(config, comment, request, botIssue, isCommentRefactoring);
 	}
+
+		/**
+		 * This method configures the local workspace, refactors the issue, pushes the
+		 * changes and creates an PR.
+		 * This method uses the BotIssueGroup to create Pull-Requests
+		 *
+		 * @param isCommentRefactoring
+		 * @param config
+		 * @param comment
+		 * @param request
+		 * @param botIssueGroup
+		 * @return allRefactoredIssues
+		 * @throws Exception
+		 */
+		private RefactoredIssueGroup refactorIssue(boolean isCommentRefactoring, GitConfiguration config,
+				BotPullRequestComment comment, BotPullRequest request, BotIssueGroup botIssueGroup) throws Exception {
+				RefactoredIssueGroup refactoredIssueGroup = new RefactoredIssueGroup();
+				// If refactoring via comment
+				/*if (isCommentRefactoring) { TODO: evtl für commentedRefactoring implementeren
+						// Change to existing Refactoring-Branch
+						gitService.switchBranch(config, request.getBranchName());
+
+						// Add current filepaths to Issue
+						botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
+
+						// Try to refactor
+						botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
+
+						// If successful
+						if (botIssue.getCommitMessage() != null) {
+								// Create Refactored-Object
+								RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
+								// Push changes
+								gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
+								// Reply to User
+								apiGrabber.replyToUserInsideBotRequest(request, comment, config);
+
+								// Save and return refactored issue
+								return issueRepo.save(refactoredIssue);
+						}
+
+						// If analysis service refactoring
+				} else {*/
+				// Create new branch for refactoring
+				String newBranch = "sonarQube_Refactoring_" + botIssueGroup.getBotIssueGroup().get(0).getCommentServiceID();
+				// Check if branch already exists (throws exception if it does)
+				apiGrabber.checkBranch(config, newBranch);
+				gitService.createBranch(config, "master", newBranch, "upstream");
+				// Add current filepaths to Issue
+				for (BotIssue botIssue : botIssueGroup.getBotIssueGroup()) {
+						botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
+						// Try to refactor
+						botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
+
+						// If successful
+						if (botIssue.getCommitMessage() != null) {
+								// Create Refactored-Object
+								RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
+								refactoredIssueGroup.addIssue(refactoredIssue);
+								issueRepo.save(refactoredIssue); //TODO: vllt RefactoredIssueGroup so umschreiben dass es das auch speichert
+						} else {
+								botIssue.setErrorMessage("Could not create a commit message!");
+								return processFailedRefactoring(config, comment, request, botIssueGroup, isCommentRefactoring);
+						}
+				}
+				//}
+
+				// Push changes + create Pull-Request
+				gitService.commitAndPushChanges(config, botIssueGroup.getBotIssueGroup().get(0).getCommitMessage());
+				apiGrabber.makeCreateRequestWithAnalysisService(botIssueGroup, config, newBranch);
+
+				// Save and return refactored issue
+				return refactoredIssueGroup;
+		}
 
 	/**
 	 * This method checks if the database contains a configuration with given id and
@@ -462,6 +543,23 @@ public class RefactoringService {
 		return (!issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent());
 	}
 
+		/**
+		 * This method checks if a from a AnalysisServiceIssue translated BotIssue is
+		 * valid, e.g. not already refactored.
+		 *
+		 * param config
+		 * @param group
+		 * @return
+		 */
+		public boolean isAnalysisIssueValid(BotIssueGroup group) {
+				for (BotIssue issue : group.getBotIssueGroup()){
+					if (issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent()){
+							return false;
+					}
+				}
+				return true;
+		}
+
 	/**
 	 * This method processes a faild refactoring. It creates a RefactoredIssue
 	 * object and saves it to the database so that the bot won't try to refactor a
@@ -493,6 +591,42 @@ public class RefactoringService {
 		// Save failed refactoring and return it
 		return issueRepo.save(failedIssue);
 	}
+
+		/**
+		 * This method processes a faild refactoring. It creates a RefactoredIssue
+		 * object and saves it to the database so that the bot won't try to refactor a
+		 * comment that can not be refactored. Also, a reply is sent to the comment
+		 * creator to inform him of the failure with a proper error message.
+		 * This method uses the BotIssueGroup
+		 *
+		 * @param config
+		 * @param comment
+		 * @param request
+		 * @param botIssueGroup
+		 * @param isCommentRefactoring
+		 * @return failedIssue
+		 */
+		private RefactoredIssueGroup processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,
+				BotPullRequest request, BotIssueGroup botIssueGroup, boolean isCommentRefactoring) {
+				// Create failedIssue
+				RefactoredIssue failedIssue = botController.buildRefactoredIssue(botIssueGroup.getBotIssueGroup().get(0), config);//TODO: noch richtig anpassen
+
+				// Reply to user if refactoring comments
+				if (isCommentRefactoring) {
+						try {
+								apiGrabber.replyToUserForFailedRefactoring(request, comment, config,
+										constructCommentReplyMessage(botIssueGroup.getBotIssueGroup().get(0).getErrorMessage()));
+						} catch (Exception u) {
+								logger.error(u.getMessage(), u);
+						}
+				}
+				issueRepo.save(failedIssue);
+				RefactoredIssueGroup group = new RefactoredIssueGroup();
+				group.addIssue(failedIssue);
+
+				// Save failed refactoring and return it
+				return group;
+		}
 
 	/**
 	 * This method creates a reply message with the help from the error message of a

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import de.refactoringbot.model.botissuegroup.BotIssueGroup;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,6 +188,30 @@ public class GithubObjectTranslator {
 
 		return createRequest;
 	}
+
+		/**
+		 * This method creates an object that can be used to create a Pull-Request on
+		 * GitHub after a analysis service refactoring.
+		 * This method creates Pull-Requests with the BotIssueGroup
+		 *
+		 * @param group
+		 * @param gitConfig
+		 * @param newBranch
+		 * @return createRequest
+		 */
+		public GithubCreateRequest makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig,
+				String newBranch) {
+				GithubCreateRequest createRequest = new GithubCreateRequest();
+
+				// Fill object with data
+				createRequest.setTitle(group.getBotIssueGroup().get(0).getCommitMessage());
+				createRequest.setBody(PULL_REQUEST_DESCRIPTION);
+				createRequest.setHead(gitConfig.getBotName() + ":" + newBranch);
+				createRequest.setBase("master");
+				createRequest.setMaintainer_can_modify(true);
+
+				return createRequest;
+		}
 
 	/**
 	 * This method creates an object that can be used reply to a comment on GitHub.

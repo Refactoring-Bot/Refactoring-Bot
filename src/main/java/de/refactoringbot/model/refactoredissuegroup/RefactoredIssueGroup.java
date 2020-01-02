@@ -1,8 +1,5 @@
 package de.refactoringbot.model.refactoredissuegroup;
 
-import de.refactoringbot.model.botissue.BotIssue;
-import de.refactoringbot.model.botissuegroup.BotIssueGroupType;
-import de.refactoringbot.model.exceptions.BotIssueTypeException;
 import de.refactoringbot.model.refactoredissue.RefactoredIssue;
 
 import java.util.ArrayList;

@@ -10,6 +10,7 @@ import java.util.*;
 
 import javax.naming.OperationNotSupportedException;
 
+import de.refactoringbot.model.botissuegroup.BotIssueGroup;
 import de.refactoringbot.model.sonarqube.SonarIssue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -457,8 +458,8 @@ public class ApiGrabber {
 		switch (gitConfig.getRepoService()) {
 		case github:
 			// Create PR object
-			GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue, gitConfig,
-					newBranch);
+				GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue, gitConfig,
+						newBranch);
 			// Create PR on filehoster
 			githubGrabber.createRequest(createRequest, gitConfig);
 			break;
@@ -471,6 +472,37 @@ public class ApiGrabber {
 			break;
 		}
 	}
+
+		/**
+		 * This method creates a request on a filehoster if the refactoring was
+		 * performed with issues from a analysis tool.
+		 * This method uses the BotIssueGroup to create Pull-Requests
+		 *
+		 * @param group
+		 * @param gitConfig
+		 * @param newBranch
+		 * @throws Exception
+		 */
+		public void makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig, String newBranch)
+				throws Exception {
+				// Pick filehoster
+				switch (gitConfig.getRepoService()) {
+				case github:
+						// Create PR object
+						GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(group, gitConfig,
+								newBranch);//TODO: hier pullrequests mit den gruppen machen
+						// Create PR on filehoster
+						githubGrabber.createRequest(createRequest, gitConfig);
+						break;
+				/*case gitlab: TODO: evtl implementieren
+						// Create PR Object
+						GitLabCreateRequest gitlabCreateRequest = gitlabTranslator.makeCreateRequestWithAnalysisService(group,
+								gitConfig, newBranch);
+						// Create PR on filehoster
+						gitlabGrabber.createRequest(gitlabCreateRequest, gitConfig);
+						break;*/
+				}
+		}
 
 	/**
 	 * This method checks the analysis service data.
