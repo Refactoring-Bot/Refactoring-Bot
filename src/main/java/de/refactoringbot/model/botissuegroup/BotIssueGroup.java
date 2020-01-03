@@ -14,6 +14,7 @@ public class BotIssueGroup {
 		//TODO: type in enum oder so speichern
 		private BotIssueGroupType type;
 		private List<BotIssue> botIssues;
+		private String name;
 
 		public BotIssueGroup(BotIssueGroupType type) throws BotIssueTypeException {
 				botIssues = new ArrayList<>();
@@ -45,4 +46,10 @@ public class BotIssueGroup {
 		}
 
 		public BotIssueGroupType getType(){return this.type;}
+
+		public void setName(String name){
+				this.name = name;
+		}
+
+		public String getName(){return name;}
 }

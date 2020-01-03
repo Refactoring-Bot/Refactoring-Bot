@@ -120,8 +120,8 @@ public class RefactoringService {
 		}
 
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();//TODO: rausfinden wo das überall verwendet wird, damit nachher die gruppen einen pullrequest bekommen und mein code keine auswirkungen auf andere stellen hat
-		RefactoredIssueGroup allRefactoredIssueGroup = new RefactoredIssueGroup();
-			List<RefactoredIssueGroup> groupsOfRefactoredIssues = new ArrayList<>();
+		RefactoredIssueGroup allRefactoredIssueGroup;
+		List<RefactoredIssueGroup> groupsOfRefactoredIssues = new ArrayList<>();
 		RefactoredIssueGroup refactoredIssueGroup;
 
 		try {
@@ -129,28 +129,28 @@ public class RefactoringService {
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
 			//TODO: mit den issueGroups weiterarbeiten und code genau anschauen und anpassen
 				List<BotIssueGroup> issueGroups = grouping(botIssues);
-				//groupPrioritization(); evtl erst die refactored groups priorisieren
+				//issueGroups = groupPrioritization(issueGroups); evtl erst die refactored groups priorisieren
 
 			// Iterate all issues
 			for (BotIssueGroup botIssueGroup : issueGroups) {
-				List<BotIssue> issueList = botIssueGroup.getBotIssueGroup();
 				allRefactoredIssues.clear(); //TODO: schauen, dass das keine negativen auswirkungen hat
-					refactoredIssueGroup = new RefactoredIssueGroup();
+				refactoredIssueGroup = new RefactoredIssueGroup();
 
 				// When Bot-Pull-Request-Limit reached -> return
 				if (amountBotRequests >= config.getMaxAmountRequests()) {
 					// Return all refactored issues
 					//return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);//TODO: rausfinden was die ResponseEntity ist und evtl durch die gruppen ersetzten
-						return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
+					return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
 				}
 
 				//for (BotIssue botIssue : issueList){
 						try {
 								//System.out.println("BotIssue Operation: " + botIssueGroup.getBotIssueGroup().get(0).getRefactoringOperation());
 								// If issue was not already refactored
-								if (isAnalysisIssueValid(botIssueGroup)) {
+								if (isAnalysisIssueValid(botIssueGroup) && botIssueGroup.getBotIssueGroup().size() > 0) {
 										// Perform refactoring
 										allRefactoredIssueGroup = refactorIssue(false, config, null, null, botIssueGroup);
+										System.out.println(botIssueGroup.getBotIssueGroup().size());
 										for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()){
 												allRefactoredIssues.add(issue);
 										}
@@ -188,39 +188,102 @@ public class RefactoringService {
 		 */
 	public List<BotIssueGroup> grouping(List<BotIssue> prioList) throws BotIssueTypeException {
 		List<BotIssueGroup> issueGroups = new ArrayList<>();
+		List<BotIssueGroup> classGroupList = new ArrayList<>();
 		BotIssueGroup addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-		BotIssueGroup rename = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-		BotIssueGroup reorder = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		//BotIssueGroup rename = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		//BotIssueGroup reorder = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-		BotIssueGroup removePar = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		//BotIssueGroup removePar = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup unknown = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		BotIssueGroup classGroup;
+
 		//TODO: bei probedurchlauf checken ob liste sortiert ist
 
 			//order each BotIssue to a group
 			for (BotIssue issue : prioList){
 				if (issue.getRefactoringOperation().equals(RefactoringOperations.ADD_OVERRIDE_ANNOTATION)){
-					addOverride.addIssue(issue);
-				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.RENAME_METHOD)){
+						//when the amount of refactorings in the addOverride group is bigger than 20,
+						// then add the group to the issues and create a new group
+						if (addOverride.getBotIssueGroup().size() >= 20){
+								issueGroups.add(addOverride);
+								addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+								addOverride.addIssue(issue);
+						}else {
+								addOverride.addIssue(issue);
+						}
+				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE)){
+						//when the amount of refactorings in the commentedOutCode group is bigger than 10,
+						// then add the group to the issues and create a new group
+						if (removeCom.getBotIssueGroup().size() >= 10){
+								issueGroups.add(removeCom);
+								removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+								removeCom.addIssue(issue);
+						}else {
+								removeCom.addIssue(issue);
+						}
+				} else {
+						//bei den anderen refactorings wird auf die klasse überprüft
+						System.out.println(issue.getFilePath());
+						boolean found = false;
+						for (BotIssueGroup group : classGroupList){
+								if (group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() < 20){//TODO: des mit den getAllJavaFiles rausfinden
+										//group for same class and not full
+										group.addIssue(issue);
+										found = true;
+										break;
+								} else if (group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() >= 20){
+										//group with same name but full, create a new group
+										found = true;
+										classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
+										classGroup.setName(issue.getFilePath());
+										classGroup.addIssue(issue);
+										classGroupList.add(classGroup);
+								}
+						}
+						if (!found){
+								//no existing class group, create a new one and add it tho the list
+								classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
+								classGroup.setName(issue.getFilePath());
+								classGroup.addIssue(issue);
+								classGroupList.add(classGroup);
+						}
+				}
+				/*else if(issue.getRefactoringOperation().equals(RefactoringOperations.RENAME_METHOD)){
 						rename.addIssue(issue);
 				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REORDER_MODIFIER)){
 						reorder.addIssue(issue);
-				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE)){
-						removeCom.addIssue(issue);
 				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_PARAMETER)){
 						removePar.addIssue(issue);
 				} else {
+						//for the unknown group will be no limit
 						unknown.addIssue(issue);
-				}
+				}*/
 				//TODO: bei listen auf größe überprüfen
 			}
 
-			//TODO: gruppen erst adden wenn voll oder am ende vom alg, sonst probleme so wie es grad ist
-			issueGroups.add(addOverride);
-			issueGroups.add(rename);
-			issueGroups.add(reorder);
-			issueGroups.add(removeCom);
-			issueGroups.add(removePar);
-			issueGroups.add(unknown);
+			//end of the alg check if a issue is in one of the list, then add it to the issueGroups
+			if (addOverride.getBotIssueGroup().size() > 0){
+					issueGroups.add(addOverride);
+			}
+			if (removeCom.getBotIssueGroup().size() > 0){
+					issueGroups.add(removeCom);
+			}
+			if (classGroupList.size() > 0){
+					issueGroups.addAll(classGroupList);
+			}
+			/*if (rename.getBotIssueGroup().size() > 0){
+					issueGroups.add(rename);
+			}
+			if (reorder.getBotIssueGroup().size() > 0){
+					issueGroups.add(reorder);
+			}
+			if (removePar.getBotIssueGroup().size() > 0){
+					issueGroups.add(removePar);
+			}*/
+			if (unknown.getBotIssueGroup().size() > 0){
+					issueGroups.add(unknown);
+			}
+
 			return issueGroups;
 	}
 
