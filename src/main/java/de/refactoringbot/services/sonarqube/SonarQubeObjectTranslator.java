@@ -44,7 +44,6 @@ public class SonarQubeObjectTranslator {
 			botIssue.setFilePath(Paths.get(component.substring(project.length() + 1, component.length())).toString());
 			botIssue.setLine(issue.getLine());
 			botIssue.setCommentServiceID(issue.getKey());
-			botIssue.setCountChanges(issue.getCountChanges());
 
 			// Translate SonarQube rule
 			switch (issue.getRule()) {

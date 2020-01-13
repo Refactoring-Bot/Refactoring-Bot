@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.model.botissuegroup.BotIssueGroup;
 import de.refactoringbot.model.botissuegroup.BotIssueGroupType;
 import de.refactoringbot.model.exceptions.*;
@@ -34,7 +35,7 @@ import javassist.NotFoundException;
 
 /**
  * This class contains functions regarding the automated refactorings.
- * 
+ *
  * @author Stefan Basaric
  *
  */
@@ -67,13 +68,14 @@ public class RefactoringService {
 	WitService witService;
 	@Autowired
 	FileService fileService;
+	@Autowired GithubDataGrabber githubGrabber;
 
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringService.class);
 
 	/**
 	 * This method performs a refactoring from a comment or an analysis service
 	 * issue.
-	 * 
+	 *
 	 * @param configID
 	 * @param isCommentRefactoring
 	 * @return response
@@ -106,7 +108,7 @@ public class RefactoringService {
 	/**
 	 * This method processes the refactoring of issues detected by an analysis
 	 * service.
-	 * 
+	 *
 	 * @param config
 	 * param allIssues
 	 * @return response
@@ -127,6 +129,16 @@ public class RefactoringService {
 		try {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
+
+			for (BotIssue issue : botIssues){
+					//TODO: später mit richtigem branch name arbeiten
+					issue.setCountChanges(githubGrabber.countCommitsFromHistory(issue, config, "master"));
+			}
+
+			//botIssues = githubGrabber.countCommitsFromHistory(botIssues, config, "master");
+
+			botIssues = bubbleSort(botIssues);
+
 			//TODO: mit den issueGroups weiterarbeiten und code genau anschauen und anpassen
 				List<BotIssueGroup> issueGroups = grouping(botIssues);
 				//issueGroups = groupPrioritization(issueGroups); evtl erst die refactored groups priorisieren
@@ -179,6 +191,43 @@ public class RefactoringService {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+
+		/**
+		 * sort the sonarIssues with its count on changes in commits
+		 * TODO: rausfinden ob bubbleSort reicht
+		 * @param issues
+		 * @return sortedIssues: the List that is sorted after the countChanges
+		 */
+		private List<BotIssue> countSort(List<BotIssue> issues){
+				//in dieser Liste werden die sortierten SonarIssues gespeichert
+				List<BotIssue> sortedIssues = new ArrayList<>();
+
+				sortedIssues = bubbleSort(issues);
+
+				return sortedIssues;
+		}
+
+		/**
+		 * sort a list with the bubble sort
+		 * TODO: auf private nach testen
+		 * @param list
+		 * @return list, the sorted list
+		 */
+		public List<BotIssue> bubbleSort(List<BotIssue> list){
+				BotIssue temp;
+
+				for (int i = 0; i < list.size() - 2; i++){
+						for (int j = 0; j < list.size() - i - 1; j++){
+								if (list.get(j).getCountChanges() < list.get(j + 1).getCountChanges()){
+										temp = list.get(j);
+										list.set(j, list.get(j + 1));
+										list.set(j + 1, temp);
+								}
+						}
+				}
+
+				return list;
+		}
 
 		/**
 		 * This method groups the prioritised Bot-Issues
@@ -298,7 +347,7 @@ public class RefactoringService {
 
 	/**
 	 * This method processes the comment driven refactoring.
-	 * 
+	 *
 	 * @param config
 	 * @param allRequests
 	 * @return response
@@ -360,7 +409,7 @@ public class RefactoringService {
 	/**
 	 * This method refactors the BotIssue which was created from a comment. It
 	 * returns a RefactoredIssue after a successful or failed refactoring.
-	 * 
+	 *
 	 * @param config
 	 * param issue
 	 * @param request
@@ -536,7 +585,7 @@ public class RefactoringService {
 	/**
 	 * This method checks if the database contains a configuration with given id and
 	 * returns it if it exists.
-	 * 
+	 *
 	 * @param configurationId
 	 * @return savedConfig
 	 * @throws DatabaseConnectionException
@@ -568,7 +617,7 @@ public class RefactoringService {
 
 	/**
 	 * This method returns all pull requests from a filehosting service.
-	 * 
+	 *
 	 * @param config
 	 * @return
 	 * @throws URISyntaxException
@@ -585,7 +634,7 @@ public class RefactoringService {
 
 	/**
 	 * This method checks if a comment was already refactored in the past.
-	 * 
+	 *
 	 * @param config
 	 * @param comment
 	 * @return isAlreadyRefactored
@@ -597,7 +646,7 @@ public class RefactoringService {
 	/**
 	 * This method checks if a from a AnalysisServiceIssue translated BotIssue is
 	 * valid, e.g. not already refactored.
-	 * 
+	 *
 	 * param config
 	 * @param issue
 	 * @return
@@ -628,7 +677,7 @@ public class RefactoringService {
 	 * object and saves it to the database so that the bot won't try to refactor a
 	 * comment that can not be refactored. Also, a reply is sent to the comment
 	 * creator to inform him of the failure with a proper error message.
-	 * 
+	 *
 	 * @param config
 	 * @param comment
 	 * @param request
@@ -694,7 +743,7 @@ public class RefactoringService {
 	/**
 	 * This method creates a reply message with the help from the error message of a
 	 * BotRefactoringException.
-	 * 
+	 *
 	 * @param exceptionMessage
 	 * @return replyMessage
 	 */
@@ -705,7 +754,7 @@ public class RefactoringService {
 	/**
 	 * This method creates an BotIssue for a failed refactoring because of a invalid
 	 * comment that the bot can not understand.
-	 * 
+	 *
 	 * @param comment
 	 * @param errorMessage
 	 * @return issue
@@ -726,7 +775,7 @@ public class RefactoringService {
 
 	/**
 	 * This method updates a BotIssue with up-to-date file paths.
-	 * 
+	 *
 	 * @param botIssue
 	 * @param isCommentRefactoring
 	 * @param config

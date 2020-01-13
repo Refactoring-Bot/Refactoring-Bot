@@ -254,15 +254,8 @@ public class ApiGrabber {
 		case sonarqube:
 			// Get issues and translate them
 			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig);
-				//TODO: evtl hier die issues priorisieren und danach gruppieren, man muss halt die Liste umschreiben, damit
-				//TODO: der Wert des Code-Smells noch mit abgespeichert wird
-				for (SonarQubeIssues sqIssue : issues){
-						for (SonarIssue issue : sqIssue.getIssues()){
-								//issue.setCountChanges(githubGrabber.countCommitsFromHistory(issue, gitConfig));
-						}
-				}
 
-				//here the sonarqube issues will be sorted
+				//here the sonarqube issues will be sorted by the creation date
 				// this part belongs to the first prioritization of the code-smells
 				issues = codeSmellPrioritization(issues);
 
@@ -279,6 +272,7 @@ public class ApiGrabber {
 
 		/**
 		 * TODO: von public auf private nach den tests
+		 * TODO: die SonarIssues werden nur nach Datum sortiert, die Bot Issues dann nach anzahl der Änderungen
 		 *
 		 * This Method sorts the sonarqube issues
 		 * it will be the first part of the code-smell prioritization
@@ -291,26 +285,11 @@ public class ApiGrabber {
 
 				//erste Schleife durchläuft alle Projekte
 				for (SonarQubeIssues sonarQubeIssues : issues){
-						//TODO: löschen
-						for (SonarIssue issue : sonarQubeIssues.getIssues()){
-								System.out.println("issue id: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count: " + issue.getCountChanges());
-						}
 
 						//erstes sortieren nach Datum
 						sonarQubeIssues.setIssues(dateSort(sonarQubeIssues));
 						//TODO: schauen, ob erstes Objekt in der list zuerst gerefactored wird und dann die liste so hin drehen, dass neuestes zuerst steht
 						//TODO: schauen wie Date sortiert
-
-						//TODO: löschen
-						for (SonarIssue issue : sonarQubeIssues.getIssues()){
-								System.out.println("issue id after dateSort: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count: " + issue.getCountChanges());
-						}
-						sonarQubeIssues.setIssues(countSort(sonarQubeIssues));
-
-						//TODO: löschen
-						for (SonarIssue issue : sonarQubeIssues.getIssues()){
-								System.out.println("issue id after countSort: " + issue.getKey() + " Creation date: " + issue.getCreationDate() + " issue count: " + issue.getCountChanges());
-						}
 				}
 
 				return issues;
@@ -362,43 +341,6 @@ public class ApiGrabber {
 				Collections.reverse(sortedIssues);
 
 			return sortedIssues;
-		}
-
-		/**
-		 * sort the sonarIssues with its count on changes in commits
-		 * @param issues
-		 * @return sortedIssues: the List that is sorted after the countChanges
-		 */
-		private List<SonarIssue> countSort(SonarQubeIssues issues){
-				int count;
-				List<SonarIssue> issueList = issues.getIssues();
-				//in dieser Liste werden die sortierten SonarIssues gespeichert
-				List<SonarIssue> sortedIssues = new ArrayList<>();
-
-				sortedIssues = bubbleSort(issueList);
-
-				return sortedIssues;
-		}
-
-		/**
-		 * sort a list with the bubble sort
-		 * @param list
-		 * @return list, the sorted list
-		 */
-		private List<SonarIssue> bubbleSort(List<SonarIssue> list){
-				SonarIssue temp;
-
-				for (int i = 0; i < list.size() - 2; i++){
-						for (int j = 0; j < list.size() - i - 2; j++){
-								if (list.get(j).getCountChanges() < list.get(j + 1).getCountChanges()){
-										temp = list.get(j);
-										list.set(j, list.get(j + 1));
-										list.set(j + 1, temp);
-								}
-						}
-				}
-
-				return list;
 		}
 
 		/**
