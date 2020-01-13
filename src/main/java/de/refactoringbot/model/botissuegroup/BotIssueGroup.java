@@ -15,6 +15,7 @@ public class BotIssueGroup {
 		private BotIssueGroupType type;
 		private List<BotIssue> botIssues;
 		private String name;
+		private int valueCounChange = 0;
 
 		public BotIssueGroup(BotIssueGroupType type) throws BotIssueTypeException {
 				botIssues = new ArrayList<>();
@@ -52,4 +53,14 @@ public class BotIssueGroup {
 		}
 
 		public String getName(){return name;}
+
+		//TODO: effizienter machen
+		public int getValueCounChange(){
+
+				for (BotIssue issue : botIssues){
+						valueCounChange += issue.getCountChanges();
+				}
+
+				return valueCounChange;
+		}
 }

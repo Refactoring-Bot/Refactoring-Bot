@@ -200,66 +200,6 @@ import de.refactoringbot.model.github.user.GithubUser;
 		}
 
 		/**
-		 * counts the commits of a single piece of code
-		 * TODO: bis jetzt schaut er nur auf dem master nach den commits für zusätzliche branches editieren
-		 *
-		 * @param issue
-		 * @return count, the count of commits
-		 */
-		public int countCommitsFromHistory(BotIssue issue, GitConfiguration gitConfig, String branch)
-				throws URISyntaxException, BotRefactoringException, GitHubAPIException {
-
-				String path = issue.getFilePath();
-				String repoFolder = gitConfig.getRepoFolder();
-				path = path.replaceAll("\\\\", "/");
-				repoFolder = repoFolder.replaceAll("\\\\", "/");
-				int count = 0;
-				String command = "", command2 = "";
-				//unter zuhilfenahme von https://mkyong.com/java/how-to-execute-shell-command-from-java/
-				ProcessBuilder processBuilder = new ProcessBuilder();
-				Process p;
-				repoFolder = repoFolder.substring(repoFolder.indexOf(':') + 1);
-				command = "cd ." + repoFolder;
-				command2 = "git shortlog -s -n -- ./" + path;
-
-				try {
-						//TODO: andere lösung wegen absolutem pfad vllt mit skript
-						processBuilder.command("C:\\Program Files\\Git\\git-bash.exe", "cd /H && ls -la");
-						p = processBuilder.start();
-						System.out.println("cd /H && " + command + " && " + command2);
-
-						System.out.println("Process Error: " + p.getErrorStream().read());
-						System.out.println("Process: " + p.getErrorStream().read());
-
-						BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-						System.out.println("Console input: " + input.read());
-						String line;
-						String text = command + "\n";
-						while ((line = input.readLine()) != null) {
-								text += line;
-								System.out.println("Line: " + line);
-						}
-						int exitVal = p.waitFor();
-						if (exitVal == 0) {
-								System.out.println("Success!");
-								System.out.println(text);
-						}
-				} catch (Exception e) {
-						//TODO:richtges verhalten überlegen
-						System.out.println(e.getMessage());
-						// If branch does not exist -> return
-						if (e.getMessage().equals("404 Not Found")) {
-								return 0;
-						}
-						logger.error(e.getMessage(), e);
-						throw new GitHubAPIException("Could not get Branch from Github!", e);
-				} finally {
-						System.out.println("Count: " + count);
-						return count;
-				}
-		}
-
-		/**
 		 * This method returns all PullRequest from Github.
 		 *
 		 * @return allRequests

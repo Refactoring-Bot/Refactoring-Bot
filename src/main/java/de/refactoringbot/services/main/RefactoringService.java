@@ -132,16 +132,14 @@ public class RefactoringService {
 
 			for (BotIssue issue : botIssues){
 					//TODO: später mit richtigem branch name arbeiten
-					issue.setCountChanges(githubGrabber.countCommitsFromHistory(issue, config, "master"));
+					issue.setCountChanges(gitService.countCommitsFromHistory(issue, config, "master"));
 			}
-
-			//botIssues = githubGrabber.countCommitsFromHistory(botIssues, config, "master");
 
 			botIssues = bubbleSort(botIssues);
 
 			//TODO: mit den issueGroups weiterarbeiten und code genau anschauen und anpassen
 				List<BotIssueGroup> issueGroups = grouping(botIssues);
-				//issueGroups = groupPrioritization(issueGroups); evtl erst die refactored groups priorisieren
+				issueGroups = groupPrioritization(issueGroups);
 
 			// Iterate all issues
 			for (BotIssueGroup botIssueGroup : issueGroups) {
@@ -191,21 +189,6 @@ public class RefactoringService {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-
-		/**
-		 * sort the sonarIssues with its count on changes in commits
-		 * TODO: rausfinden ob bubbleSort reicht
-		 * @param issues
-		 * @return sortedIssues: the List that is sorted after the countChanges
-		 */
-		private List<BotIssue> countSort(List<BotIssue> issues){
-				//in dieser Liste werden die sortierten SonarIssues gespeichert
-				List<BotIssue> sortedIssues = new ArrayList<>();
-
-				sortedIssues = bubbleSort(issues);
-
-				return sortedIssues;
-		}
 
 		/**
 		 * sort a list with the bubble sort
@@ -338,11 +321,25 @@ public class RefactoringService {
 
 		/**
 		 * This method prioritises the Bot-Issue-Groups
-		 * TODO: rückgabewert unb Parameter ändern
+		 * TODO: nach Testen auf private setzten
 		 * TODO: beschreiben was du machst
 		 */
-	private void groupPrioritization(){
+	public List<BotIssueGroup> groupPrioritization(List<BotIssueGroup> issueGroups){
+			BotIssueGroup temp;
 
+			for (int i = 0; i < issueGroups.size() - 2; i++){
+					for (int j = 0; j < issueGroups.size() - i - 1; j++){
+							if (issueGroups.get(j).getValueCounChange() < issueGroups.get(j + 1).getValueCounChange()){
+									temp = issueGroups.get(j);
+									issueGroups.set(j, issueGroups.get(j + 1));
+									issueGroups.set(j + 1, temp);
+							}
+					}
+			}
+
+			//TODO: Liste in umgekehrter Reihenfolge zurück geben, damit die höher priorisierten requests oben stehen
+			//TODO: und irgendetwas bei dem request erstellen für die gruppen passt noch nicht
+			return issueGroups;
 	}
 
 	/**
