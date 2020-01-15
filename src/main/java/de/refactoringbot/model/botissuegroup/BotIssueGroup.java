@@ -14,7 +14,7 @@ public class BotIssueGroup {
 		//TODO: type in enum oder so speichern
 		private BotIssueGroupType type;
 		private List<BotIssue> botIssues;
-		private String name;
+		private String name = "";
 		private int valueCounChange = 0;
 
 		public BotIssueGroup(BotIssueGroupType type) throws BotIssueTypeException {

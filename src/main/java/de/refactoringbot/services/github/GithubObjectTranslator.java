@@ -204,7 +204,7 @@ public class GithubObjectTranslator {
 				GithubCreateRequest createRequest = new GithubCreateRequest();
 
 				// Fill object with data
-				createRequest.setTitle(group.getBotIssueGroup().get(0).getCommitMessage());
+				createRequest.setTitle(group.getBotIssueGroup().get(0).getCommitMessage());//TODO: vllt was besseres einfallen lassen
 				createRequest.setBody(PULL_REQUEST_DESCRIPTION);
 				createRequest.setHead(gitConfig.getBotName() + ":" + newBranch);
 				createRequest.setBase("master");

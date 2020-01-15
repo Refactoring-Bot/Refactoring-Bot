@@ -220,11 +220,12 @@ public class RefactoringService {
 		 */
 	public List<BotIssueGroup> grouping(List<BotIssue> prioList) throws BotIssueTypeException {
 		List<BotIssueGroup> issueGroups = new ArrayList<>();
-		List<BotIssueGroup> classGroupList = new ArrayList<>();
 		BotIssueGroup addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		//addOverride.setName("Add Override");
 		//BotIssueGroup rename = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		//BotIssueGroup reorder = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+		//removeCom.setName("Remove Commented out Code");
 		//BotIssueGroup removePar = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup unknown = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup classGroup;
@@ -233,12 +234,18 @@ public class RefactoringService {
 
 			//order each BotIssue to a group
 			for (BotIssue issue : prioList){
+					List<String> files = issue.getAllJavaFiles();
+					if (files != null){
+							//TODO: alles mit files löschen
+							System.out.println(files.toString());
+					}
 				if (issue.getRefactoringOperation().equals(RefactoringOperations.ADD_OVERRIDE_ANNOTATION)){
 						//when the amount of refactorings in the addOverride group is bigger than 20,
 						// then add the group to the issues and create a new group
 						if (addOverride.getBotIssueGroup().size() >= 20){
 								issueGroups.add(addOverride);
 								addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+								addOverride.setName(issue.getFilePath());
 								addOverride.addIssue(issue);
 						}else {
 								addOverride.addIssue(issue);
@@ -249,6 +256,7 @@ public class RefactoringService {
 						if (removeCom.getBotIssueGroup().size() >= 10){
 								issueGroups.add(removeCom);
 								removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+								removeCom.setName(issue.getFilePath());
 								removeCom.addIssue(issue);
 						}else {
 								removeCom.addIssue(issue);
@@ -257,27 +265,35 @@ public class RefactoringService {
 						//bei den anderen refactorings wird auf die klasse überprüft
 						System.out.println(issue.getFilePath());
 						boolean found = false;
-						for (BotIssueGroup group : classGroupList){
-								if (group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() < 20){//TODO: des mit den getAllJavaFiles rausfinden
-										//group for same class and not full
-										group.addIssue(issue);
-										found = true;
-										break;
-								} else if (group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() >= 20){
-										//group with same name but full, create a new group
-										found = true;
+						try {
+								for (BotIssueGroup group : issueGroups){
+										if (group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() < 20){//TODO: des mit den getAllJavaFiles rausfinden
+												//group for same class and not full
+												group.addIssue(issue);
+												found = true;
+												break;
+										} else if (group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() >= 20){
+												//group with same name but full, create a new group
+												found = true;
+												classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
+												classGroup.setName(issue.getFilePath());
+												classGroup.addIssue(issue);
+												issueGroups.add(classGroup);
+										}
+								}
+								if (!found){
+										//no existing class group, create a new one and add it tho the list
 										classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
 										classGroup.setName(issue.getFilePath());
 										classGroup.addIssue(issue);
-										classGroupList.add(classGroup);
+										issueGroups.add(classGroup);
 								}
-						}
-						if (!found){
-								//no existing class group, create a new one and add it tho the list
+						} catch (NullPointerException e){
+								//no existing class group, create a new one and add it tho the list TODO: löschen
 								classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
 								classGroup.setName(issue.getFilePath());
 								classGroup.addIssue(issue);
-								classGroupList.add(classGroup);
+								issueGroups.add(classGroup);
 						}
 				}
 				/*else if(issue.getRefactoringOperation().equals(RefactoringOperations.RENAME_METHOD)){
@@ -299,9 +315,6 @@ public class RefactoringService {
 			}
 			if (removeCom.getBotIssueGroup().size() > 0){
 					issueGroups.add(removeCom);
-			}
-			if (classGroupList.size() > 0){
-					issueGroups.addAll(classGroupList);
 			}
 			/*if (rename.getBotIssueGroup().size() > 0){
 					issueGroups.add(rename);
