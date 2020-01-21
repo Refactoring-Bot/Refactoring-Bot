@@ -272,7 +272,6 @@ public class ApiGrabber {
 
 		/**
 		 * TODO: von public auf private nach den tests
-		 * TODO: die SonarIssues werden nur nach Datum sortiert, die Bot Issues dann nach anzahl der Änderungen
 		 *
 		 * This Method sorts the sonarqube issues
 		 * it will be the first part of the code-smell prioritization

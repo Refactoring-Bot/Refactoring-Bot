@@ -2,7 +2,7 @@ package de.refactoringbot.model.botissue;
 
 import java.util.List;
 
-//TODO: datum und anzahl änderungen evtl adden
+//TODO: änderungsdatum evtl adden
 public class BotIssue {
 
 	private String refactoringOperation;

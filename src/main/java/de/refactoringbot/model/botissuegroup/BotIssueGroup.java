@@ -2,6 +2,8 @@ package de.refactoringbot.model.botissuegroup;
 
 import de.refactoringbot.model.botissue.BotIssue;
 import de.refactoringbot.model.exceptions.BotIssueTypeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,11 +13,12 @@ import java.util.List;
  * TODO: in JSON oder DB speichern?
  */
 public class BotIssueGroup {
-		//TODO: type in enum oder so speichern
 		private BotIssueGroupType type;
 		private List<BotIssue> botIssues;
 		private String name = "";
 		private int valueCounChange = 0;
+
+		private static final Logger logger = LoggerFactory.getLogger(BotIssueGroup.class);
 
 		public BotIssueGroup(BotIssueGroupType type) throws BotIssueTypeException {
 				botIssues = new ArrayList<>();
@@ -62,5 +65,17 @@ public class BotIssueGroup {
 				}
 
 				return valueCounChange;
+		}
+
+		/**
+		 * deletes an issue
+		 * @param issue
+		 */
+		public void remove(BotIssue issue){
+				try{
+						botIssues.remove(issue);
+				}catch (Exception e){
+						logger.error("Can't remove issue");
+				}
 		}
 }

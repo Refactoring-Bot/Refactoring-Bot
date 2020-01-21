@@ -82,7 +82,6 @@ public class RefactoringService {
 	 * @throws Exception
 	 */
 	public ResponseEntity<?> performRefactoring(Long configID, boolean isCommentRefactoring) throws Exception {
-		//TODO: evtl wichtig für Gruppenprio
 		// Check and create configuration
 		GitConfiguration config = checkConfigurationExistance(configID);
 
@@ -121,7 +120,7 @@ public class RefactoringService {
                     HttpStatus.BAD_REQUEST);
 		}
 
-		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();//TODO: rausfinden wo das überall verwendet wird, damit nachher die gruppen einen pullrequest bekommen und mein code keine auswirkungen auf andere stellen hat
+		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
 		RefactoredIssueGroup allRefactoredIssueGroup;
 		List<RefactoredIssueGroup> groupsOfRefactoredIssues = new ArrayList<>();
 		RefactoredIssueGroup refactoredIssueGroup;
@@ -137,52 +136,44 @@ public class RefactoringService {
 
 			botIssues = bubbleSort(botIssues);
 
-			//TODO: mit den issueGroups weiterarbeiten und code genau anschauen und anpassen
 				List<BotIssueGroup> issueGroups = grouping(botIssues);
 				issueGroups = groupPrioritization(issueGroups);
 
 			// Iterate all issues
 			for (BotIssueGroup botIssueGroup : issueGroups) {
-				allRefactoredIssues.clear(); //TODO: schauen, dass das keine negativen auswirkungen hat
+				allRefactoredIssues.clear();
 				refactoredIssueGroup = new RefactoredIssueGroup();
 
 				// When Bot-Pull-Request-Limit reached -> return
 				if (amountBotRequests >= config.getMaxAmountRequests()) {
 					// Return all refactored issues
-					//return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);//TODO: rausfinden was die ResponseEntity ist und evtl durch die gruppen ersetzten
 					return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
 				}
 
-				//for (BotIssue botIssue : issueList){
 						try {
-								//System.out.println("BotIssue Operation: " + botIssueGroup.getBotIssueGroup().get(0).getRefactoringOperation());
 								// If issue was not already refactored
 								if (isAnalysisIssueValid(botIssueGroup) && botIssueGroup.getBotIssueGroup().size() > 0) {
 										// Perform refactoring
 										allRefactoredIssueGroup = refactorIssue(false, config, null, null, botIssueGroup);
-										System.out.println(botIssueGroup.getBotIssueGroup().size());
 										for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()){
 												allRefactoredIssues.add(issue);
 										}
-										//amountBotRequests++; Gilt nur wenn für einzelne issues pull request erstellt wird
 								}
 						} catch (Exception e) {
 								// Create failed Refactored-Object
 								botIssueGroup.addIssue(new BotIssue());
-								botIssueGroup.getBotIssueGroup().get(0).setErrorMessage("Bot could not refactor this issue! Internal server error!");
+								botIssueGroup.getBotIssueGroup().get(0).setErrorMessage("Bot could not refactor this issue! Internal server error!");//TODO: irgendwo bei create branch liegt ein fehler
 								allRefactoredIssueGroup = processFailedRefactoring(config, null, null, botIssueGroup, false);
 								for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()){
 										allRefactoredIssues.add(issue);
 								}
 								logger.error(e.getMessage(), e);
 						}
-				//}
 					refactoredIssueGroup.addIssues(allRefactoredIssues);
 					groupsOfRefactoredIssues.add(refactoredIssueGroup);
 					amountBotRequests++; //gilt wenn für gruppen pull requests erstellt werden
 			}
 
-			//return new ResponseEntity<>(allRefactoredIssues, HttpStatus.OK);
 				return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
@@ -215,30 +206,19 @@ public class RefactoringService {
 		/**
 		 * This method groups the prioritised Bot-Issues
 		 * TODO: beschreiben wie du gruppierst
-		 * TODO: Rückgabewert ändern und auf private setzten
+		 * TODO: nach testen auf private setzten
 		 * @param prioList
 		 */
 	public List<BotIssueGroup> grouping(List<BotIssue> prioList) throws BotIssueTypeException {
 		List<BotIssueGroup> issueGroups = new ArrayList<>();
 		BotIssueGroup addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-		//addOverride.setName("Add Override");
-		//BotIssueGroup rename = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-		//BotIssueGroup reorder = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-		//removeCom.setName("Remove Commented out Code");
-		//BotIssueGroup removePar = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup unknown = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup classGroup;
 
-		//TODO: bei probedurchlauf checken ob liste sortiert ist
-
 			//order each BotIssue to a group
 			for (BotIssue issue : prioList){
-					List<String> files = issue.getAllJavaFiles();
-					if (files != null){
-							//TODO: alles mit files löschen
-							System.out.println(files.toString());
-					}
+
 				if (issue.getRefactoringOperation().equals(RefactoringOperations.ADD_OVERRIDE_ANNOTATION)){
 						//when the amount of refactorings in the addOverride group is bigger than 20,
 						// then add the group to the issues and create a new group
@@ -263,16 +243,15 @@ public class RefactoringService {
 						}
 				} else {
 						//bei den anderen refactorings wird auf die klasse überprüft
-						System.out.println(issue.getFilePath());
 						boolean found = false;
 						try {
 								for (BotIssueGroup group : issueGroups){
-										if (group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() < 20){//TODO: des mit den getAllJavaFiles rausfinden
+										if (group.getType().equals(BotIssueGroupType.CLASS) && group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() < 20){
 												//group for same class and not full
 												group.addIssue(issue);
 												found = true;
 												break;
-										} else if (group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() >= 20){
+										} else if (group.getType().equals(BotIssueGroupType.CLASS) && group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() >= 20){
 												//group with same name but full, create a new group
 												found = true;
 												classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
@@ -289,42 +268,18 @@ public class RefactoringService {
 										issueGroups.add(classGroup);
 								}
 						} catch (NullPointerException e){
-								//no existing class group, create a new one and add it tho the list TODO: löschen
-								classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
-								classGroup.setName(issue.getFilePath());
-								classGroup.addIssue(issue);
-								issueGroups.add(classGroup);
+								logger.error(e.getMessage(), e);
 						}
 				}
-				/*else if(issue.getRefactoringOperation().equals(RefactoringOperations.RENAME_METHOD)){
-						rename.addIssue(issue);
-				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REORDER_MODIFIER)){
-						reorder.addIssue(issue);
-				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_PARAMETER)){
-						removePar.addIssue(issue);
-				} else {
-						//for the unknown group will be no limit
-						unknown.addIssue(issue);
-				}*/
-				//TODO: bei listen auf größe überprüfen
 			}
 
-			//end of the alg check if a issue is in one of the list, then add it to the issueGroups
+			//end of the algorithm checks if a issue is in one of the list, then add it to the issueGroups
 			if (addOverride.getBotIssueGroup().size() > 0){
 					issueGroups.add(addOverride);
 			}
 			if (removeCom.getBotIssueGroup().size() > 0){
 					issueGroups.add(removeCom);
 			}
-			/*if (rename.getBotIssueGroup().size() > 0){
-					issueGroups.add(rename);
-			}
-			if (reorder.getBotIssueGroup().size() > 0){
-					issueGroups.add(reorder);
-			}
-			if (removePar.getBotIssueGroup().size() > 0){
-					issueGroups.add(removePar);
-			}*/
 			if (unknown.getBotIssueGroup().size() > 0){
 					issueGroups.add(unknown);
 			}
@@ -334,8 +289,9 @@ public class RefactoringService {
 
 		/**
 		 * This method prioritises the Bot-Issue-Groups
+		 *
+		 * It is a simple sort with the sum of count-changes of the botIssues in the group.
 		 * TODO: nach Testen auf private setzten
-		 * TODO: beschreiben was du machst
 		 */
 	public List<BotIssueGroup> groupPrioritization(List<BotIssueGroup> issueGroups){
 			BotIssueGroup temp;
@@ -351,7 +307,6 @@ public class RefactoringService {
 			}
 
 			//TODO: Liste in umgekehrter Reihenfolge zurück geben, damit die höher priorisierten requests oben stehen
-			//TODO: und irgendetwas bei dem request erstellen für die gruppen passt noch nicht
 			return issueGroups;
 	}
 
@@ -561,28 +516,31 @@ public class RefactoringService {
 						// If analysis service refactoring
 				} else {*/
 				// Create new branch for refactoring
-				String newBranch = "sonarQube_Refactoring_" + botIssueGroup.getBotIssueGroup().get(0).getCommentServiceID();
+				String newBranch = "sonarQube_Refactoring_Group_" + botIssueGroup.getBotIssueGroup().get(0).getCommentServiceID();
 				// Check if branch already exists (throws exception if it does)
 				apiGrabber.checkBranch(config, newBranch);
-				gitService.createBranch(config, "master", newBranch, "upstream");
+				gitService.createBranch(config, "master", newBranch, "upstream");//TODO: hier liegt fehler
 				// Add current filepaths to Issue
 				for (BotIssue botIssue : botIssueGroup.getBotIssueGroup()) {
 						botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 						// Try to refactor
 						botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
 
-						// If successful
-						if (botIssue.getCommitMessage() != null) {
-								// Create Refactored-Object
-								RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
-								refactoredIssueGroup.addIssue(refactoredIssue);
-								issueRepo.save(refactoredIssue); //TODO: vllt RefactoredIssueGroup so umschreiben dass es das auch speichert
-						} else {
-								botIssue.setErrorMessage("Could not create a commit message!");
-								return processFailedRefactoring(config, comment, request, botIssueGroup, isCommentRefactoring);
+						try{
+								// If successful
+								if (botIssue.getCommitMessage() != null) {
+										// Create Refactored-Object
+										RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
+										refactoredIssueGroup.addIssue(refactoredIssue);
+										issueRepo.save(refactoredIssue); //TODO: vllt RefactoredIssueGroup so umschreiben dass es das auch speichert
+								} else {
+										botIssue.setErrorMessage("Could not create a commit message!");
+										return processFailedRefactoring(config, comment, request, botIssueGroup, isCommentRefactoring);
+								}
+						}catch (Exception e){
+							botIssueGroup.remove(botIssue);
 						}
 				}
-				//}
 
 				// Push changes + create Pull-Request
 				gitService.commitAndPushChanges(config, botIssueGroup.getBotIssueGroup().get(0).getCommitMessage());
