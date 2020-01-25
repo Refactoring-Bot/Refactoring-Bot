@@ -128,13 +128,22 @@ public class RefactoringService {
 		try {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
+			//durch die Schwierigkeiten mit den CommentedOutCode refactorings werden diese erst in eine seperate Liste gespeichert und später in die ursprüngliche Liste eingefügt
+			List<BotIssue> commentedOutIssues = new ArrayList<>();
 
 			for (BotIssue issue : botIssues){
 					//TODO: später mit richtigem branch name arbeiten
 					issue.setCountChanges(gitService.countCommitsFromHistory(issue, config, "master"));
+
+					if (issue.getRefactoringOperation().equals("Remove Commented Out Code")){
+							commentedOutIssues.add(issue);
+					}
 			}
 
+			botIssues.removeAll(commentedOutIssues);
 			botIssues = bubbleSort(botIssues);
+			commentedOutIssues = sortCommentedOutIssues(commentedOutIssues);
+			botIssues.addAll(commentedOutIssues);
 
 				List<BotIssueGroup> issueGroups = grouping(botIssues);
 				issueGroups = groupPrioritization(issueGroups);
@@ -201,6 +210,27 @@ public class RefactoringService {
 				}
 
 				return list;
+		}
+
+		/**
+		 * sorts the commentedOut Issues that the issue with the highest line is on the top
+		 * @param issues
+		 * @return
+		 */
+		private List<BotIssue> sortCommentedOutIssues(List<BotIssue> issues){
+			BotIssue temp;
+
+				for (int i = 0; i < issues.size() - 2; i++){
+						for (int j = 0; j < issues.size() - i - 1; j++){
+								if (issues.get(j).getLine() < issues.get(j + 1).getLine()){
+										temp = issues.get(j);
+										issues.set(j, issues.get(j + 1));
+										issues.set(j + 1, temp);
+								}
+						}
+				}
+
+				return issues;
 		}
 
 		/**
