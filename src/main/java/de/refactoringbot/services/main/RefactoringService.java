@@ -533,6 +533,7 @@ public class RefactoringService {
 										RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
 										refactoredIssueGroup.addIssue(refactoredIssue);
 										issueRepo.save(refactoredIssue); //TODO: vllt RefactoredIssueGroup so umschreiben dass es das auch speichert
+										gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
 								} else {
 										botIssue.setErrorMessage("Could not create a commit message!");
 										return processFailedRefactoring(config, comment, request, botIssueGroup, isCommentRefactoring);
@@ -543,7 +544,6 @@ public class RefactoringService {
 				}
 
 				// Push changes + create Pull-Request
-				gitService.commitAndPushChanges(config, botIssueGroup.getBotIssueGroup().get(0).getCommitMessage());
 				apiGrabber.makeCreateRequestWithAnalysisService(botIssueGroup, config, newBranch);
 
 				// Save and return refactored issue
