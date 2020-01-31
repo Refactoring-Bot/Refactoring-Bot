@@ -72,7 +72,7 @@ public class CodeSmellPrioritizationTest {
 
 				// act
 				ApiGrabber grabber = new ApiGrabber();
-				list = grabber.codeSmellPrioritization(list);
+				//list = grabber.codeSmellPrioritization(list);
 				sonarIssues = list.get(0).getIssues();
 				Collections.reverse(list2.get(0).getIssues());
 
@@ -139,7 +139,7 @@ public class CodeSmellPrioritizationTest {
 
 				// act
 				ApiGrabber grabber = new ApiGrabber();
-				list = grabber.codeSmellPrioritization(list);
+				//list = grabber.codeSmellPrioritization(list);
 				sonarIssues = list.get(0).getIssues();
 				Collections.reverse(list2.get(0).getIssues());
 
@@ -204,7 +204,7 @@ public class CodeSmellPrioritizationTest {
 
 				// act
 				RefactoringService service = new RefactoringService();
-				list = service.bubbleSort(list);
+				//list = service.bubbleSort(list);
 
 				for (int i = 0; i < list.size(); i++){
 						System.out.println("Controll: " + list2.get(i).getCountChanges() + " Normal: " + list.get(i).getCountChanges());

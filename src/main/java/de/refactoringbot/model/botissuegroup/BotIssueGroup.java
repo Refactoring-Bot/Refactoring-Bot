@@ -10,7 +10,6 @@ import java.util.List;
 
 /**
  * This class is for the group of code smells that the refactoring bot will push
- * TODO: in JSON oder DB speichern?
  */
 public class BotIssueGroup {
 		private BotIssueGroupType type;

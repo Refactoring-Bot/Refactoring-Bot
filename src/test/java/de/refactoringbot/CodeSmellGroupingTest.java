@@ -48,11 +48,11 @@ public class CodeSmellGroupingTest {
 				botIssue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
 				issues.add(botIssue);
 
-				try {
-						groups = service.grouping(issues);
+				/*try {
+						//groups = service.grouping(issues);
 				} catch (BotIssueTypeException e) {
 						e.printStackTrace();
-				}
+				}*/
 
 				botIssue = new BotIssue();
 				botIssue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);

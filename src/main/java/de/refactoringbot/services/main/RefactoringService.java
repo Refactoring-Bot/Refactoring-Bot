@@ -171,7 +171,7 @@ public class RefactoringService {
 						} catch (Exception e) {
 								// Create failed Refactored-Object
 								botIssueGroup.addIssue(new BotIssue());
-								botIssueGroup.getBotIssueGroup().get(0).setErrorMessage("Bot could not refactor this issue! Internal server error!");//TODO: irgendwo bei create branch liegt ein fehler
+								botIssueGroup.getBotIssueGroup().get(0).setErrorMessage("Bot could not refactor this issue! Internal server error!");
 								allRefactoredIssueGroup = processFailedRefactoring(config, null, null, botIssueGroup, false);
 								for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()){
 										allRefactoredIssues.add(issue);
@@ -191,12 +191,13 @@ public class RefactoringService {
 	}
 
 		/**
-		 * sort a list with the bubble sort
-		 * TODO: auf private nach testen
+		 * sort a list with the bubble sort with its value on countChanges.
+		 * After this method the BotIssue with the highest value on countChanges will be the first in the List.
+		 *
 		 * @param list
 		 * @return list, the sorted list
 		 */
-		public List<BotIssue> bubbleSort(List<BotIssue> list){
+		private List<BotIssue> bubbleSort(List<BotIssue> list){
 				BotIssue temp;
 
 				for (int i = 0; i < list.size() - 2; i++){
@@ -234,12 +235,13 @@ public class RefactoringService {
 		}
 
 		/**
-		 * This method groups the prioritised Bot-Issues
-		 * TODO: beschreiben wie du gruppierst
-		 * TODO: nach testen auf private setzten
+		 * This method groups the prioritised Bot-Issues.
+		 * The AddOverrideAnnotation and RemoveCommentedOutCode code smells will be in separate groups.
+		 * The other code smells will be in groups that relates to the classes their in.
+		 *
 		 * @param prioList
 		 */
-	public List<BotIssueGroup> grouping(List<BotIssue> prioList) throws BotIssueTypeException {
+	private List<BotIssueGroup> grouping(List<BotIssue> prioList) throws BotIssueTypeException {
 		List<BotIssueGroup> issueGroups = new ArrayList<>();
 		BotIssueGroup addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
@@ -321,9 +323,8 @@ public class RefactoringService {
 		 * This method prioritises the Bot-Issue-Groups
 		 *
 		 * It is a simple sort with the sum of count-changes of the botIssues in the group.
-		 * TODO: nach Testen auf private setzten
 		 */
-	public List<BotIssueGroup> groupPrioritization(List<BotIssueGroup> issueGroups){
+	private List<BotIssueGroup> groupPrioritization(List<BotIssueGroup> issueGroups){
 			BotIssueGroup temp;
 
 			for (int i = 0; i < issueGroups.size() - 2; i++){
@@ -336,7 +337,6 @@ public class RefactoringService {
 					}
 			}
 
-			//TODO: Liste in umgekehrter Reihenfolge zurück geben, damit die höher priorisierten requests oben stehen
 			return issueGroups;
 	}
 
@@ -549,7 +549,7 @@ public class RefactoringService {
 				String newBranch = "sonarQube_Refactoring_Group_" + botIssueGroup.getBotIssueGroup().get(0).getCommentServiceID();
 				// Check if branch already exists (throws exception if it does)
 				apiGrabber.checkBranch(config, newBranch);
-				gitService.createBranch(config, "master", newBranch, "upstream");//TODO: hier liegt fehler
+				gitService.createBranch(config, "master", newBranch, "upstream");
 				// Add current filepaths to Issue
 				for (BotIssue botIssue : botIssueGroup.getBotIssueGroup()) {
 						botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);

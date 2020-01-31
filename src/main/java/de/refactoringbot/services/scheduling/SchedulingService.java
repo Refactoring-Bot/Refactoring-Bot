@@ -49,7 +49,6 @@ public class SchedulingService {
 		for (GitConfiguration config: allConfigs) {
 			try {
 				logger.info("Starting scheduled comment refactoring with configuration with the ID: " + config.getConfigurationId());
-				//TODO: beachten
 				refactoring.performRefactoring(config.getConfigurationId(), true);
 				logger.info("Successfully finished comment refactoring with configuration with the ID: " + config.getConfigurationId());
 			} catch (Exception e) {

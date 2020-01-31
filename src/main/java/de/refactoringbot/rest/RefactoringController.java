@@ -44,7 +44,6 @@ public class RefactoringController {
 	public ResponseEntity<?> refactorWithComments(@PathVariable Long configID) {
 		// Refactor with comments and respond with result
 		try {
-				//TODO: beachten
 			return refactoringService.performRefactoring(configID, true);
 		} catch (DatabaseConnectionException d) {
 			logger.error(d.getMessage(), d);
@@ -71,7 +70,6 @@ public class RefactoringController {
 	public ResponseEntity<?> refactorWithSonarQube(@PathVariable Long configID) {
 		// Refactor with analysis service and respond with result
 		try {
-				//TODO: beachten
 			return refactoringService.performRefactoring(configID, false);
 		} catch (DatabaseConnectionException d) {
 			logger.error(d.getMessage(), d);

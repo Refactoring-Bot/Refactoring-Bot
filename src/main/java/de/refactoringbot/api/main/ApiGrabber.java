@@ -43,7 +43,7 @@ import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
 /**
  * This class transfers all Rest-Requests to correct APIs and returns all
  * objects as translated bot objects.
- * 
+ *
  * @author Stefan Basaric
  *
  */
@@ -68,7 +68,7 @@ public class ApiGrabber {
 	/**
 	 * This method gets all requests with all comments from an api translated into a
 	 * bot object.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @return botRequests
 	 * @throws URISyntaxException
@@ -98,7 +98,7 @@ public class ApiGrabber {
 	/**
 	 * This method replies to User inside a Pull-Request that belongs to a Bot if
 	 * the refactoring was successful.
-	 * 
+	 *
 	 * @param request
 	 * @param gitConfig
 	 * @throws Exception
@@ -121,7 +121,7 @@ public class ApiGrabber {
 
 	/**
 	 * Reply to comment if refactoring failed.
-	 * 
+	 *
 	 * @param request
 	 * @param gitConfig
 	 * @throws Exception
@@ -143,7 +143,7 @@ public class ApiGrabber {
 
 	/**
 	 * Check if Branch exists on repository.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @throws Exception
 	 */
@@ -161,7 +161,7 @@ public class ApiGrabber {
 
 	/**
 	 * This method checks the user input and creates a git configuration.
-	 * 
+	 *
 	 * @param configuration
 	 * @return gitConfig
 	 * @throws Exception
@@ -200,7 +200,7 @@ public class ApiGrabber {
 
 	/**
 	 * This method deletes a repository of a filehoster.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @throws Exception
 	 * @throws OperationNotSupportedException
@@ -219,7 +219,7 @@ public class ApiGrabber {
 
 	/**
 	 * This method creates a fork of a repository of a filehoster.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @throws Exception
 	 */
@@ -243,7 +243,7 @@ public class ApiGrabber {
 
 	/**
 	 * This method gets all issues of a Project from a analysis service.
-	 * TODO: test für diese methode schreiben um zu sehen, in welcher reihenfolge die BotIssues dann stehen
+	 *
 	 * @param gitConfig
 	 * @return botIssues
 	 * @throws Exception
@@ -271,15 +271,13 @@ public class ApiGrabber {
 	}
 
 		/**
-		 * TODO: von public auf private nach den tests
-		 *
 		 * This Method sorts the sonarqube issues
-		 * it will be the first part of the code-smell prioritization
+		 * it will be the first part of the code smell prioritization
 		 *
 		 * @param issues
 		 * @return
 		 */
-		public List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues){
+		private List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues){
 				//TODO: Methode an codeconventions anpassen
 
 				//erste Schleife durchläuft alle Projekte
@@ -287,8 +285,6 @@ public class ApiGrabber {
 
 						//erstes sortieren nach Datum
 						sonarQubeIssues.setIssues(dateSort(sonarQubeIssues));
-						//TODO: schauen, ob erstes Objekt in der list zuerst gerefactored wird und dann die liste so hin drehen, dass neuestes zuerst steht
-						//TODO: schauen wie Date sortiert
 				}
 
 				return issues;
@@ -367,7 +363,7 @@ public class ApiGrabber {
 	 * only necessary for analysis services that only return relative paths for
 	 * their issues (e.g. SonarQube). Other anaylsis services should just return the
 	 * input path in their case-section.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @param relativePath
 	 * @return absoluteFilePath
@@ -431,7 +427,7 @@ public class ApiGrabber {
 				case github:
 						// Create PR object
 						GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(group, gitConfig,
-								newBranch);//TODO: hier pullrequests mit den gruppen machen
+								newBranch);
 						// Create PR on filehoster
 						githubGrabber.createRequest(createRequest, gitConfig);
 						break;
@@ -447,14 +443,14 @@ public class ApiGrabber {
 
 	/**
 	 * This method checks the analysis service data.
-	 * 
+	 *
 	 * @param configuration
 	 * analysisService
 	 * param
 	 * analysisServiceProjectKey
-	 * 
+	 *
 	 * @throws SonarQubeAPIException
-	 * @throws URISyntaxException 
+	 * @throws URISyntaxException
 	 */
 	private void checkAnalysisService(GitConfigurationDTO configuration) throws SonarQubeAPIException, URISyntaxException {
 		// Check if input exists
