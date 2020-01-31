@@ -1,7 +1,6 @@
 package de.refactoringbot.api.main;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -271,19 +270,14 @@ public class ApiGrabber {
 	}
 
 		/**
-		 * This Method sorts the sonarqube issues
+		 * This method sorts the sonarqube issues
 		 * it will be the first part of the code smell prioritization
 		 *
 		 * @param issues
 		 * @return
 		 */
 		private List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues){
-				//TODO: Methode an codeconventions anpassen
-
-				//erste Schleife durchläuft alle Projekte
 				for (SonarQubeIssues sonarQubeIssues : issues){
-
-						//erstes sortieren nach Datum
 						sonarQubeIssues.setIssues(dateSort(sonarQubeIssues));
 				}
 
@@ -291,29 +285,29 @@ public class ApiGrabber {
 		}
 
 		/**
-		 * sort the SonarIssues with its creation date
-		 * TODO: warum so implementiert?
-		 * TODO: warum nicht nach update date sortieren?
+		 * This method sort the SonarIssues with its creation date
+		 * the issue with the newest creationdate will be the first in the returned list.
+		 *
 		 * @param sqIssues
 		 * @return sortedIssues: the List that is sorted after the date
 		 */
 		private List<SonarIssue> dateSort(SonarQubeIssues sqIssues){
 				Date creationDate;
 				DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+'SSSS");
-				//in dieser Liste wird in der Schleife pro durchlauf die aktuellen Befunde gespeichert
+				//in this List the current findings are saved
 				List<SonarIssue> sonarIssues;
-				//in der Map wird die Id des Befundes mit dem zugehörigen Datum gespeichert
+				//In this map the ID of the finding and its date are saved
 				Map<String, Date> sonarIssueMap = new HashMap<>();
-				//in dieser Liste werden die sortierten SonarIssues gespeichert
+				//In this list the sorted SonarIssues are saved
 				List<SonarIssue> sortedIssues;
 
-				//die aktuellen Befunde werden geholt
+				//the current findings are fetched
 				sonarIssues = sqIssues.getIssues();
 
-				//zweite Schleife durchläuft alle Befunde der Projekte
+				//this loop runs throug all findings of the project
 				for (SonarIssue sonarIssue : sonarIssues){
 						try {
-								//für jeden Befund wird ein Date erzeugt
+								//for each finding a date object is created with the date from the issue
 								creationDate = format.parse(sonarIssue.getCreationDate());
 								sonarIssueMap.put(sonarIssue.getKey(), creationDate);
 
@@ -322,10 +316,10 @@ public class ApiGrabber {
 						}
 				}
 				sonarIssueMap = sortByValue(sonarIssueMap);
-				//neue Liste für jedes Projekt
+				//new list for each project
 				sortedIssues = new ArrayList<>();
 
-				//schleifen um die sonarIssues Liste in die richtige Reihenfolge zu bringen
+				//loop to bring the SonarIssues list in the correct order
 				for (Map.Entry<String, Date> entry : sonarIssueMap.entrySet() ){
 						for (SonarIssue issue : sonarIssues){
 								if (entry.getKey().equals(issue.getKey())){
@@ -339,7 +333,7 @@ public class ApiGrabber {
 		}
 
 		/**
-		 * Methode aus https://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values TODO: zuletzt besucht am:
+		 * Method from: https://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values TODO: last visited at: 31.01.2020
 		 * sort Maps by value
 		 * @param map
 		 * @param <K>
@@ -431,13 +425,13 @@ public class ApiGrabber {
 						// Create PR on filehoster
 						githubGrabber.createRequest(createRequest, gitConfig);
 						break;
-				/*case gitlab: TODO: evtl implementieren
+				case gitlab:
 						// Create PR Object
 						GitLabCreateRequest gitlabCreateRequest = gitlabTranslator.makeCreateRequestWithAnalysisService(group,
 								gitConfig, newBranch);
 						// Create PR on filehoster
 						gitlabGrabber.createRequest(gitlabCreateRequest, gitConfig);
-						break;*/
+						break;
 				}
 		}
 

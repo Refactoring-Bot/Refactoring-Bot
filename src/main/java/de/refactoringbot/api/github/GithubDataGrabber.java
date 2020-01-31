@@ -5,8 +5,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
-import de.refactoringbot.model.botissue.BotIssue;
-import de.refactoringbot.model.sonarqube.SonarIssue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

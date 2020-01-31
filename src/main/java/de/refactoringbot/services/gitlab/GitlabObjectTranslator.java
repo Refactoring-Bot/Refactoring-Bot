@@ -5,6 +5,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import de.refactoringbot.model.botissuegroup.BotIssueGroup;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ public class GitlabObjectTranslator {
 	 * This method creates a GitConfiguration from GitLab data.
 	 * 
 	 * @param configuration
-	 * @param integer
+	 * @param apiUrl
 	 * @return
 	 * @throws GitLabAPIException
 	 * @throws MalformedURLException
@@ -192,6 +193,31 @@ public class GitlabObjectTranslator {
 
 		return createRequest;
 	}
+
+		/**
+		 * This method creates an object that can be used to create a Pull-Request on
+		 * GitHub after a analysis service refactoring.
+		 * This method creates Pull-Requests with the BotIssueGroup
+		 *
+		 * @param group
+		 * @param gitConfig
+		 * @param newBranch
+		 * @return createRequest
+		 */
+		public GitLabCreateRequest makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig,
+				String newBranch) {
+				GitLabCreateRequest createRequest = new GitLabCreateRequest();
+
+				// Fill object with data
+				createRequest.setTitle(group.getBotIssueGroup().get(0).getCommitMessage());//TODO: vllt was besseres einfallen lassen
+				createRequest.setDescription(PULL_REQUEST_DESCRIPTION);
+				createRequest.setSource_branch(newBranch);
+				createRequest.setTarget_branch("master");
+				createRequest.setAllow_collaboration(true);
+				createRequest.setTarget_project_id(getProjectId(gitConfig.getRepoApiLink()));
+
+				return createRequest;
+		}
 
 	/**
 	 * This method returns a reply comment as a String that can be created on
