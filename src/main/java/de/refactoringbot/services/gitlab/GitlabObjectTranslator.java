@@ -207,9 +207,14 @@ public class GitlabObjectTranslator {
 		public GitLabCreateRequest makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig,
 				String newBranch) {
 				GitLabCreateRequest createRequest = new GitLabCreateRequest();
+				String title = "";
+
+				//create the commit message by adding all commit messages from the BotIssues in the group
+				for (BotIssue issue : group.getBotIssueGroup()){
+						title = title + ", " + issue.getCommitMessage();
+				}
 
 				// Fill object with data
-				createRequest.setTitle(group.getBotIssueGroup().get(0).getCommitMessage());//TODO: vllt was besseres einfallen lassen
 				createRequest.setDescription(PULL_REQUEST_DESCRIPTION);
 				createRequest.setSource_branch(newBranch);
 				createRequest.setTarget_branch("master");

@@ -202,9 +202,14 @@ public class GithubObjectTranslator {
 		public GithubCreateRequest makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig,
 				String newBranch) {
 				GithubCreateRequest createRequest = new GithubCreateRequest();
+				String title = "";
+
+				//create the commit message by adding all commit messages from the BotIssues in the group
+				for (BotIssue issue : group.getBotIssueGroup()){
+						title = title + ", " + issue.getCommitMessage();
+				}
 
 				// Fill object with data
-				createRequest.setTitle(group.getBotIssueGroup().get(0).getCommitMessage());//TODO: vllt was besseres einfallen lassen
 				createRequest.setBody(PULL_REQUEST_DESCRIPTION);
 				createRequest.setHead(gitConfig.getBotName() + ":" + newBranch);
 				createRequest.setBase("master");

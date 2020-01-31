@@ -149,7 +149,7 @@ public class GitService {
 	}
 
 		/**
-		 * counts the commits of a single piece of code
+		 * This method count the commits of a single piece of code.
 		 * TODO: bis jetzt schaut er nur auf dem master nach den commits für zusätzliche branches editieren
 		 *
 		 * @param issue
@@ -163,8 +163,6 @@ public class GitService {
 			path = path.replaceAll("\\\\", "/");
 			Repository repository;
 
-			System.out.println("File Directory: " + botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() +"/"+ path);
-
 			try {
 					repository = new FileRepository(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/.git");
 					ObjectId objID = repository.resolve(Constants.HEAD);
@@ -172,13 +170,9 @@ public class GitService {
 				git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() /*+ path*/));
 				commits = git.log().add(objID).addPath(path).call();
 
-				System.out.println("Commits: " + commits.toString());
-
 				for (RevCommit commit : commits){
 						count++;
 				}
-
-				System.out.println(issue.getFilePath() + " Commits: " + count);
 			}catch (Exception e){
 					logger.error(e.getMessage(), e);
 			} finally {

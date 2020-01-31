@@ -128,7 +128,8 @@ public class RefactoringService {
 		try {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
-			//durch die Schwierigkeiten mit den CommentedOutCode refactorings werden diese erst in eine seperate Liste gespeichert und später in die ursprüngliche Liste eingefügt
+				//because of trouble with the CommentedOutCode refactorings this one are saved in a separate list and prioritised on its own.
+				//later they will be added to the botIssue list again.
 			List<BotIssue> commentedOutIssues = new ArrayList<>();
 
 			for (BotIssue issue : botIssues){
@@ -180,7 +181,7 @@ public class RefactoringService {
 						}
 					refactoredIssueGroup.addIssues(allRefactoredIssues);
 					groupsOfRefactoredIssues.add(refactoredIssueGroup);
-					amountBotRequests++; //gilt wenn für gruppen pull requests erstellt werden
+					amountBotRequests++; //the amountBotRequest is only incremented when a group of refactorings are pushed.
 			}
 
 				return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
@@ -191,7 +192,7 @@ public class RefactoringService {
 	}
 
 		/**
-		 * sort a list with the bubble sort with its value on countChanges.
+		 * Sort a list with the bubble sort with its value on countChanges.
 		 * After this method the BotIssue with the highest value on countChanges will be the first in the List.
 		 *
 		 * @param list
@@ -214,7 +215,8 @@ public class RefactoringService {
 		}
 
 		/**
-		 * sorts the commentedOut Issues that the issue with the highest line is on the top
+		 * Sorts the commentedOut Issues that the issue with the highest line is on the top
+		 *
 		 * @param issues
 		 * @return
 		 */
@@ -274,7 +276,8 @@ public class RefactoringService {
 								removeCom.addIssue(issue);
 						}
 				} else {
-						//bei den anderen refactorings wird auf die klasse überprüft
+						//if the refactoring is not AddOverrideAnnotation or RemoveCommentedOutCode, then check if the
+						//refactorings are in the same class to add them in a class group.
 						boolean found = false;
 						try {
 								for (BotIssueGroup group : issueGroups){
@@ -284,7 +287,7 @@ public class RefactoringService {
 												found = true;
 												break;
 										} else if (group.getType().equals(BotIssueGroupType.CLASS) && group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() >= 20){
-												//group with same name but full, create a new group
+												//group with same class but full, create a new group for this class
 												found = true;
 												classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
 												classGroup.setName(issue.getFilePath());
@@ -320,8 +323,7 @@ public class RefactoringService {
 	}
 
 		/**
-		 * This method prioritises the Bot-Issue-Groups
-		 *
+		 * This method prioritises the Bot-Issue-Group.
 		 * It is a simple sort with the sum of count-changes of the botIssues in the group.
 		 */
 	private List<BotIssueGroup> groupPrioritization(List<BotIssueGroup> issueGroups){
@@ -562,7 +564,7 @@ public class RefactoringService {
 										// Create Refactored-Object
 										RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
 										refactoredIssueGroup.addIssue(refactoredIssue);
-										issueRepo.save(refactoredIssue); //TODO: vllt RefactoredIssueGroup so umschreiben dass es das auch speichert
+										issueRepo.save(refactoredIssue);
 										gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
 								} else {
 										botIssue.setErrorMessage("Could not create a commit message!");
