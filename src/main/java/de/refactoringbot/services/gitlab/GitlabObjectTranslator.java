@@ -211,10 +211,11 @@ public class GitlabObjectTranslator {
 
 				//create the commit message by adding all commit messages from the BotIssues in the group
 				for (BotIssue issue : group.getBotIssueGroup()){
-						title = title + ", " + issue.getCommitMessage();
+						title = title + issue.getCommitMessage() + ", ";
 				}
 
 				// Fill object with data
+				createRequest.setTitle(title);
 				createRequest.setDescription(PULL_REQUEST_DESCRIPTION);
 				createRequest.setSource_branch(newBranch);
 				createRequest.setTarget_branch("master");
