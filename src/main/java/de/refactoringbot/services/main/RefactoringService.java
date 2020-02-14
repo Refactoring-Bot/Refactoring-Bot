@@ -522,7 +522,9 @@ public class RefactoringService {
 				BotPullRequestComment comment, BotPullRequest request, BotIssueGroup botIssueGroup) throws Exception {
 				RefactoredIssueGroup refactoredIssueGroup = new RefactoredIssueGroup();
 				// If refactoring via comment
-				/*if (isCommentRefactoring) { TODO: evtl für commentedRefactoring implementeren
+				//TODO: I'm not sure if this is working regrets Marvin Knodel
+				if (isCommentRefactoring) {
+						BotIssue botIssue = botIssueGroup.getBotIssueGroup().get(0);
 						// Change to existing Refactoring-Branch
 						gitService.switchBranch(config, request.getBranchName());
 
@@ -542,11 +544,11 @@ public class RefactoringService {
 								apiGrabber.replyToUserInsideBotRequest(request, comment, config);
 
 								// Save and return refactored issue
-								return issueRepo.save(refactoredIssue);
+								issueRepo.save(refactoredIssue);
 						}
 
 						// If analysis service refactoring
-				} else {*/
+				} else {
 				// Create new branch for refactoring
 				String newBranch = "sonarQube_Refactoring_Group_" + botIssueGroup.getBotIssueGroup().get(0).getCommentServiceID();
 				// Check if branch already exists (throws exception if it does)
@@ -577,6 +579,7 @@ public class RefactoringService {
 
 				// Push changes + create Pull-Request
 				apiGrabber.makeCreateRequestWithAnalysisService(botIssueGroup, config, newBranch);
+				}
 
 				// Save and return refactored issue
 				return refactoredIssueGroup;
