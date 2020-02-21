@@ -81,16 +81,14 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath());
 
-		apiUriBuilder.queryParam("access_token", botToken);
-
-		URI githubURI = apiUriBuilder.build().encode().toUri();
-
 		RestTemplate rest = new RestTemplate();
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(botToken);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
+		URI githubURI = apiUriBuilder.build().encode().toUri();
 		try {
 			// Send request to the GitHub-API
 			return rest.exchange(githubURI, HttpMethod.GET, entity, GithubRepository.class).getBody();
@@ -125,13 +123,13 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme()).host(configUri.getHost())
 				.path(configUri.getPath());
 
-		apiUriBuilder.queryParam("access_token", botToken);
 
 		URI githubURI = apiUriBuilder.build().encode().toUri();
 
 		RestTemplate rest = new RestTemplate();
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(botToken);
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
 		GithubUser githubUser = null;
@@ -174,7 +172,6 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/branches/" + branchName);
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
 
 		URI pullsUri = apiUriBuilder.build().encode().toUri();
 
@@ -182,6 +179,7 @@ public class GithubDataGrabber {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(gitConfig.getBotToken());
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
 		try {
@@ -216,7 +214,6 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/pulls");
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
 
 		URI pullsUri = apiUriBuilder.build().encode().toUri();
 
@@ -224,6 +221,7 @@ public class GithubDataGrabber {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(gitConfig.getBotToken());
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
 		String json = null;
@@ -261,7 +259,6 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(commentsUri.getScheme())
 				.host(commentsUri.getHost()).path(commentsUri.getPath());
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
 
 		URI githubURI = apiUriBuilder.build().encode().toUri();
 
@@ -269,6 +266,7 @@ public class GithubDataGrabber {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(gitConfig.getBotToken());
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
 		String json = null;
@@ -310,7 +308,6 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/pulls/" + requestNumber);
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
 
 		URI pullsUri = apiUriBuilder.build().encode().toUri();
 
@@ -318,13 +315,15 @@ public class GithubDataGrabber {
 		HttpHeaders headers = new HttpHeaders();
 		MediaType mediaType = new MediaType("application", "merge-patch+json");
 		headers.setContentType(mediaType);
+		headers.setBearerAuth(gitConfig.getBotToken());
+		HttpEntity<GithubUpdateRequest> entity = new HttpEntity<>(send, headers);
 
 		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
 		RestTemplate rest = new RestTemplate(requestFactory);
 
 		try {
 			// Send request to the GitHub-API
-			rest.exchange(pullsUri, HttpMethod.PATCH, new HttpEntity<>(send), String.class);
+			rest.exchange(pullsUri, HttpMethod.PATCH, entity, String.class);
 		} catch (RestClientException e) {
 			throw new GitHubAPIException("Could not update pull request!", e);
 		}
@@ -348,15 +347,18 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/pulls/" + requestNumber + "/comments");
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
 
 		URI pullsUri = apiUriBuilder.build().encode().toUri();
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(gitConfig.getBotToken());
+		HttpEntity<ReplyComment> entity = new HttpEntity<>(comment, headers);
 
 		RestTemplate rest = new RestTemplate();
 
 		try {
 			// Send request to Github-API
-			rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<>(comment), String.class);
+			rest.exchange(pullsUri, HttpMethod.POST, entity, String.class);
 		} catch (RestClientException e) {
 			throw new GitHubAPIException("Could not reply to Github comment!", e);
 		}
@@ -379,15 +381,18 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/pulls");
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
 
 		URI pullsUri = apiUriBuilder.build().encode().toUri();
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(gitConfig.getBotToken());
+		HttpEntity<GithubCreateRequest> entity = new HttpEntity<>(request, headers);
 
 		RestTemplate rest = new RestTemplate();
 
 		try {
 			// Send request to the GitHub-API
-			return rest.exchange(pullsUri, HttpMethod.POST, new HttpEntity<>(request), GithubPullRequest.class)
+			return rest.exchange(pullsUri, HttpMethod.POST, entity, GithubPullRequest.class)
 					.getBody();
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not create pull request on Github!", r);
@@ -410,7 +415,10 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/forks");
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(gitConfig.getBotToken());
+		HttpEntity<String> entity = new HttpEntity<>(headers);
 
 		URI forksUri = apiUriBuilder.build().encode().toUri();
 
@@ -418,7 +426,7 @@ public class GithubDataGrabber {
 
 		try {
 			// Send request to the Github-API
-			return rest.exchange(forksUri, HttpMethod.POST, null, GithubRepository.class).getBody();
+			return rest.exchange(forksUri, HttpMethod.POST, entity, GithubRepository.class).getBody();
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not create fork on Github!", r);
 		}
@@ -446,15 +454,17 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath());
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
-
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(gitConfig.getBotToken());
+		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 		URI repoUri = apiUriBuilder.build().encode().toUri();
 
 		RestTemplate rest = new RestTemplate();
 
 		try {
 			// Send request to the Github-API
-			rest.exchange(repoUri, HttpMethod.DELETE, null, String.class);
+			rest.exchange(repoUri, HttpMethod.DELETE, entity, String.class);
 		} catch (RestClientException r) {
 			throw new GitHubAPIException("Could not delete repository from Github!", r);
 		}
