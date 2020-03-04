@@ -111,7 +111,7 @@ public class GitService {
 			git.stashApply().call();
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			throw new GitWorkflowException("Faild to stash changes!");
+			throw new GitWorkflowException("Failed to stash changes!");
 		}
 	}
 
