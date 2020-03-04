@@ -1,9 +1,16 @@
 package de.refactoringbot.rest;
 
+import de.refactoringbot.api.github.GithubDataGrabber;
+import de.refactoringbot.model.exceptions.GitHubAPIException;
+import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
+import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +29,9 @@ import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import io.swagger.annotations.ApiOperation;
 import javassist.NotFoundException;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 /**
  * This method offers an CRUD-Interface as a REST-Interface for the
  * Git-Configurations.
@@ -37,6 +47,8 @@ public class ConfigurationController {
 	ConfigurationService configService;
 	@Autowired
 	ModelMapper modelMapper;
+	@Autowired
+	GithubDataGrabber grabber;
 
 	private static final Logger logger = LoggerFactory.getLogger(ConfigurationController.class);
 
@@ -168,5 +180,47 @@ public class ConfigurationController {
 		} catch (NotFoundException n) {
 			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
 		}
+	}
+
+	/**
+	 * This method returns a list of all open pullrequest.
+	 *
+	 * @param configurationId
+	 * @return config
+	 */
+	@GetMapping(path = "/{configurationId}/openPullRequests", produces = "application/json")
+	@ApiOperation(value = "Get amount of open Pull Requests")
+	public ResponseEntity<?> getOpenPullRequests(@PathVariable("configurationId") Long configurationId) throws GitHubAPIException, IOException, URISyntaxException, JSONException {
+		// Check if configuration exists
+		GitConfiguration config = null;
+		try {
+			config = configService.checkConfigurationExistance(configurationId);
+		} catch (DatabaseConnectionException d) {
+			// Print exception and abort if database error occurs
+			logger.error(d.getMessage(), d);
+			return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (NotFoundException n) {
+			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
+		}
+		GithubPullRequests json = null;
+		json = grabber.getAllPullRequests(config);
+		double amountOfOpenPR = 0.0;
+		double ratio = 0.0;
+
+		for (GithubPullRequest pullRequest: json.getAllPullRequests() ) {
+			if (pullRequest.getState().equals("open") && pullRequest.getUser().getLogin().equals(config.getBotName())){
+				amountOfOpenPR++;
+			}
+		}
+		if(json.getAllPullRequests().size() > 0) {
+			ratio = amountOfOpenPR / json.getAllPullRequests().size();
+		}
+		JSONArray openPullRequests = new JSONArray();
+		JSONObject openPullRequest = new JSONObject();
+		openPullRequest.put("amount", amountOfOpenPR);
+		openPullRequest.put("ratio", ratio);
+		openPullRequests.put(openPullRequest);
+
+		return new ResponseEntity<>(openPullRequests.toString(), HttpStatus.OK);
 	}
 }
