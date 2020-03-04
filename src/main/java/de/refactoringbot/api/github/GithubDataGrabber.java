@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import de.refactoringbot.model.gituser.GitUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -488,4 +489,44 @@ public class GithubDataGrabber {
 		return result;
 	}
 
+	/**
+	 * This method checks if a gitUser exists and returns events of gitUser.
+	 *
+	 * @param gitUser
+	 * @return events
+	 * @throws Exception
+	 */
+	public String getUserEvents(GitUser gitUser)
+			throws URISyntaxException, GitHubAPIException, IOException {
+
+		// Create URI from user input
+		URI eventUri = null;
+
+		eventUri = createURIFromApiLink(GITHUB_DEFAULT_APILINK + "/users/" + gitUser.getGitUserName()+"?per_page=100");
+
+
+		// Build URI
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(eventUri.getScheme()).host(eventUri.getHost())
+				.path(eventUri.getPath()+ "/events");
+
+
+		URI githubUri = apiUriBuilder.build().encode().toUri();
+
+		RestTemplate rest = new RestTemplate();
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(gitUser.getGitUserToken());
+		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+
+		String json = null;
+		try {
+			// Send Request to the GitHub-API
+			json = rest.exchange(githubUri, HttpMethod.GET, entity, String.class).getBody();
+		} catch (RestClientException e) {
+			logger.error(e.getMessage(), e);
+			throw new GitHubAPIException("Could not get Events from Github!", e);
+		}
+
+		return json;
+	}
 }
