@@ -60,27 +60,37 @@ public class GitUserController {
         }
     }
 
+
+    /**
+     * This method updates an git user with the given userId.
+     *
+     * @param savedGitUser
+     * @return updatedGitUser
+     */
     @PutMapping(path = "/{gitUserId}", consumes = "application/json", produces = "application/json")
     @ApiOperation(value = "Update Git-User with gitUser Id")
-    public ResponseEntity<?> update(@RequestBody GitUserDTO newGitUser,
+    public ResponseEntity<?> update(@RequestBody GitUserDTO savedGitUser,
                                     @PathVariable(name = "gitUserId") Long gitUserId) {
-        GitUser savedGitUser = null;
+        GitUser updatedGitUser = null;
         try {
-            savedGitUser = gitUserService.checkGitUserExistence(gitUserId);
+            updatedGitUser = gitUserService.checkGitUserExistence(gitUserId);
+            grabber.checkGithubUser(savedGitUser.getGitUserName(), savedGitUser.getGitUserToken(), savedGitUser.getGitUserEmail(), savedGitUser.getFilehosterApiLink());
+
         } catch (DatabaseConnectionException d) {
             // Print exception and abort if database error occurs
             logger.error(d.getMessage(), d);
             return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (NotFoundException n) {
+        } catch (Exception n) {
             return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
         }
 
+        modelMapper.map(savedGitUser, updatedGitUser);
+
         // Init database user
-        modelMapper.map(newGitUser, savedGitUser);
 
         try {
-            savedGitUser = gitUserService.updateGitUser(savedGitUser);
-            return new ResponseEntity<>(savedGitUser, HttpStatus.CREATED);
+            updatedGitUser = gitUserService.updateGitUser(updatedGitUser);
+            return new ResponseEntity<>(updatedGitUser, HttpStatus.CREATED);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);

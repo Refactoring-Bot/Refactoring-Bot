@@ -215,12 +215,11 @@ public class ConfigurationController {
 		if(json.getAllPullRequests().size() > 0) {
 			ratio = amountOfOpenPR / json.getAllPullRequests().size();
 		}
-		JSONArray openPullRequests = new JSONArray();
 		JSONObject openPullRequest = new JSONObject();
 		openPullRequest.put("amount", amountOfOpenPR);
+		openPullRequest.put("total", json.getAllPullRequests().size());
 		openPullRequest.put("ratio", ratio);
-		openPullRequests.put(openPullRequest);
 
-		return new ResponseEntity<>(openPullRequests.toString(), HttpStatus.OK);
+		return new ResponseEntity<>(openPullRequest.toString(), HttpStatus.OK);
 	}
 }
