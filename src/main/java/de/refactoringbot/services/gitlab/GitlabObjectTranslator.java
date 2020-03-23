@@ -194,36 +194,37 @@ public class GitlabObjectTranslator {
 		return createRequest;
 	}
 
-		/**
-		 * This method creates an object that can be used to create a Pull-Request on
-		 * GitHub after a analysis service refactoring.
-		 * This method creates Pull-Requests with the BotIssueGroup
-		 *
-		 * @param group
-		 * @param gitConfig
-		 * @param newBranch
-		 * @return createRequest
-		 */
-		public GitLabCreateRequest makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig,
-				String newBranch) {
-				GitLabCreateRequest createRequest = new GitLabCreateRequest();
-				String title = "";
+	/**
+	 * This method creates an object that can be used to create a Pull-Request on
+	 * GitHub after a analysis service refactoring. This method creates
+	 * Pull-Requests with the BotIssueGroup
+	 *
+	 * @param group
+	 * @param gitConfig
+	 * @param newBranch
+	 * @return createRequest
+	 */
+	public GitLabCreateRequest makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig,
+			String newBranch) {
+		GitLabCreateRequest createRequest = new GitLabCreateRequest();
+		String title = "";
 
-				//create the commit message by adding all commit messages from the BotIssues in the group
-				for (BotIssue issue : group.getBotIssueGroup()){
-						title = title + issue.getCommitMessage() + ", ";
-				}
-
-				// Fill object with data
-				createRequest.setTitle(title);
-				createRequest.setDescription(PULL_REQUEST_DESCRIPTION);
-				createRequest.setSource_branch(newBranch);
-				createRequest.setTarget_branch("master");
-				createRequest.setAllow_collaboration(true);
-				createRequest.setTarget_project_id(getProjectId(gitConfig.getRepoApiLink()));
-
-				return createRequest;
+		// create the commit message by adding all commit messages from the BotIssues in
+		// the group
+		for (BotIssue issue : group.getBotIssueGroup()) {
+			title = title + issue.getCommitMessage() + ", ";
 		}
+
+		// Fill object with data
+		createRequest.setTitle(title);
+		createRequest.setDescription(PULL_REQUEST_DESCRIPTION);
+		createRequest.setSource_branch(newBranch);
+		createRequest.setTarget_branch("master");
+		createRequest.setAllow_collaboration(true);
+		createRequest.setTarget_project_id(getProjectId(gitConfig.getRepoApiLink()));
+
+		return createRequest;
+	}
 
 	/**
 	 * This method returns a reply comment as a String that can be created on

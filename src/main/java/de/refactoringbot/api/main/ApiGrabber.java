@@ -254,9 +254,9 @@ public class ApiGrabber {
 			// Get issues and translate them
 			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig);
 
-				//here the sonarqube issues will be sorted by the creation date
-				// this part belongs to the first prioritization of the code-smells
-				issues = codeSmellPrioritization(issues);
+			// here the sonarqube issues will be sorted by the creation date
+			// this part belongs to the first prioritization of the code-smells
+			issues = codeSmellPrioritization(issues);
 
 			List<BotIssue> botIssues = new ArrayList<>();
 			for (SonarQubeIssues i : issues) {
@@ -269,88 +269,90 @@ public class ApiGrabber {
 		}
 	}
 
-		/**
-		 * This method sorts the sonarqube issues
-		 * it will be the first part of the code smell prioritization
-		 *
-		 * @param issues
-		 * @return
-		 */
-		private List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues){
-				for (SonarQubeIssues sonarQubeIssues : issues){
-						sonarQubeIssues.setIssues(dateSort(sonarQubeIssues));
-				}
-
-				return issues;
+	/**
+	 * This method sorts the sonarqube issues it will be the first part of the code
+	 * smell prioritization
+	 *
+	 * @param issues
+	 * @return
+	 */
+	private List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues) {
+		for (SonarQubeIssues sonarQubeIssues : issues) {
+			sonarQubeIssues.setIssues(dateSort(sonarQubeIssues));
 		}
 
-		/**
-		 * This method sort the SonarIssues with its creation date
-		 * the issue with the newest creationdate will be the first in the returned list.
-		 *
-		 * @param sqIssues
-		 * @return sortedIssues: the List that is sorted after the date
-		 */
-		private List<SonarIssue> dateSort(SonarQubeIssues sqIssues){
-				Date creationDate;
-				DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+'SSSS");
-				//in this List the current findings are saved
-				List<SonarIssue> sonarIssues;
-				//In this map the ID of the finding and its date are saved
-				Map<String, Date> sonarIssueMap = new HashMap<>();
-				//In this list the sorted SonarIssues are saved
-				List<SonarIssue> sortedIssues;
+		return issues;
+	}
 
-				//the current findings are fetched
-				sonarIssues = sqIssues.getIssues();
+	/**
+	 * This method sort the SonarIssues with its creation date the issue with the
+	 * newest creationdate will be the first in the returned list.
+	 *
+	 * @param sqIssues
+	 * @return sortedIssues: the List that is sorted after the date
+	 */
+	private List<SonarIssue> dateSort(SonarQubeIssues sqIssues) {
+		Date creationDate;
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+'SSSS");
+		// in this List the current findings are saved
+		List<SonarIssue> sonarIssues;
+		// In this map the ID of the finding and its date are saved
+		Map<String, Date> sonarIssueMap = new HashMap<>();
+		// In this list the sorted SonarIssues are saved
+		List<SonarIssue> sortedIssues;
 
-				//this loop runs throug all findings of the project
-				for (SonarIssue sonarIssue : sonarIssues){
-						try {
-								//for each finding a date object is created with the date from the issue
-								creationDate = format.parse(sonarIssue.getCreationDate());
-								sonarIssueMap.put(sonarIssue.getKey(), creationDate);
+		// the current findings are fetched
+		sonarIssues = sqIssues.getIssues();
 
-						} catch (ParseException e) {
-								e.printStackTrace();
-						}
+		// this loop runs throug all findings of the project
+		for (SonarIssue sonarIssue : sonarIssues) {
+			try {
+				// for each finding a date object is created with the date from the issue
+				creationDate = format.parse(sonarIssue.getCreationDate());
+				sonarIssueMap.put(sonarIssue.getKey(), creationDate);
+
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}
+		}
+		sonarIssueMap = sortByValue(sonarIssueMap);
+		// new list for each project
+		sortedIssues = new ArrayList<>();
+
+		// loop to bring the SonarIssues list in the correct order
+		for (Map.Entry<String, Date> entry : sonarIssueMap.entrySet()) {
+			for (SonarIssue issue : sonarIssues) {
+				if (entry.getKey().equals(issue.getKey())) {
+					sortedIssues.add(issue);
 				}
-				sonarIssueMap = sortByValue(sonarIssueMap);
-				//new list for each project
-				sortedIssues = new ArrayList<>();
+			}
+		}
+		Collections.reverse(sortedIssues);
 
-				//loop to bring the SonarIssues list in the correct order
-				for (Map.Entry<String, Date> entry : sonarIssueMap.entrySet() ){
-						for (SonarIssue issue : sonarIssues){
-								if (entry.getKey().equals(issue.getKey())){
-										sortedIssues.add(issue);
-								}
-						}
-				}
-				Collections.reverse(sortedIssues);
+		return sortedIssues;
+	}
 
-			return sortedIssues;
+	/**
+	 * Method from:
+	 * https://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values
+	 * TODO: last visited at: 31.01.2020 sort Maps by value
+	 * 
+	 * @param map
+	 * @param <K>
+	 * @param <V>
+	 * @return result: the sorted result
+	 */
+	private static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
+		List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
+		list.sort(Map.Entry.comparingByValue());
+
+		Map<K, V> result = new LinkedHashMap<>();
+		for (Map.Entry<K, V> entry : list) {
+			result.put(entry.getKey(), entry.getValue());
 		}
 
-		/**
-		 * Method from: https://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values TODO: last visited at: 31.01.2020
-		 * sort Maps by value
-		 * @param map
-		 * @param <K>
-		 * @param <V>
-		 * @return result: the sorted result
-		 */
-		private static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
-				List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
-				list.sort(Map.Entry.comparingByValue());
-
-				Map<K, V> result = new LinkedHashMap<>();
-				for (Map.Entry<K, V> entry : list) {
-						result.put(entry.getKey(), entry.getValue());
-				}
-
-				return result;
-		}
+		return result;
+	}
 
 	/**
 	 * This method returns the absolute path of a anaylsis service issue. This is
@@ -389,8 +391,8 @@ public class ApiGrabber {
 		switch (gitConfig.getRepoService()) {
 		case github:
 			// Create PR object
-				GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue, gitConfig,
-						newBranch);
+			GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(issue, gitConfig,
+					newBranch);
 			// Create PR on filehoster
 			githubGrabber.createRequest(createRequest, gitConfig);
 			break;
@@ -404,49 +406,48 @@ public class ApiGrabber {
 		}
 	}
 
-		/**
-		 * This method creates a request on a filehoster if the refactoring was
-		 * performed with issues from a analysis tool.
-		 * This method uses the BotIssueGroup to create Pull-Requests
-		 *
-		 * @param group
-		 * @param gitConfig
-		 * @param newBranch
-		 * @throws Exception
-		 */
-		public void makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig, String newBranch)
-				throws Exception {
-				// Pick filehoster
-				switch (gitConfig.getRepoService()) {
-				case github:
-						// Create PR object
-						GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(group, gitConfig,
-								newBranch);
-						// Create PR on filehoster
-						githubGrabber.createRequest(createRequest, gitConfig);
-						break;
-				case gitlab:
-						// Create PR Object
-						GitLabCreateRequest gitlabCreateRequest = gitlabTranslator.makeCreateRequestWithAnalysisService(group,
-								gitConfig, newBranch);
-						// Create PR on filehoster
-						gitlabGrabber.createRequest(gitlabCreateRequest, gitConfig);
-						break;
-				}
+	/**
+	 * This method creates a request on a filehoster if the refactoring was
+	 * performed with issues from a analysis tool. This method uses the
+	 * BotIssueGroup to create Pull-Requests
+	 *
+	 * @param group
+	 * @param gitConfig
+	 * @param newBranch
+	 * @throws Exception
+	 */
+	public void makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig, String newBranch)
+			throws Exception {
+		// Pick filehoster
+		switch (gitConfig.getRepoService()) {
+		case github:
+			// Create PR object
+			GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(group, gitConfig,
+					newBranch);
+			// Create PR on filehoster
+			githubGrabber.createRequest(createRequest, gitConfig);
+			break;
+		case gitlab:
+			// Create PR Object
+			GitLabCreateRequest gitlabCreateRequest = gitlabTranslator.makeCreateRequestWithAnalysisService(group,
+					gitConfig, newBranch);
+			// Create PR on filehoster
+			gitlabGrabber.createRequest(gitlabCreateRequest, gitConfig);
+			break;
 		}
+	}
 
 	/**
 	 * This method checks the analysis service data.
 	 *
 	 * @param configuration
-	 * analysisService
-	 * param
-	 * analysisServiceProjectKey
+	 *            analysisService param analysisServiceProjectKey
 	 *
 	 * @throws SonarQubeAPIException
 	 * @throws URISyntaxException
 	 */
-	private void checkAnalysisService(GitConfigurationDTO configuration) throws SonarQubeAPIException, URISyntaxException {
+	private void checkAnalysisService(GitConfigurationDTO configuration)
+			throws SonarQubeAPIException, URISyntaxException {
 		// Check if input exists
 		if (configuration.getAnalysisService() == null || configuration.getAnalysisServiceProjectKey() == null
 				|| configuration.getAnalysisServiceApiLink() == null) {

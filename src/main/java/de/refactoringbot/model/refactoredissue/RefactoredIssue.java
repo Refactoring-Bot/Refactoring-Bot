@@ -28,12 +28,12 @@ public class RefactoredIssue {
 	private String status;
 	private int countChanges;
 
-	public void setCountChanges(int count){
-			countChanges = count;
+	public void setCountChanges(int count) {
+		countChanges = count;
 	}
 
-	public int getCountChanges(){
-			return countChanges;
+	public int getCountChanges() {
+		return countChanges;
 	}
 
 	public Long getIssueId() {

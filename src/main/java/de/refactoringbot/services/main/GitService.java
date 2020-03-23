@@ -148,36 +148,39 @@ public class GitService {
 		}
 	}
 
-		/**
-		 * This method count the commits of a single piece of code.
-		 * TODO: bis jetzt schaut er nur auf dem master nach den commits für zusätzliche branches editieren
-		 *
-		 * @param issue
-		 * @return count, the count of commits
-		 */
-	public int countCommitsFromHistory(BotIssue issue, GitConfiguration gitConfig, String branch){
-			int count = 0;
-			Git git;
-			Iterable<RevCommit> commits;
-			String path = issue.getFilePath();
-			path = path.replaceAll("\\\\", "/");
-			Repository repository;
+	/**
+	 * This method count the commits of a single piece of code. TODO: bis jetzt
+	 * schaut er nur auf dem master nach den commits für zusätzliche branches
+	 * editieren
+	 *
+	 * @param issue
+	 * @return count, the count of commits
+	 */
+	public int countCommitsFromHistory(BotIssue issue, GitConfiguration gitConfig, String branch) {
+		int count = 0;
+		Git git;
+		Iterable<RevCommit> commits;
+		String path = issue.getFilePath();
+		path = path.replaceAll("\\\\", "/");
+		Repository repository;
 
-			try {
-					repository = new FileRepository(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/.git");
-					ObjectId objID = repository.resolve(Constants.HEAD);
-					//switchBranch(gitConfig, branch);
-				git = Git.open(new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() /*+ path*/));
-				commits = git.log().add(objID).addPath(path).call();
+		try {
+			repository = new FileRepository(
+					botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/.git");
+			ObjectId objID = repository.resolve(Constants.HEAD);
+			// switchBranch(gitConfig, branch);
+			git = Git.open(
+					new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() /* + path */));
+			commits = git.log().add(objID).addPath(path).call();
 
-				for (RevCommit commit : commits){
-						count++;
-				}
-			}catch (Exception e){
-					logger.error(e.getMessage(), e);
-			} finally {
-					return count;
+			for (RevCommit commit : commits) {
+				count++;
 			}
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+		} finally {
+			return count;
+		}
 	}
 
 	/**

@@ -68,7 +68,8 @@ public class RefactoringService {
 	WitService witService;
 	@Autowired
 	FileService fileService;
-	@Autowired GithubDataGrabber githubGrabber;
+	@Autowired
+	GithubDataGrabber githubGrabber;
 
 	private static final Logger logger = LoggerFactory.getLogger(RefactoringService.class);
 
@@ -109,15 +110,15 @@ public class RefactoringService {
 	 * service.
 	 *
 	 * @param config
-	 * param allIssues
+	 *            param allIssues
 	 * @return response
 	 */
 	private ResponseEntity<?> processAnalysisIssues(GitConfiguration config, int amountBotRequests) {
 
 		if (amountBotRequests >= config.getMaxAmountRequests()) {
-            return new ResponseEntity<String>(
-                    "The maximum number of open pull requests created by the Bot has been reached!",
-                    HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<String>(
+					"The maximum number of open pull requests created by the Bot has been reached!",
+					HttpStatus.BAD_REQUEST);
 		}
 
 		List<RefactoredIssue> allRefactoredIssues = new ArrayList<>();
@@ -128,17 +129,18 @@ public class RefactoringService {
 		try {
 			// Get issues from analysis service API
 			List<BotIssue> botIssues = apiGrabber.getAnalysisServiceIssues(config);
-				//because of trouble with the CommentedOutCode refactorings this one are saved in a separate list and prioritised on its own.
-				//later they will be added to the botIssue list again.
+			// because of trouble with the CommentedOutCode refactorings this one are saved
+			// in a separate list and prioritised on its own.
+			// later they will be added to the botIssue list again.
 			List<BotIssue> commentedOutIssues = new ArrayList<>();
 
-			for (BotIssue issue : botIssues){
-					//TODO: später mit richtigem branch name arbeiten
-					issue.setCountChanges(gitService.countCommitsFromHistory(issue, config, "master"));
+			for (BotIssue issue : botIssues) {
+				// TODO: später mit richtigem branch name arbeiten
+				issue.setCountChanges(gitService.countCommitsFromHistory(issue, config, "master"));
 
-					if (issue.getRefactoringOperation().equals("Remove Commented Out Code")){
-							commentedOutIssues.add(issue);
-					}
+				if (issue.getRefactoringOperation().equals("Remove Commented Out Code")) {
+					commentedOutIssues.add(issue);
+				}
 			}
 
 			botIssues.removeAll(commentedOutIssues);
@@ -146,8 +148,8 @@ public class RefactoringService {
 			commentedOutIssues = sortCommentedOutIssues(commentedOutIssues);
 			botIssues.addAll(commentedOutIssues);
 
-				List<BotIssueGroup> issueGroups = grouping(botIssues);
-				issueGroups = groupPrioritization(issueGroups);
+			List<BotIssueGroup> issueGroups = grouping(botIssues);
+			issueGroups = groupPrioritization(issueGroups);
 
 			// Iterate all issues
 			for (BotIssueGroup botIssueGroup : issueGroups) {
@@ -160,89 +162,93 @@ public class RefactoringService {
 					return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
 				}
 
-						try {
-								// If issue was not already refactored
-								if (isAnalysisIssueValid(botIssueGroup) && botIssueGroup.getBotIssueGroup().size() > 0) {
-										// Perform refactoring
-										allRefactoredIssueGroup = refactorIssue(false, config, null, null, botIssueGroup);
-										for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()){
-												allRefactoredIssues.add(issue);
-										}
-								}
-						} catch (Exception e) {
-								// Create failed Refactored-Object
-								botIssueGroup.addIssue(new BotIssue());
-								botIssueGroup.getBotIssueGroup().get(0).setErrorMessage("Bot could not refactor this issue! Internal server error!");
-								allRefactoredIssueGroup = processFailedRefactoring(config, null, null, botIssueGroup, false);
-								for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()){
-										allRefactoredIssues.add(issue);
-								}
-								logger.error(e.getMessage(), e);
+				try {
+					// If issue was not already refactored
+					if (isAnalysisIssueValid(botIssueGroup) && botIssueGroup.getBotIssueGroup().size() > 0) {
+						// Perform refactoring
+						allRefactoredIssueGroup = refactorIssue(false, config, null, null, botIssueGroup);
+						for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()) {
+							allRefactoredIssues.add(issue);
 						}
-					refactoredIssueGroup.addIssues(allRefactoredIssues);
-					groupsOfRefactoredIssues.add(refactoredIssueGroup);
-					amountBotRequests++; //the amountBotRequest is only incremented when a group of refactorings are pushed.
+					}
+				} catch (Exception e) {
+					// Create failed Refactored-Object
+					botIssueGroup.addIssue(new BotIssue());
+					botIssueGroup.getBotIssueGroup().get(0)
+							.setErrorMessage("Bot could not refactor this issue! Internal server error!");
+					allRefactoredIssueGroup = processFailedRefactoring(config, null, null, botIssueGroup, false);
+					for (RefactoredIssue issue : allRefactoredIssueGroup.getRefactoredIssueGroup()) {
+						allRefactoredIssues.add(issue);
+					}
+					logger.error(e.getMessage(), e);
+				}
+				refactoredIssueGroup.addIssues(allRefactoredIssues);
+				groupsOfRefactoredIssues.add(refactoredIssueGroup);
+				amountBotRequests++; // the amountBotRequest is only incremented when a group of refactorings are
+										// pushed.
 			}
 
-				return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
+			return new ResponseEntity<>(groupsOfRefactoredIssues, HttpStatus.OK);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
-		/**
-		 * Sort a list with the bubble sort with its value on countChanges.
-		 * After this method the BotIssue with the highest value on countChanges will be the first in the List.
-		 *
-		 * @param list
-		 * @return list, the sorted list
-		 */
-		private List<BotIssue> bubbleSort(List<BotIssue> list){
-				BotIssue temp;
+	/**
+	 * Sort a list with the bubble sort with its value on countChanges. After this
+	 * method the BotIssue with the highest value on countChanges will be the first
+	 * in the List.
+	 *
+	 * @param list
+	 * @return list, the sorted list
+	 */
+	private List<BotIssue> bubbleSort(List<BotIssue> list) {
+		BotIssue temp;
 
-				for (int i = 0; i < list.size() - 2; i++){
-						for (int j = 0; j < list.size() - i - 1; j++){
-								if (list.get(j).getCountChanges() < list.get(j + 1).getCountChanges()){
-										temp = list.get(j);
-										list.set(j, list.get(j + 1));
-										list.set(j + 1, temp);
-								}
-						}
+		for (int i = 0; i < list.size() - 2; i++) {
+			for (int j = 0; j < list.size() - i - 1; j++) {
+				if (list.get(j).getCountChanges() < list.get(j + 1).getCountChanges()) {
+					temp = list.get(j);
+					list.set(j, list.get(j + 1));
+					list.set(j + 1, temp);
 				}
-
-				return list;
+			}
 		}
 
-		/**
-		 * Sorts the commentedOut Issues that the issue with the highest line is on the top
-		 *
-		 * @param issues
-		 * @return
-		 */
-		private List<BotIssue> sortCommentedOutIssues(List<BotIssue> issues){
-			BotIssue temp;
+		return list;
+	}
 
-				for (int i = 0; i < issues.size() - 2; i++){
-						for (int j = 0; j < issues.size() - i - 1; j++){
-								if (issues.get(j).getLine() < issues.get(j + 1).getLine()){
-										temp = issues.get(j);
-										issues.set(j, issues.get(j + 1));
-										issues.set(j + 1, temp);
-								}
-						}
+	/**
+	 * Sorts the commentedOut Issues that the issue with the highest line is on the
+	 * top
+	 *
+	 * @param issues
+	 * @return
+	 */
+	private List<BotIssue> sortCommentedOutIssues(List<BotIssue> issues) {
+		BotIssue temp;
+
+		for (int i = 0; i < issues.size() - 2; i++) {
+			for (int j = 0; j < issues.size() - i - 1; j++) {
+				if (issues.get(j).getLine() < issues.get(j + 1).getLine()) {
+					temp = issues.get(j);
+					issues.set(j, issues.get(j + 1));
+					issues.set(j + 1, temp);
 				}
-
-				return issues;
+			}
 		}
 
-		/**
-		 * This method groups the prioritised Bot-Issues.
-		 * The AddOverrideAnnotation and RemoveCommentedOutCode code smells will be in separate groups.
-		 * The other code smells will be in groups that relates to the classes their in.
-		 *
-		 * @param prioList
-		 */
+		return issues;
+	}
+
+	/**
+	 * This method groups the prioritised Bot-Issues. The AddOverrideAnnotation and
+	 * RemoveCommentedOutCode code smells will be in separate groups. The other code
+	 * smells will be in groups that relates to the classes their in.
+	 *
+	 * @param prioList
+	 */
 	private List<BotIssueGroup> grouping(List<BotIssue> prioList) throws BotIssueTypeException {
 		List<BotIssueGroup> issueGroups = new ArrayList<>();
 		BotIssueGroup addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
@@ -250,96 +256,103 @@ public class RefactoringService {
 		BotIssueGroup unknown = new BotIssueGroup(BotIssueGroupType.REFACTORING);
 		BotIssueGroup classGroup;
 
-			//order each BotIssue to a group
-			for (BotIssue issue : prioList){
+		// order each BotIssue to a group
+		for (BotIssue issue : prioList) {
 
-				if (issue.getRefactoringOperation().equals(RefactoringOperations.ADD_OVERRIDE_ANNOTATION)){
-						//when the amount of refactorings in the addOverride group is bigger than 20,
-						// then add the group to the issues and create a new group
-						if (addOverride.getBotIssueGroup().size() >= 20){
-								issueGroups.add(addOverride);
-								addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-								addOverride.setName(issue.getFilePath());
-								addOverride.addIssue(issue);
-						}else {
-								addOverride.addIssue(issue);
-						}
-				} else if(issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE)){
-						//when the amount of refactorings in the commentedOutCode group is bigger than 10,
-						// then add the group to the issues and create a new group
-						if (removeCom.getBotIssueGroup().size() >= 10){
-								issueGroups.add(removeCom);
-								removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-								removeCom.setName(issue.getFilePath());
-								removeCom.addIssue(issue);
-						}else {
-								removeCom.addIssue(issue);
-						}
+			if (issue.getRefactoringOperation().equals(RefactoringOperations.ADD_OVERRIDE_ANNOTATION)) {
+				// when the amount of refactorings in the addOverride group is bigger than 20,
+				// then add the group to the issues and create a new group
+				if (addOverride.getBotIssueGroup().size() >= 20) {
+					issueGroups.add(addOverride);
+					addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+					addOverride.setName(issue.getFilePath());
+					addOverride.addIssue(issue);
 				} else {
-						//if the refactoring is not AddOverrideAnnotation or RemoveCommentedOutCode, then check if the
-						//refactorings are in the same class to add them in a class group.
-						boolean found = false;
-						try {
-								for (BotIssueGroup group : issueGroups){
-										if (group.getType().equals(BotIssueGroupType.CLASS) && group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() < 20){
-												//group for same class and not full
-												group.addIssue(issue);
-												found = true;
-												break;
-										} else if (group.getType().equals(BotIssueGroupType.CLASS) && group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().size() >= 20){
-												//group with same class but full, create a new group for this class
-												found = true;
-												classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
-												classGroup.setName(issue.getFilePath());
-												classGroup.addIssue(issue);
-												issueGroups.add(classGroup);
-										}
-								}
-								if (!found){
-										//no existing class group, create a new one and add it tho the list
-										classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
-										classGroup.setName(issue.getFilePath());
-										classGroup.addIssue(issue);
-										issueGroups.add(classGroup);
-								}
-						} catch (NullPointerException e){
-								logger.error(e.getMessage(), e);
+					addOverride.addIssue(issue);
+				}
+			} else if (issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE)) {
+				// when the amount of refactorings in the commentedOutCode group is bigger than
+				// 10,
+				// then add the group to the issues and create a new group
+				if (removeCom.getBotIssueGroup().size() >= 10) {
+					issueGroups.add(removeCom);
+					removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
+					removeCom.setName(issue.getFilePath());
+					removeCom.addIssue(issue);
+				} else {
+					removeCom.addIssue(issue);
+				}
+			} else {
+				// if the refactoring is not AddOverrideAnnotation or RemoveCommentedOutCode,
+				// then check if the
+				// refactorings are in the same class to add them in a class group.
+				boolean found = false;
+				try {
+					for (BotIssueGroup group : issueGroups) {
+						if (group.getType().equals(BotIssueGroupType.CLASS)
+								&& group.getName().equals(issue.getFilePath())
+								&& group.getBotIssueGroup().size() < 20) {
+							// group for same class and not full
+							group.addIssue(issue);
+							found = true;
+							break;
+						} else if (group.getType().equals(BotIssueGroupType.CLASS)
+								&& group.getName().equals(issue.getFilePath())
+								&& group.getBotIssueGroup().size() >= 20) {
+							// group with same class but full, create a new group for this class
+							found = true;
+							classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
+							classGroup.setName(issue.getFilePath());
+							classGroup.addIssue(issue);
+							issueGroups.add(classGroup);
 						}
+					}
+					if (!found) {
+						// no existing class group, create a new one and add it tho the list
+						classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
+						classGroup.setName(issue.getFilePath());
+						classGroup.addIssue(issue);
+						issueGroups.add(classGroup);
+					}
+				} catch (NullPointerException e) {
+					logger.error(e.getMessage(), e);
 				}
 			}
+		}
 
-			//end of the algorithm checks if a issue is in one of the list, then add it to the issueGroups
-			if (addOverride.getBotIssueGroup().size() > 0){
-					issueGroups.add(addOverride);
-			}
-			if (removeCom.getBotIssueGroup().size() > 0){
-					issueGroups.add(removeCom);
-			}
-			if (unknown.getBotIssueGroup().size() > 0){
-					issueGroups.add(unknown);
-			}
+		// end of the algorithm checks if a issue is in one of the list, then add it to
+		// the issueGroups
+		if (addOverride.getBotIssueGroup().size() > 0) {
+			issueGroups.add(addOverride);
+		}
+		if (removeCom.getBotIssueGroup().size() > 0) {
+			issueGroups.add(removeCom);
+		}
+		if (unknown.getBotIssueGroup().size() > 0) {
+			issueGroups.add(unknown);
+		}
 
-			return issueGroups;
+		return issueGroups;
 	}
 
-		/**
-		 * This method prioritises the Bot-Issue-Group.
-		 * It is a simple sort with the sum of count-changes of the botIssues in the group.
-		 */
-	private List<BotIssueGroup> groupPrioritization(List<BotIssueGroup> issueGroups){
-			BotIssueGroup temp;
+	/**
+	 * This method prioritises the Bot-Issue-Group. It is a simple sort with the sum
+	 * of count-changes of the botIssues in the group.
+	 */
+	private List<BotIssueGroup> groupPrioritization(List<BotIssueGroup> issueGroups) {
+		BotIssueGroup temp;
 
-			for (int i = 0; i < issueGroups.size() - 2; i++){
-					for (int j = 0; j < issueGroups.size() - i - 1; j++){
-							if (issueGroups.get(j).getValueCounChange() < issueGroups.get(j + 1).getValueCounChange()){
-									temp = issueGroups.get(j);
-									issueGroups.set(j, issueGroups.get(j + 1));
-									issueGroups.set(j + 1, temp);
-							}
-					}
+		for (int i = 0; i < issueGroups.size() - 2; i++) {
+			for (int j = 0; j < issueGroups.size() - i - 1; j++) {
+				if (issueGroups.get(j).getValueCounChange() < issueGroups.get(j + 1).getValueCounChange()) {
+					temp = issueGroups.get(j);
+					issueGroups.set(j, issueGroups.get(j + 1));
+					issueGroups.set(j + 1, temp);
+				}
 			}
+		}
 
-			return issueGroups;
+		return issueGroups;
 	}
 
 	/**
@@ -408,10 +421,10 @@ public class RefactoringService {
 	 * returns a RefactoredIssue after a successful or failed refactoring.
 	 *
 	 * @param config
-	 * param issue
+	 *            param issue
 	 * @param request
 	 * @param comment
-	 * param amountBotRequests
+	 *            param amountBotRequests
 	 * @return refactoredIssue
 	 */
 	private RefactoredIssue refactorComment(GitConfiguration config, BotIssue botIssue, BotPullRequest request,
@@ -505,85 +518,86 @@ public class RefactoringService {
 		return processFailedRefactoring(config, comment, request, botIssue, isCommentRefactoring);
 	}
 
-		/**
-		 * This method configures the local workspace, refactors the issue, pushes the
-		 * changes and creates an PR.
-		 * This method uses the BotIssueGroup to create Pull-Requests
-		 *
-		 * @param isCommentRefactoring
-		 * @param config
-		 * @param comment
-		 * @param request
-		 * @param botIssueGroup
-		 * @return allRefactoredIssues
-		 * @throws Exception
-		 */
-		private RefactoredIssueGroup refactorIssue(boolean isCommentRefactoring, GitConfiguration config,
-				BotPullRequestComment comment, BotPullRequest request, BotIssueGroup botIssueGroup) throws Exception {
-				RefactoredIssueGroup refactoredIssueGroup = new RefactoredIssueGroup();
-				// If refactoring via comment
-				//TODO: I'm not sure if this is working regrets Marvin Knodel
-				if (isCommentRefactoring) {
-						BotIssue botIssue = botIssueGroup.getBotIssueGroup().get(0);
-						// Change to existing Refactoring-Branch
-						gitService.switchBranch(config, request.getBranchName());
+	/**
+	 * This method configures the local workspace, refactors the issue, pushes the
+	 * changes and creates an PR. This method uses the BotIssueGroup to create
+	 * Pull-Requests
+	 *
+	 * @param isCommentRefactoring
+	 * @param config
+	 * @param comment
+	 * @param request
+	 * @param botIssueGroup
+	 * @return allRefactoredIssues
+	 * @throws Exception
+	 */
+	private RefactoredIssueGroup refactorIssue(boolean isCommentRefactoring, GitConfiguration config,
+			BotPullRequestComment comment, BotPullRequest request, BotIssueGroup botIssueGroup) throws Exception {
+		RefactoredIssueGroup refactoredIssueGroup = new RefactoredIssueGroup();
+		// If refactoring via comment
+		// TODO: I'm not sure if this is working
+		if (isCommentRefactoring) {
+			BotIssue botIssue = botIssueGroup.getBotIssueGroup().get(0);
+			// Change to existing Refactoring-Branch
+			gitService.switchBranch(config, request.getBranchName());
 
-						// Add current filepaths to Issue
-						botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
+			// Add current filepaths to Issue
+			botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
 
-						// Try to refactor
-						botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
+			// Try to refactor
+			botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
 
-						// If successful
-						if (botIssue.getCommitMessage() != null) {
-								// Create Refactored-Object
-								RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
-								// Push changes
-								gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
-								// Reply to User
-								apiGrabber.replyToUserInsideBotRequest(request, comment, config);
-
-								// Save and return refactored issue
-								issueRepo.save(refactoredIssue);
-						}
-
-						// If analysis service refactoring
-				} else {
-				// Create new branch for refactoring
-				String newBranch = "sonarQube_Refactoring_Group_" + botIssueGroup.getBotIssueGroup().get(0).getCommentServiceID();
-				// Check if branch already exists (throws exception if it does)
-				apiGrabber.checkBranch(config, newBranch);
-				gitService.createBranch(config, "master", newBranch, "upstream");
-				// Add current filepaths to Issue
-				for (BotIssue botIssue : botIssueGroup.getBotIssueGroup()) {
-						botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
-						// Try to refactor
-						botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
-
-						try{
-								// If successful
-								if (botIssue.getCommitMessage() != null) {
-										// Create Refactored-Object
-										RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
-										refactoredIssueGroup.addIssue(refactoredIssue);
-										issueRepo.save(refactoredIssue);
-										gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
-								} else {
-										botIssue.setErrorMessage("Could not create a commit message!");
-										return processFailedRefactoring(config, comment, request, botIssueGroup, isCommentRefactoring);
-								}
-						}catch (Exception e){
-							botIssueGroup.remove(botIssue);
-						}
-				}
-
-				// Push changes + create Pull-Request
-				apiGrabber.makeCreateRequestWithAnalysisService(botIssueGroup, config, newBranch);
-				}
+			// If successful
+			if (botIssue.getCommitMessage() != null) {
+				// Create Refactored-Object
+				RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
+				// Push changes
+				gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
+				// Reply to User
+				apiGrabber.replyToUserInsideBotRequest(request, comment, config);
 
 				// Save and return refactored issue
-				return refactoredIssueGroup;
+				issueRepo.save(refactoredIssue);
+			}
+
+			// If analysis service refactoring
+		} else {
+			// Create new branch for refactoring
+			String newBranch = "sonarQube_Refactoring_Group_"
+					+ botIssueGroup.getBotIssueGroup().get(0).getCommentServiceID();
+			// Check if branch already exists (throws exception if it does)
+			apiGrabber.checkBranch(config, newBranch);
+			gitService.createBranch(config, "master", newBranch, "upstream");
+			// Add current filepaths to Issue
+			for (BotIssue botIssue : botIssueGroup.getBotIssueGroup()) {
+				botIssue = addUpToDateFilePaths(botIssue, isCommentRefactoring, config);
+				// Try to refactor
+				botIssue.setCommitMessage(refactoring.pickAndRefactor(botIssue, config));
+
+				try {
+					// If successful
+					if (botIssue.getCommitMessage() != null) {
+						// Create Refactored-Object
+						RefactoredIssue refactoredIssue = botController.buildRefactoredIssue(botIssue, config);
+						refactoredIssueGroup.addIssue(refactoredIssue);
+						issueRepo.save(refactoredIssue);
+						gitService.commitAndPushChanges(config, botIssue.getCommitMessage());
+					} else {
+						botIssue.setErrorMessage("Could not create a commit message!");
+						return processFailedRefactoring(config, comment, request, botIssueGroup, isCommentRefactoring);
+					}
+				} catch (Exception e) {
+					botIssueGroup.remove(botIssue);
+				}
+			}
+
+			// Push changes + create Pull-Request
+			apiGrabber.makeCreateRequestWithAnalysisService(botIssueGroup, config, newBranch);
 		}
+
+		// Save and return refactored issue
+		return refactoredIssueGroup;
+	}
 
 	/**
 	 * This method checks if the database contains a configuration with given id and
@@ -651,6 +665,7 @@ public class RefactoringService {
 	 * valid, e.g. not already refactored.
 	 *
 	 * param config
+	 * 
 	 * @param issue
 	 * @return
 	 */
@@ -658,22 +673,23 @@ public class RefactoringService {
 		return (!issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent());
 	}
 
-		/**
-		 * This method checks if a from a AnalysisServiceIssue translated BotIssue is
-		 * valid, e.g. not already refactored.
-		 *
-		 * param config
-		 * @param group
-		 * @return
-		 */
-		public boolean isAnalysisIssueValid(BotIssueGroup group) {
-				for (BotIssue issue : group.getBotIssueGroup()){
-					if (issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent()){
-							return false;
-					}
-				}
-				return true;
+	/**
+	 * This method checks if a from a AnalysisServiceIssue translated BotIssue is
+	 * valid, e.g. not already refactored.
+	 *
+	 * param config
+	 * 
+	 * @param group
+	 * @return
+	 */
+	public boolean isAnalysisIssueValid(BotIssueGroup group) {
+		for (BotIssue issue : group.getBotIssueGroup()) {
+			if (issueRepo.refactoredAnalysisIssue(issue.getCommentServiceID()).isPresent()) {
+				return false;
+			}
 		}
+		return true;
+	}
 
 	/**
 	 * This method processes a faild refactoring. It creates a RefactoredIssue
@@ -707,41 +723,42 @@ public class RefactoringService {
 		return issueRepo.save(failedIssue);
 	}
 
-		/**
-		 * This method processes a faild refactoring. It creates a RefactoredIssue
-		 * object and saves it to the database so that the bot won't try to refactor a
-		 * comment that can not be refactored. Also, a reply is sent to the comment
-		 * creator to inform him of the failure with a proper error message.
-		 * This method uses the BotIssueGroup
-		 *
-		 * @param config
-		 * @param comment
-		 * @param request
-		 * @param botIssueGroup
-		 * @param isCommentRefactoring
-		 * @return failedIssue
-		 */
-		private RefactoredIssueGroup processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,
-				BotPullRequest request, BotIssueGroup botIssueGroup, boolean isCommentRefactoring) {
-				// Create failedIssue
-				RefactoredIssue failedIssue = botController.buildRefactoredIssue(botIssueGroup.getBotIssueGroup().get(0), config);//TODO: noch richtig anpassen
+	/**
+	 * This method processes a faild refactoring. It creates a RefactoredIssue
+	 * object and saves it to the database so that the bot won't try to refactor a
+	 * comment that can not be refactored. Also, a reply is sent to the comment
+	 * creator to inform him of the failure with a proper error message. This method
+	 * uses the BotIssueGroup
+	 *
+	 * @param config
+	 * @param comment
+	 * @param request
+	 * @param botIssueGroup
+	 * @param isCommentRefactoring
+	 * @return failedIssue
+	 */
+	private RefactoredIssueGroup processFailedRefactoring(GitConfiguration config, BotPullRequestComment comment,
+			BotPullRequest request, BotIssueGroup botIssueGroup, boolean isCommentRefactoring) {
+		// Create failedIssue
+		RefactoredIssue failedIssue = botController.buildRefactoredIssue(botIssueGroup.getBotIssueGroup().get(0),
+				config);// TODO: noch richtig anpassen
 
-				// Reply to user if refactoring comments
-				if (isCommentRefactoring) {
-						try {
-								apiGrabber.replyToUserForFailedRefactoring(request, comment, config,
-										constructCommentReplyMessage(botIssueGroup.getBotIssueGroup().get(0).getErrorMessage()));
-						} catch (Exception u) {
-								logger.error(u.getMessage(), u);
-						}
-				}
-				issueRepo.save(failedIssue);
-				RefactoredIssueGroup group = new RefactoredIssueGroup();
-				group.addIssue(failedIssue);
-
-				// Save failed refactoring and return it
-				return group;
+		// Reply to user if refactoring comments
+		if (isCommentRefactoring) {
+			try {
+				apiGrabber.replyToUserForFailedRefactoring(request, comment, config,
+						constructCommentReplyMessage(botIssueGroup.getBotIssueGroup().get(0).getErrorMessage()));
+			} catch (Exception u) {
+				logger.error(u.getMessage(), u);
+			}
 		}
+		issueRepo.save(failedIssue);
+		RefactoredIssueGroup group = new RefactoredIssueGroup();
+		group.addIssue(failedIssue);
+
+		// Save failed refactoring and return it
+		return group;
+	}
 
 	/**
 	 * This method creates a reply message with the help from the error message of a

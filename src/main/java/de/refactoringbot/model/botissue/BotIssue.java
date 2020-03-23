@@ -108,8 +108,12 @@ public class BotIssue {
 		this.javaRoots = javaRoots;
 	}
 
-	public void setCountChanges(int count){this.countChanges = count;}
+	public void setCountChanges(int count) {
+		this.countChanges = count;
+	}
 
-	public int getCountChanges(){return countChanges;}
+	public int getCountChanges() {
+		return countChanges;
+	}
 
 }
