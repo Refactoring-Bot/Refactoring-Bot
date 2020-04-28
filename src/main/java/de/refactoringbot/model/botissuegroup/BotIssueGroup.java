@@ -29,6 +29,17 @@ public class BotIssueGroup {
 		}
 	}
 
+	public BotIssueGroup(BotIssueGroupType type, String name) throws BotIssueTypeException {
+		this.name = name;
+		botIssues = new ArrayList<>();
+		if (type == BotIssueGroupType.CLASS || type == BotIssueGroupType.REFACTORING
+				|| type == BotIssueGroupType.OBJECT) {
+			this.type = type;
+		} else {
+			throw new BotIssueTypeException("Invalid BotIssueType");
+		}
+	}
+
 	public void addIssue(BotIssue issue) {
 		botIssues.add(issue);
 	}

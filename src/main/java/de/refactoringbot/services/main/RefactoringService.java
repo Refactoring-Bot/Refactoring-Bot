@@ -243,93 +243,48 @@ public class RefactoringService {
 	}
 
 	/**
-	 * This method groups the prioritised Bot-Issues. The AddOverrideAnnotation and
-	 * RemoveCommentedOutCode code smells will be in separate groups. The other code
-	 * smells will be in groups that relates to the classes their in.
+	 * This method groups the prioritised Bot-Issues.
 	 *
 	 * @param prioList
 	 */
-	private List<BotIssueGroup> grouping(List<BotIssue> prioList) throws BotIssueTypeException {
+	public List<BotIssueGroup> grouping(List<BotIssue> prioList) throws BotIssueTypeException {
 		List<BotIssueGroup> issueGroups = new ArrayList<>();
-		BotIssueGroup addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-		BotIssueGroup removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-		BotIssueGroup unknown = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-		BotIssueGroup classGroup;
+		boolean found;
 
 		// order each BotIssue to a group
 		for (BotIssue issue : prioList) {
-
-			if (issue.getRefactoringOperation().equals(RefactoringOperations.ADD_OVERRIDE_ANNOTATION)) {
-				// when the amount of refactorings in the addOverride group is bigger than 20,
-				// then add the group to the issues and create a new group
-				if (addOverride.getBotIssueGroup().size() >= 20) {
-					issueGroups.add(addOverride);
-					addOverride = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-					addOverride.setName(issue.getFilePath());
-					addOverride.addIssue(issue);
-				} else {
-					addOverride.addIssue(issue);
-				}
-			} else if (issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE)) {
-				// when the amount of refactorings in the commentedOutCode group is bigger than
-				// 10,
-				// then add the group to the issues and create a new group
-				if (removeCom.getBotIssueGroup().size() >= 10) {
-					issueGroups.add(removeCom);
-					removeCom = new BotIssueGroup(BotIssueGroupType.REFACTORING);
-					removeCom.setName(issue.getFilePath());
-					removeCom.addIssue(issue);
-				} else {
-					removeCom.addIssue(issue);
-				}
-			} else {
-				// if the refactoring is not AddOverrideAnnotation or RemoveCommentedOutCode,
-				// then check if the
-				// refactorings are in the same class to add them in a class group.
-				boolean found = false;
-				try {
-					for (BotIssueGroup group : issueGroups) {
-						if (group.getType().equals(BotIssueGroupType.CLASS)
-								&& group.getName().equals(issue.getFilePath())
+			found = false;
+			try {
+				for (BotIssueGroup group : issueGroups) {
+					// check if there is already a group for the class and refactoring type
+					if (group.getName().equals(issue.getFilePath()) && group.getBotIssueGroup().get(0)
+							.getRefactoringOperation().equals(issue.getRefactoringOperation())) {
+						// find the right group size
+						if (!issue.getRefactoringOperation().equals(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE)
 								&& group.getBotIssueGroup().size() < 20) {
-							// group for same class and not full
 							group.addIssue(issue);
 							found = true;
 							break;
-						} else if (group.getType().equals(BotIssueGroupType.CLASS)
-								&& group.getName().equals(issue.getFilePath())
-								&& group.getBotIssueGroup().size() >= 20) {
-							// group with same class but full, create a new group for this class
+						} else if (issue.getRefactoringOperation()
+								.equals(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE)
+								&& group.getBotIssueGroup().size() < 10) {
+							group.addIssue(issue);
 							found = true;
-							classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
-							classGroup.setName(issue.getFilePath());
-							classGroup.addIssue(issue);
-							issueGroups.add(classGroup);
+							break;
 						}
 					}
-					if (!found) {
-						// no existing class group, create a new one and add it tho the list
-						classGroup = new BotIssueGroup(BotIssueGroupType.CLASS);
-						classGroup.setName(issue.getFilePath());
-						classGroup.addIssue(issue);
-						issueGroups.add(classGroup);
-					}
-				} catch (NullPointerException e) {
-					logger.error(e.getMessage(), e);
-				}
-			}
-		}
 
-		// end of the algorithm checks if a issue is in one of the list, then add it to
-		// the issueGroups
-		if (addOverride.getBotIssueGroup().size() > 0) {
-			issueGroups.add(addOverride);
-		}
-		if (removeCom.getBotIssueGroup().size() > 0) {
-			issueGroups.add(removeCom);
-		}
-		if (unknown.getBotIssueGroup().size() > 0) {
-			issueGroups.add(unknown);
+				}
+				if (!found) {
+					BotIssueGroup newGroup = new BotIssueGroup(BotIssueGroupType.CLASS, issue.getFilePath());
+					newGroup.addIssue(issue);
+					issueGroups.add(newGroup);
+				}
+
+			} catch (NullPointerException e) {
+				logger.error(e.getMessage(), e);
+			}
+
 		}
 
 		return issueGroups;
