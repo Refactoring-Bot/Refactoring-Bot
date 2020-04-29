@@ -3,6 +3,7 @@ package de.refactoringbot.services.main;
 import java.io.File;
 import java.util.List;
 
+import de.refactoringbot.model.botissue.BotIssue;
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RemoteAddCommand;
@@ -10,10 +11,10 @@ import org.eclipse.jgit.api.errors.RefAlreadyExistsException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.lib.CoreConfig.AutoCRLF;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.slf4j.Logger;
@@ -144,6 +145,41 @@ public class GitService {
 			if (git != null) {
 				git.close();
 			}
+		}
+	}
+
+	/**
+	 * This method count the commits of a single piece of code. TODO: bis jetzt
+	 * schaut er nur auf dem master nach den commits für zusätzliche branches
+	 * editieren
+	 *
+	 * @param issue
+	 * @return count, the count of commits
+	 */
+	public int countCommitsFromHistory(BotIssue issue, GitConfiguration gitConfig, String branch) {
+		int count = 0;
+		Git git;
+		Iterable<RevCommit> commits;
+		String path = issue.getFilePath();
+		path = path.replaceAll("\\\\", "/");
+		Repository repository;
+
+		try {
+			repository = new FileRepository(
+					botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() + "/.git");
+			ObjectId objID = repository.resolve(Constants.HEAD);
+			// switchBranch(gitConfig, branch);
+			git = Git.open(
+					new File(botConfig.getBotRefactoringDirectory() + gitConfig.getConfigurationId() /* + path */));
+			commits = git.log().add(objID).addPath(path).call();
+
+			for (RevCommit commit : commits) {
+				count++;
+			}
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+		} finally {
+			return count;
 		}
 	}
 

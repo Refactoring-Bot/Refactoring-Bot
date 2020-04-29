@@ -13,12 +13,13 @@ public class BotIssue {
 	private String commitMessage;
 	private List<String> allJavaFiles;
 	private List<String> javaRoots;
+	private int countChanges;
 
 	/**
 	 * The refactoring operation describes the refactoring that will be performed.
 	 * It is used to map the BotIssue to a refactoring class that is used for
 	 * refactoring.
-	 * 
+	 *
 	 * @return refactoringOperation
 	 */
 	public String getRefactoringOperation() {
@@ -57,7 +58,7 @@ public class BotIssue {
 	 * This method returns an refactoring string. A refactoring string is something
 	 * like a new name of a method (used for renaming) or the name of an parameter
 	 * that needs to be removed.
-	 * 
+	 *
 	 * @return refactorString
 	 */
 	public String getRefactorString() {
@@ -96,7 +97,7 @@ public class BotIssue {
 	 * This method returns the java roots. A java root folder is the root folder of
 	 * an java file. An example would be the src folder that is commonly used in
 	 * java projects.
-	 * 
+	 *
 	 * @return javaRoots
 	 */
 	public List<String> getJavaRoots() {
@@ -105,6 +106,14 @@ public class BotIssue {
 
 	public void setJavaRoots(List<String> javaRoots) {
 		this.javaRoots = javaRoots;
+	}
+
+	public void setCountChanges(int count) {
+		this.countChanges = count;
+	}
+
+	public int getCountChanges() {
+		return countChanges;
 	}
 
 }

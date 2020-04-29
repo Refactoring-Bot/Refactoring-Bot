@@ -26,6 +26,15 @@ public class RefactoredIssue {
 	private String analysisServiceProjectKey;
 	private String refactoringOperation;
 	private String status;
+	private int countChanges;
+
+	public void setCountChanges(int count) {
+		countChanges = count;
+	}
+
+	public int getCountChanges() {
+		return countChanges;
+	}
 
 	public Long getIssueId() {
 		return issueId;

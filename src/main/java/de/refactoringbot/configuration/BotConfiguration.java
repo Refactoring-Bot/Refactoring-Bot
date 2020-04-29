@@ -5,31 +5,28 @@ import org.springframework.stereotype.Component;
 
 /**
  * This class is used within the application.yml file.
- * 
- * @author Stefan Basaric
  *
+ * @author Stefan Basaric
  */
-@Component
-@ConfigurationProperties(prefix = "bot")
-public class BotConfiguration {
+@Component @ConfigurationProperties(prefix = "bot") public class BotConfiguration {
 
-	private String botRefactoringDirectory = "";
-	private String witClientToken = "";
+		private String botRefactoringDirectory = "";
+		private String witClientToken = "";
 
-	public String getBotRefactoringDirectory() {
-		return botRefactoringDirectory;
-	}
+		public String getBotRefactoringDirectory() {
+				return botRefactoringDirectory;
+		}
 
-	public void setBotRefactoringDirectory(String botRefactoringDirectory) {
-		this.botRefactoringDirectory = botRefactoringDirectory;
-	}
+		public void setBotRefactoringDirectory(String botRefactoringDirectory) {
+				this.botRefactoringDirectory = botRefactoringDirectory;
+		}
 
-	public String getWitClientToken() {
-		return witClientToken;
-	}
+		public String getWitClientToken() {
+				return witClientToken;
+		}
 
-	public void setWitClientToken(String witClientToken) {
-		this.witClientToken = witClientToken;
-	}
+		public void setWitClientToken(String witClientToken) {
+				this.witClientToken = witClientToken;
+		}
 
 }

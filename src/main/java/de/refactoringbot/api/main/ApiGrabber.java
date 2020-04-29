@@ -2,11 +2,15 @@ package de.refactoringbot.api.main;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import javax.naming.OperationNotSupportedException;
 
+import de.refactoringbot.model.botissuegroup.BotIssueGroup;
+import de.refactoringbot.model.sonarqube.SonarIssue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +42,7 @@ import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
 /**
  * This class transfers all Rest-Requests to correct APIs and returns all
  * objects as translated bot objects.
- * 
+ *
  * @author Stefan Basaric
  *
  */
@@ -63,7 +67,7 @@ public class ApiGrabber {
 	/**
 	 * This method gets all requests with all comments from an api translated into a
 	 * bot object.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @return botRequests
 	 * @throws URISyntaxException
@@ -93,7 +97,7 @@ public class ApiGrabber {
 	/**
 	 * This method replies to User inside a Pull-Request that belongs to a Bot if
 	 * the refactoring was successful.
-	 * 
+	 *
 	 * @param request
 	 * @param gitConfig
 	 * @throws Exception
@@ -116,7 +120,7 @@ public class ApiGrabber {
 
 	/**
 	 * Reply to comment if refactoring failed.
-	 * 
+	 *
 	 * @param request
 	 * @param gitConfig
 	 * @throws Exception
@@ -138,7 +142,7 @@ public class ApiGrabber {
 
 	/**
 	 * Check if Branch exists on repository.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @throws Exception
 	 */
@@ -156,7 +160,7 @@ public class ApiGrabber {
 
 	/**
 	 * This method checks the user input and creates a git configuration.
-	 * 
+	 *
 	 * @param configuration
 	 * @return gitConfig
 	 * @throws Exception
@@ -195,7 +199,7 @@ public class ApiGrabber {
 
 	/**
 	 * This method deletes a repository of a filehoster.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @throws Exception
 	 * @throws OperationNotSupportedException
@@ -214,7 +218,7 @@ public class ApiGrabber {
 
 	/**
 	 * This method creates a fork of a repository of a filehoster.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @throws Exception
 	 */
@@ -238,7 +242,7 @@ public class ApiGrabber {
 
 	/**
 	 * This method gets all issues of a Project from a analysis service.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @return botIssues
 	 * @throws Exception
@@ -249,6 +253,11 @@ public class ApiGrabber {
 		case sonarqube:
 			// Get issues and translate them
 			List<SonarQubeIssues> issues = sonarQubeGrabber.getIssues(gitConfig);
+
+			// here the sonarqube issues will be sorted by the creation date
+			// this part belongs to the first prioritization of the code-smells
+			issues = codeSmellPrioritization(issues);
+
 			List<BotIssue> botIssues = new ArrayList<>();
 			for (SonarQubeIssues i : issues) {
 				botIssues.addAll(sonarQubeTranslator.translateSonarIssue(i, gitConfig));
@@ -261,11 +270,96 @@ public class ApiGrabber {
 	}
 
 	/**
+	 * This method sorts the sonarqube issues it will be the first part of the code
+	 * smell prioritization
+	 *
+	 * @param issues
+	 * @return
+	 */
+	private List<SonarQubeIssues> codeSmellPrioritization(List<SonarQubeIssues> issues) {
+		for (SonarQubeIssues sonarQubeIssues : issues) {
+			sonarQubeIssues.setIssues(dateSort(sonarQubeIssues));
+		}
+
+		return issues;
+	}
+
+	/**
+	 * This method sort the SonarIssues with its creation date the issue with the
+	 * newest creationdate will be the first in the returned list.
+	 *
+	 * @param sqIssues
+	 * @return sortedIssues: the List that is sorted after the date
+	 */
+	private List<SonarIssue> dateSort(SonarQubeIssues sqIssues) {
+		Date creationDate;
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+'SSSS");
+		// in this List the current findings are saved
+		List<SonarIssue> sonarIssues;
+		// In this map the ID of the finding and its date are saved
+		Map<String, Date> sonarIssueMap = new HashMap<>();
+		// In this list the sorted SonarIssues are saved
+		List<SonarIssue> sortedIssues;
+
+		// the current findings are fetched
+		sonarIssues = sqIssues.getIssues();
+
+		// this loop runs throug all findings of the project
+		for (SonarIssue sonarIssue : sonarIssues) {
+			try {
+				// for each finding a date object is created with the date from the issue
+				creationDate = format.parse(sonarIssue.getCreationDate());
+				sonarIssueMap.put(sonarIssue.getKey(), creationDate);
+
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}
+		}
+		sonarIssueMap = sortByValue(sonarIssueMap);
+		// new list for each project
+		sortedIssues = new ArrayList<>();
+
+		// loop to bring the SonarIssues list in the correct order
+		for (Map.Entry<String, Date> entry : sonarIssueMap.entrySet()) {
+			for (SonarIssue issue : sonarIssues) {
+				if (entry.getKey().equals(issue.getKey())) {
+					sortedIssues.add(issue);
+				}
+			}
+		}
+		Collections.reverse(sortedIssues);
+
+		return sortedIssues;
+	}
+
+	/**
+	 * Method from:
+	 * https://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values
+	 * TODO: last visited at: 31.01.2020 sort Maps by value
+	 * 
+	 * @param map
+	 * @param <K>
+	 * @param <V>
+	 * @return result: the sorted result
+	 */
+	private static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
+		List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
+		list.sort(Map.Entry.comparingByValue());
+
+		Map<K, V> result = new LinkedHashMap<>();
+		for (Map.Entry<K, V> entry : list) {
+			result.put(entry.getKey(), entry.getValue());
+		}
+
+		return result;
+	}
+
+	/**
 	 * This method returns the absolute path of a anaylsis service issue. This is
 	 * only necessary for analysis services that only return relative paths for
 	 * their issues (e.g. SonarQube). Other anaylsis services should just return the
 	 * input path in their case-section.
-	 * 
+	 *
 	 * @param gitConfig
 	 * @param relativePath
 	 * @return absoluteFilePath
@@ -313,15 +407,47 @@ public class ApiGrabber {
 	}
 
 	/**
-	 * This method checks the analysis service data.
-	 * 
-	 * @param analysisService
-	 * @param analysisServiceProjectKey
-	 * 
-	 * @throws SonarQubeAPIException
-	 * @throws URISyntaxException 
+	 * This method creates a request on a filehoster if the refactoring was
+	 * performed with issues from a analysis tool. This method uses the
+	 * BotIssueGroup to create Pull-Requests
+	 *
+	 * @param group
+	 * @param gitConfig
+	 * @param newBranch
+	 * @throws Exception
 	 */
-	private void checkAnalysisService(GitConfigurationDTO configuration) throws SonarQubeAPIException, URISyntaxException {
+	public void makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig, String newBranch)
+			throws Exception {
+		// Pick filehoster
+		switch (gitConfig.getRepoService()) {
+		case github:
+			// Create PR object
+			GithubCreateRequest createRequest = githubTranslator.makeCreateRequestWithAnalysisService(group, gitConfig,
+					newBranch);
+			// Create PR on filehoster
+			githubGrabber.createRequest(createRequest, gitConfig);
+			break;
+		case gitlab:
+			// Create PR Object
+			GitLabCreateRequest gitlabCreateRequest = gitlabTranslator.makeCreateRequestWithAnalysisService(group,
+					gitConfig, newBranch);
+			// Create PR on filehoster
+			gitlabGrabber.createRequest(gitlabCreateRequest, gitConfig);
+			break;
+		}
+	}
+
+	/**
+	 * This method checks the analysis service data.
+	 *
+	 * @param configuration
+	 *            analysisService param analysisServiceProjectKey
+	 *
+	 * @throws SonarQubeAPIException
+	 * @throws URISyntaxException
+	 */
+	private void checkAnalysisService(GitConfigurationDTO configuration)
+			throws SonarQubeAPIException, URISyntaxException {
 		// Check if input exists
 		if (configuration.getAnalysisService() == null || configuration.getAnalysisServiceProjectKey() == null
 				|| configuration.getAnalysisServiceApiLink() == null) {

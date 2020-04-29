@@ -364,7 +364,7 @@ public class RemoveMethodParameter implements RefactoringImpl {
 	 * Removes the argument at the given position from the given method call
 	 * 
 	 * @param methodCall
-	 * @param paramPosition
+	 * @param position
 	 */
 	private void removeMethodCallArgument(MethodCallExpr methodCall, Integer position) {
 		methodCall.getArgument(position).remove();

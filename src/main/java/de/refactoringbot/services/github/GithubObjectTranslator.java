@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import de.refactoringbot.model.botissuegroup.BotIssueGroup;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,6 +181,37 @@ public class GithubObjectTranslator {
 
 		// Fill object with data
 		createRequest.setTitle(issue.getCommitMessage());
+		createRequest.setBody(PULL_REQUEST_DESCRIPTION);
+		createRequest.setHead(gitConfig.getBotName() + ":" + newBranch);
+		createRequest.setBase("master");
+		createRequest.setMaintainer_can_modify(true);
+
+		return createRequest;
+	}
+
+	/**
+	 * This method creates an object that can be used to create a Pull-Request on
+	 * GitHub after a analysis service refactoring. This method creates
+	 * Pull-Requests with the BotIssueGroup
+	 *
+	 * @param group
+	 * @param gitConfig
+	 * @param newBranch
+	 * @return createRequest
+	 */
+	public GithubCreateRequest makeCreateRequestWithAnalysisService(BotIssueGroup group, GitConfiguration gitConfig,
+			String newBranch) {
+		GithubCreateRequest createRequest = new GithubCreateRequest();
+		String title = "";
+
+		// create the commit message by adding all commit messages from the BotIssues in
+		// the group
+		for (BotIssue issue : group.getBotIssueGroup()) {
+			title = title + issue.getCommitMessage() + ", ";
+		}
+
+		// Fill object with data
+		createRequest.setTitle(title);
 		createRequest.setBody(PULL_REQUEST_DESCRIPTION);
 		createRequest.setHead(gitConfig.getBotName() + ":" + newBranch);
 		createRequest.setBase("master");

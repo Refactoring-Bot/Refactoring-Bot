@@ -68,6 +68,7 @@ public class BotService {
 		refactoredIssue.setAnalysisService(gitConfig.getAnalysisService());
 		refactoredIssue.setAnalysisServiceProjectKey(gitConfig.getAnalysisServiceProjectKey());
 		refactoredIssue.setRefactoringOperation(issue.getRefactoringOperation());
+		refactoredIssue.setCountChanges(issue.getCountChanges());
 
 		if (issue.getCommitMessage() != null && issue.getErrorMessage() == null) {
 			refactoredIssue.setStatus("SUCCESSFUL");

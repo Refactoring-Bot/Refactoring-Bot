@@ -36,7 +36,8 @@ public class SonarQubeDataGrabber {
 	/**
 	 * This method gets all SonarQubeIssues of a Project.
 	 * 
-	 * @param sonarQubeProjectKey
+	 * @param gitConfig
+	 * sonarQubeProjectKey
 	 * @return allIssues
 	 * @throws SonarQubeAPIException
 	 * @throws URISyntaxException
@@ -91,7 +92,8 @@ public class SonarQubeDataGrabber {
 	 * This method checks if a project with the given project key exists on
 	 * SonarQube.
 	 * 
-	 * @param analysisServiceProjectKey
+	 * @param configuration
+	 * analysisServiceProjectKey
 	 * @throws SonarQubeAPIException
 	 * @throws URISyntaxException
 	 * 
