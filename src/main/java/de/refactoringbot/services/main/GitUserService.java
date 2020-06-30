@@ -2,6 +2,7 @@ package de.refactoringbot.services.main;
 
 import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.api.main.ApiGrabber;
+import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.model.gituser.GitUser;
 import de.refactoringbot.model.gituser.GitUserDTO;
@@ -21,7 +22,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Optional;
 
 /**
- * This class contains functions regarding the configuration of the bots.
+ * This class contains functions regarding the user.
  *
  * @author Hai Duy Dam
  */
@@ -30,6 +31,8 @@ public class GitUserService {
 
     private final ModelMapper modelMapper;
 
+    @Autowired
+    ConfigurationRepository configRepo;
     @Autowired
     GitUserRepository repo;
     @Autowired
@@ -103,7 +106,7 @@ public class GitUserService {
     }
 
     /**
-     * This method checks the user input and adds a GitUser.
+     * This method checks the user input and updates a GitUser.
      *
      * @param savedGitUser
      * @return updatedGitUser
@@ -154,9 +157,4 @@ public class GitUserService {
         }
         return new ResponseEntity<>(userFeedback, HttpStatus.OK);
     }
-
-
-
-
-
 }

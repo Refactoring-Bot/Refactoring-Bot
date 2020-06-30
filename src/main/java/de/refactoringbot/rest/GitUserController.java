@@ -1,7 +1,6 @@
 package de.refactoringbot.rest;
 
 import de.refactoringbot.model.exceptions.GitHubAPIException;
-import de.refactoringbot.model.github.repository.GithubRepository;
 import de.refactoringbot.model.gituser.GitUser;
 import de.refactoringbot.model.gituser.GitUserDTO;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
@@ -16,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -68,7 +66,7 @@ public class GitUserController {
      * @return updatedGitUser
      */
     @PutMapping(path = "/{gitUserId}", consumes = "application/json", produces = "application/json")
-    @ApiOperation(value = "Update Git-User with gitUser Id")
+    @ApiOperation(value = "Update Git-User with gitUserId")
     public ResponseEntity<?> update(@RequestBody GitUserDTO savedGitUser,
                                     @PathVariable(name = "gitUserId") Long gitUserId) {
         GitUser updatedGitUser = null;
@@ -105,7 +103,7 @@ public class GitUserController {
      */
 
     @DeleteMapping(path = "/{gitUserId}", produces = "application/json")
-    @ApiOperation(value = "Delete Git-User with gitUser id")
+    @ApiOperation(value = "Delete Git-User with gitUserId")
     public ResponseEntity<?> deleteGitUser(@PathVariable("gitUserId") Long gitUserId) {
         // Check if gitUser exists
         GitUser gitUser = null;
@@ -118,8 +116,8 @@ public class GitUserController {
         } catch (NotFoundException n) {
             return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
         }
-
-        // Remove User and respond
+        
+        // Removes user from database
         return gitUserService.deleteGitUser(gitUser);
     }
 
@@ -148,7 +146,7 @@ public class GitUserController {
      * @return gitUser
      */
     @GetMapping(path = "/{gitUserId}", produces = "application/json")
-    @ApiOperation(value = "Get Git-User with gitUser id")
+    @ApiOperation(value = "Get Git-User with gitUserId")
     public ResponseEntity<?> getGitUserById(@PathVariable("gitUserId")  Long gitUserId) {
         // Check if gitUser exists
         GitUser gitUser = null;

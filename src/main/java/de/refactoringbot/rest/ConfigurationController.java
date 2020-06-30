@@ -4,6 +4,7 @@ import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
+import de.refactoringbot.model.gituser.GitUser;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,17 +26,19 @@ import org.springframework.web.bind.annotation.RestController;
 import de.refactoringbot.services.main.ConfigurationService;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
+import de.refactoringbot.model.gituser.GitUserRepository;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import io.swagger.annotations.ApiOperation;
 import javassist.NotFoundException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Optional;
 
 /**
  * This method offers an CRUD-Interface as a REST-Interface for the
  * Git-Configurations.
- * 
+ *
  * @author Stefan Basaric
  *
  */
@@ -49,12 +52,14 @@ public class ConfigurationController {
 	ModelMapper modelMapper;
 	@Autowired
 	GithubDataGrabber grabber;
+	@Autowired
+	GitUserRepository gitUserRepo;
 
 	private static final Logger logger = LoggerFactory.getLogger(ConfigurationController.class);
 
 	/**
 	 * This method creates an git configuration with the user inputs.
-	 * 
+	 *
 	 * @param newConfiguration
 	 * @return
 	 */
@@ -90,10 +95,20 @@ public class ConfigurationController {
 	@PutMapping(path = "/{configurationId}", consumes = "application/json", produces = "application/json")
 	@ApiOperation(value = "Update Git-Configuration with configuration id")
 	public ResponseEntity<?> update(@RequestBody GitConfigurationDTO newConfiguration,
-			@PathVariable(name = "configurationId") Long configurationId) {
+									@PathVariable(name = "configurationId") Long configurationId) {
 		GitConfiguration savedConfig = null;
 		try {
 			savedConfig = configService.checkConfigurationExistance(configurationId);
+			Optional<GitUser> savedGitUsers;
+			savedGitUsers = gitUserRepo.getGitUserById(newConfiguration.getGitUserId());
+			if (savedGitUsers.isPresent()) {
+				newConfiguration.setBotName(savedGitUsers.get().getGitUserName());
+				newConfiguration.setBotEmail(savedGitUsers.get().getGitUserEmail());
+				newConfiguration.setBotToken(savedGitUsers.get().getGitUserToken());
+				newConfiguration.setRepoService(savedGitUsers.get().getRepoService());
+			} else {
+				throw new NotFoundException("Gituser with given ID does not exist in the database!");
+			}
 		} catch (DatabaseConnectionException d) {
 			// Print exception and abort if database error occurs
 			logger.error(d.getMessage(), d);
@@ -117,7 +132,7 @@ public class ConfigurationController {
 
 	/**
 	 * This method removes a configuration with a specific ID from the database.
-	 * 
+	 *
 	 * @param configurationId
 	 * @return {feedbackString}
 	 */
@@ -136,14 +151,14 @@ public class ConfigurationController {
 		} catch (NotFoundException n) {
 			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
 		}
-		
+
 		// Remove Configuration and respond
 		return configService.deleteConfiguration(config);
 	}
 
 	/**
 	 * This method returns all configurations from the database
-	 * 
+	 *
 	 * @return allConfigs
 	 */
 	@GetMapping(produces = "application/json")
@@ -156,12 +171,12 @@ public class ConfigurationController {
 			// Print exception and abort if database error occurs
 			logger.error(e.getMessage(), e);
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		} 
+		}
 	}
 
 	/**
 	 * This method returns a configuration with a specific ID.
-	 * 
+	 *
 	 * @param configurationId
 	 * @return config
 	 */
@@ -221,5 +236,30 @@ public class ConfigurationController {
 		openPullRequest.put("ratio", ratio);
 
 		return new ResponseEntity<>(openPullRequest.toString(), HttpStatus.OK);
+	}
+
+	/**
+	 * This method returns events from a git repository with a specific configurationId.
+	 *
+	 * @param configurationId
+	 * @return json
+	 */
+	@GetMapping(path = "/{configurationId}/events", produces = "application/json")
+	@ApiOperation(value = "Get pull requests and comment events of a repository")
+	public ResponseEntity<?> getRepoEvents(@PathVariable("configurationId") Long configurationId) throws GitHubAPIException, IOException, URISyntaxException {
+		// Check if configuration exists
+		GitConfiguration config = null;
+		try {
+			config = configService.checkConfigurationExistance(configurationId);
+		} catch (DatabaseConnectionException d) {
+			// Print exception and abort if database error occurs
+			logger.error(d.getMessage(), d);
+			return new ResponseEntity<>(d.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (NotFoundException n) {
+			return new ResponseEntity<>(n.getMessage(), HttpStatus.NOT_FOUND);
+		}
+		String json = null;
+		json = grabber.getConfigEvents(config);
+		return new ResponseEntity<>(json, HttpStatus.OK);
 	}
 }

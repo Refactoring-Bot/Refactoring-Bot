@@ -490,7 +490,7 @@ public class GithubDataGrabber {
 	}
 
 	/**
-	 * This method checks if a gitUser exists and returns events of gitUser.
+	 * This method returns events of a gitUser.
 	 *
 	 * @param gitUser
 	 * @return events
@@ -502,7 +502,7 @@ public class GithubDataGrabber {
 		// Create URI from user input
 		URI eventUri = null;
 
-		eventUri = createURIFromApiLink(GITHUB_DEFAULT_APILINK + "/users/" + gitUser.getGitUserName()+"?per_page=100");
+		eventUri = createURIFromApiLink(GITHUB_DEFAULT_APILINK + "/users/" + gitUser.getGitUserName());
 
 
 		// Build URI
@@ -524,7 +524,48 @@ public class GithubDataGrabber {
 			json = rest.exchange(githubUri, HttpMethod.GET, entity, String.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
-			throw new GitHubAPIException("Could not get Events from Github!", e);
+			throw new GitHubAPIException("Could not get Events of user from Github!", e);
+		}
+
+		return json;
+	}
+
+	/**
+	 * This method returns events of a git repository.
+	 *
+	 * @param gitConfig
+	 * @return events
+	 * @throws Exception
+	 */
+	public String getConfigEvents(GitConfiguration gitConfig)
+			throws URISyntaxException, GitHubAPIException, IOException {
+
+		// Create URI from user input
+		URI eventUri = null;
+
+		eventUri = createURIFromApiLink(GITHUB_DEFAULT_APILINK + "/repos/" + gitConfig.getRepoOwner()+"/"+ gitConfig.getRepoName());
+
+
+		// Build URI
+		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(eventUri.getScheme()).host(eventUri.getHost())
+				.path(eventUri.getPath()+ "/events");
+
+
+		URI githubUri = apiUriBuilder.build().encode().toUri();
+
+		RestTemplate rest = new RestTemplate();
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("User-Agent", USER_AGENT);
+		headers.setBearerAuth(gitConfig.getBotToken());
+		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+
+		String json = null;
+		try {
+			// Send Request to the GitHub-API
+			json = rest.exchange(githubUri, HttpMethod.GET, entity, String.class).getBody();
+		} catch (RestClientException e) {
+			logger.error(e.getMessage(), e);
+			throw new GitHubAPIException("Could not get Events of the configuration from Github!", e);
 		}
 
 		return json;
