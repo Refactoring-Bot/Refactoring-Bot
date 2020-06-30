@@ -7,6 +7,7 @@ public class GitConfigurationDTO {
 	private FileHoster repoService;
 	private String filehosterApiLink;
 
+	private Long gitUserId;
 	private String botName;
 	private String botEmail;
 	private String botToken;
@@ -37,6 +38,14 @@ public class GitConfigurationDTO {
 
 	public void setRepoService(FileHoster repoService) {
 		this.repoService = repoService;
+	}
+
+	public Long getGitUserId() {
+		return gitUserId;
+	}
+
+	public void setGitUserId(Long gitUserId) {
+		this.gitUserId = gitUserId;
 	}
 
 	public String getBotName() {

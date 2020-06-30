@@ -171,8 +171,6 @@ public class ApiGrabber {
 		case github:
 			GithubRepository githubRepo = githubGrabber.checkRepository(configuration.getRepoName(),
 					configuration.getRepoOwner(), configuration.getBotToken(), configuration.getFilehosterApiLink());
-			githubGrabber.checkGithubUser(configuration.getBotName(), configuration.getBotToken(),
-					configuration.getBotEmail(), configuration.getFilehosterApiLink());
 
 			// Create git configuration and a fork
 			gitConfig = githubTranslator.createConfiguration(configuration, githubRepo.getUrl(),
@@ -324,11 +322,13 @@ public class ApiGrabber {
 	private void checkAnalysisService(GitConfigurationDTO configuration) throws SonarQubeAPIException, URISyntaxException {
 		// Check if input exists
 		if (configuration.getAnalysisService() == null || configuration.getAnalysisServiceProjectKey() == null
-				|| configuration.getAnalysisServiceApiLink() == null) {
+//				|| configuration.getAnalysisServiceApiLink() == null
+		) {
 			return;
 		}
 		// Pick service
 		if (configuration.getAnalysisService().equals(AnalysisProvider.sonarqube)) {
+			configuration.setAnalysisServiceApiLink("https://sonarcloud.io/api");
 			sonarQubeGrabber.checkSonarData(configuration);
 		}
 	}

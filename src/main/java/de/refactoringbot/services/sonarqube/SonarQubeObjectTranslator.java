@@ -46,27 +46,21 @@ public class SonarQubeObjectTranslator {
 			botIssue.setCommentServiceID(issue.getKey());
 
 			// Translate SonarQube rule
-			switch (issue.getRule()) {
-			case "squid:S1161":
+			if (issue.getRule().equals("squid:S1161") || issue.getRule().equals("java:S1161")) {
 				botIssue.setRefactoringOperation(RefactoringOperations.ADD_OVERRIDE_ANNOTATION);
 				botIssues.add(botIssue);
-				break;
-			case "squid:ModifiersOrderCheck":
+			} else if (issue.getRule().equals("squid:ModifiersOrderCheck") || issue.getRule().equals("java:S1124")) {
 				botIssue.setRefactoringOperation(RefactoringOperations.REORDER_MODIFIER);
 				botIssues.add(botIssue);
-				break;
-			case "squid:CommentedOutCodeLine":
+			} else if (issue.getRule().equals("squid:CommentedOutCodeLine") || issue.getRule().equals("java:S125")) {
 				botIssue.setRefactoringOperation(RefactoringOperations.REMOVE_COMMENTED_OUT_CODE);
 				botIssues.add(botIssue);
-				break;
-			case "squid:S1172":
+			} else if (issue.getRule().equals("squid:S1172") || issue.getRule().equals("java:S1172")) {
 				botIssue.setRefactoringOperation(RefactoringOperations.REMOVE_PARAMETER);
 				botIssue.setRefactorString(getNameOfFirstUnusedParameterInIssue(issue));
 				botIssues.add(botIssue);
-				break;
-			default:
+			} else {
 				botIssue.setRefactoringOperation(RefactoringOperations.UNKNOWN);
-				break;
 			}
 		}
 

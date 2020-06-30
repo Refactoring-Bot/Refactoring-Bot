@@ -20,6 +20,7 @@ public class GitConfiguration {
 
 	private String repoFolder;
 
+	private Long gitUserId;
 	private String botName;
 	private String botEmail;
 	private String botToken;
@@ -73,6 +74,14 @@ public class GitConfiguration {
 
 	public void setRepoService(FileHoster repoService) {
 		this.repoService = repoService;
+	}
+
+	public Long getGitUserId() {
+		return gitUserId;
+	}
+
+	public void setGitUserId(Long gitUserId) {
+		this.gitUserId = gitUserId;
 	}
 
 	public String getBotName() {

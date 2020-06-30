@@ -56,7 +56,7 @@ public class WitDataGrabber {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("User-Agent", USER_AGENT);
-		headers.set("Authorization", "Bearer " + botConfig.getWitClientToken());
+		headers.setBearerAuth(botConfig.getWitClientToken());
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
 		try {

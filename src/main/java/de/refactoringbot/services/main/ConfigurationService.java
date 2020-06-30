@@ -20,6 +20,9 @@ import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.services.github.GithubObjectTranslator;
+import de.refactoringbot.model.gituser.GitUserRepository;
+import de.refactoringbot.model.gituser.GitUser;
+import de.refactoringbot.model.gituser.GitUserDTO;
 import javassist.NotFoundException;
 
 /**
@@ -33,6 +36,8 @@ public class ConfigurationService {
 
 	@Autowired
 	ConfigurationRepository repo;
+	@Autowired
+	GitUserRepository gitUserRepo;
 	@Autowired
 	ApiGrabber grabber;
 	@Autowired
@@ -107,6 +112,16 @@ public class ConfigurationService {
 	 */
 	public GitConfiguration createInitialConfiguration(GitConfigurationDTO newConfiguration) throws Exception {
 		// Create configuration
+		Optional<GitUser> savedGitUsers;
+		savedGitUsers = gitUserRepo.getGitUserById(newConfiguration.getGitUserId());
+		if (savedGitUsers.isPresent()) {
+			newConfiguration.setBotName(savedGitUsers.get().getGitUserName());
+			newConfiguration.setBotEmail(savedGitUsers.get().getGitUserEmail());
+			newConfiguration.setBotToken(savedGitUsers.get().getGitUserToken());
+			newConfiguration.setRepoService(savedGitUsers.get().getRepoService());
+		} else {
+			throw new NotFoundException("Gituser with given ID does not exist in the database!");
+		}
 		GitConfiguration createdConfig = grabber.createConfigurationForRepo(newConfiguration);
 
 		try {
@@ -170,6 +185,8 @@ public class ConfigurationService {
 		config.setRepoFolder(
 				Paths.get(botConfig.getBotRefactoringDirectory() + config.getConfigurationId()).toString());
 		config = repo.save(config);
+
+
 
 		// Fetch target-Repository-Data
 		gitService.fetchRemote(config);
