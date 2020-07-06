@@ -20,7 +20,9 @@ jobs:
         WIT_CLIENT_TOKEN: ${{secrets.WIT_CLIENT_TOKEN}}
     - name: analyze with sonarcloud
       if: github.ref == 'refs/heads/master'      
-      run: mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=false  
+      run: |
+        mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=false
+        sonar-scanner
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
