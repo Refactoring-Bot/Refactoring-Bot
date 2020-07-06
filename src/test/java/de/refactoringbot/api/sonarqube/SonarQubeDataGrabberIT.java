@@ -42,7 +42,7 @@ public class SonarQubeDataGrabberIT {
 		 * This test gets skipped if it is not executed on the build server. To
 		 * successfully run it on a local machine, this method must not be executed.
 		 */
-		assumeThat(System.getenv("TRAVIS")).isNotNull();
+		assumeThat(System.getenv("GITHUB_ACTIONS")).isNotNull();
 	}
 	
 	@Test
