@@ -21,7 +21,7 @@ jobs:
       with:
         java-version: 1.8
     - name: Build and test with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B install --file pom.xml
       env:
         WIT_CLIENT_TOKEN: ${{secrets.WIT_CLIENT_TOKEN}}
 
@@ -45,7 +45,7 @@ jobs:
         run: >
           ./mvnw --batch-mode
           -Pcoverage
-          clean install
+          clean verify
           sonar:sonar
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.organization=refactoring-bot
