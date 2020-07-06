@@ -39,19 +39,23 @@ public class SonarQubeDataGrabber {
 	 * @param sonarQubeProjectKey
 	 * @return allIssues
 	 * @throws SonarQubeAPIException
+	 * @throws URISyntaxException
 	 */
-	public List<SonarQubeIssues> getIssues(GitConfiguration gitConfig) throws SonarQubeAPIException, URISyntaxException {
-		int page = 1;
-
+	public List<SonarQubeIssues> getIssues(GitConfiguration gitConfig)
+			throws SonarQubeAPIException, URISyntaxException {
+		final int maxPage = 4; // results in a maximum of 4 * 500 = 2000 issues
+		final int maxNumberOfIssuesInASingleCall = 500; // maximum allowed by the sonarQube API
+		
 		List<SonarQubeIssues> issues = new ArrayList<>();
-
-		while (page < 500) {
+		
+		for (int page = 1; page < maxPage; page++) {
 			// Build URI
-			UriComponentsBuilder apiUriBuilder = createUriBuilder(gitConfig.getAnalysisServiceApiLink(), "/issues/search");
+			UriComponentsBuilder apiUriBuilder = createUriBuilder(gitConfig.getAnalysisServiceApiLink(),
+					"/issues/search");
 
-			apiUriBuilder.queryParam("componentRoots", gitConfig.getAnalysisServiceProjectKey());
+			apiUriBuilder.queryParam("componentKeys", gitConfig.getAnalysisServiceProjectKey());
 			apiUriBuilder.queryParam("statuses", "OPEN,REOPENED");
-			apiUriBuilder.queryParam("ps", 500);
+			apiUriBuilder.queryParam("ps", maxNumberOfIssuesInASingleCall);
 			apiUriBuilder.queryParam("p", page);
 
 			URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
@@ -64,18 +68,19 @@ public class SonarQubeDataGrabber {
 
 			try {
 				// Send request
-				issues.add(rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody());
-				page++;
+				SonarQubeIssues issueBucket = rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class)
+						.getBody();
+				issues.add(issueBucket);
+				if (issueBucket.getIssues().size() < maxNumberOfIssuesInASingleCall) {
+					break;
+				}
 			} catch (RestClientException e) {
 				if (page == 1) {
 					logger.error(e.getMessage(), e);
 					throw new SonarQubeAPIException("Could not access SonarQube API!", e);
 				}
-
 				break;
-
 			}
-
 		}
 
 		return issues;
@@ -88,13 +93,21 @@ public class SonarQubeDataGrabber {
 	 * 
 	 * @param analysisServiceProjectKey
 	 * @throws SonarQubeAPIException
+	 * @throws URISyntaxException
+	 * 
+	 * @return true if configured analysis service is valid, throws exception
+	 *         otherwise
 	 */
-	public void checkSonarData(GitConfigurationDTO configuration) throws SonarQubeAPIException, URISyntaxException {
+	public boolean checkSonarData(GitConfigurationDTO configuration) throws SonarQubeAPIException, URISyntaxException {
 		// Build URI
-		UriComponentsBuilder apiUriBuilder = createUriBuilder(configuration.getAnalysisServiceApiLink(), "/components/show");
-
+		UriComponentsBuilder apiUriBuilder = null;
+		try {
+			apiUriBuilder = createUriBuilder(configuration.getAnalysisServiceApiLink(), "/components/show");
+		} catch (URISyntaxException e) {
+			throw new URISyntaxException(
+					"Error checking analysis service data. Could not create URI from given API link! ", e.getMessage());
+		}
 		apiUriBuilder.queryParam("component", configuration.getAnalysisServiceProjectKey());
-
 		URI sonarQubeURI = apiUriBuilder.build().encode().toUri();
 
 		RestTemplate rest = new RestTemplate();
@@ -104,12 +117,13 @@ public class SonarQubeDataGrabber {
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
 		try {
-			// Send request
 			rest.exchange(sonarQubeURI, HttpMethod.GET, entity, SonarQubeIssues.class).getBody();
 		} catch (RestClientException e) {
-			logger.error(e.getMessage(), e);
-			throw new SonarQubeAPIException("Project with given project key does not exist on SonarQube!", e);
+			throw new SonarQubeAPIException(
+					"Error checking analysis service data. Project with given project key might not exist.");
 		}
+
+		return true;
 	}
 
 	/**
@@ -125,15 +139,10 @@ public class SonarQubeDataGrabber {
 	private UriComponentsBuilder createUriBuilder(String link, String apiEntryPoint) throws URISyntaxException {
 		URI result = null;
 		UriComponentsBuilder apiUriBuilder = null;
-		try {
-			result = new URI(link);
-			apiUriBuilder = UriComponentsBuilder.newInstance().scheme(result.getScheme()).host(result.getHost()).port(result.getPort())
-					.path(result.getPath() + apiEntryPoint);
-			return apiUriBuilder;
-		} catch (URISyntaxException u) {
-			logger.error(u.getMessage(), u);
-			throw new URISyntaxException("Could not create URI from given API link!", u.getMessage());
-		}
+		result = new URI(link);
+		apiUriBuilder = UriComponentsBuilder.newInstance().scheme(result.getScheme()).host(result.getHost())
+				.port(result.getPort()).path(result.getPath() + apiEntryPoint);
+		return apiUriBuilder;
 	}
 
 }

@@ -102,7 +102,7 @@ public class GrammarServiceTest {
 
 	@Test
 	public void testCheckComment() {
-		GrammarService grammarService = new GrammarService(fileService);
+		GrammarService grammarService = new GrammarService();
 		// Init gitconfig with bot username
 		GitConfiguration gitConfig = new GitConfiguration();
 		gitConfig.setBotName(CORRECT_BOT_USERNAME);
@@ -132,20 +132,17 @@ public class GrammarServiceTest {
 	private BotIssue getIssueAfterMapping(String commentBody) throws Exception {
 		// arrange
 		Mockito.when(fileService.getAllJavaFiles(System.getProperty("user.dir"))).thenReturn(new ArrayList<>());
-		GitConfiguration gitConfig = new GitConfiguration();
-		GrammarService grammarService = new GrammarService(fileService);
+		GrammarService grammarService = new GrammarService();
 		BotPullRequestComment comment = new BotPullRequestComment();
 		comment.setCommentID(0);
 		comment.setUsername("randomuser");
 		comment.setFilepath("");
 		comment.setPosition(0);
 		comment.setCommentBody(commentBody);
-		String repoFolder = System.getProperty("user.dir");
-		gitConfig.setRepoFolder(repoFolder);
 
 		// act
 		BotIssue botIssue = new BotIssue();
-		botIssue = grammarService.createIssueFromComment(comment, gitConfig);
+		botIssue = grammarService.createIssueFromComment(comment);
 
 		return botIssue;
 	}

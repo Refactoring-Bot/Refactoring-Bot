@@ -1,5 +1,5 @@
 
-package de.refactoringbot.model.wit;
+package de.refactoringbot.model.gitlab.user;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,49 +13,36 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-    "_text",
-    "entities",
-    "msg_id"
+    "provider",
+    "extern_uid"
 })
-public class WitObject {
+public class Identity {
 
-    @JsonProperty("_text")
-    private String text;
-    @JsonProperty("entities")
-    private Entities entities;
-    @JsonProperty("msg_id")
-    private String msgId;
+    @JsonProperty("provider")
+    private String provider;
+    @JsonProperty("extern_uid")
+    private String externUid;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<>();
 
-    @JsonProperty("_text")
-    public String getText() {
-        return text;
+    @JsonProperty("provider")
+    public String getProvider() {
+        return provider;
     }
 
-    @JsonProperty("_text")
-    public void setText(String text) {
-        this.text = text;
+    @JsonProperty("provider")
+    public void setProvider(String provider) {
+        this.provider = provider;
     }
 
-    @JsonProperty("entities")
-    public Entities getEntities() {
-        return entities;
+    @JsonProperty("extern_uid")
+    public String getExternUid() {
+        return externUid;
     }
 
-    @JsonProperty("entities")
-    public void setEntities(Entities entities) {
-        this.entities = entities;
-    }
-
-    @JsonProperty("msg_id")
-    public String getMsgId() {
-        return msgId;
-    }
-
-    @JsonProperty("msg_id")
-    public void setMsgId(String msgId) {
-        this.msgId = msgId;
+    @JsonProperty("extern_uid")
+    public void setExternUid(String externUid) {
+        this.externUid = externUid;
     }
 
     @JsonAnyGetter

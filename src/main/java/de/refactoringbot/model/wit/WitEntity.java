@@ -28,7 +28,7 @@ public class WitEntity {
     @JsonProperty("type")
     private String type;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("suggested")
     public Boolean getSuggested() {

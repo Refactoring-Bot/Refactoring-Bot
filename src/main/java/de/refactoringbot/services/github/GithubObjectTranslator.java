@@ -41,7 +41,7 @@ public class GithubObjectTranslator {
 	private final GithubDataGrabber grabber;
 	private final ModelMapper modelMapper;
 	private final GitService gitService;
-	private final String pullRequestBodyComment = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this pull request by creating line specific (review) comments inside the 'Files changed' tab of this pull request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
+	private static final String PULL_REQUEST_DESCRIPTION = "Hi, I'm a refactoring bot. I found and fixed some code smells for you. \n\n You can instruct me to perform changes on this pull request by creating line specific comments inside the 'Files changed' tab of this pull request. Use the english language to give me instructions and do not forget to tag me (using @) inside the comment to let me know that you are talking to me.";
 
 	@Autowired
 	public GithubObjectTranslator(GithubDataGrabber grabber, ModelMapper modelMapper, GitService gitService) {
@@ -54,28 +54,39 @@ public class GithubObjectTranslator {
 	 * This method creates a GitConfiguration from GitHub data.
 	 * 
 	 * @param configuration
+	 * @param apiUrl
+	 * @param gitUrl
 	 * @return
 	 */
-	public GitConfiguration createConfiguration(GitConfigurationDTO configuration) {
-		
+	public GitConfiguration createConfiguration(GitConfigurationDTO configuration, String apiUrl, String gitUrl) {
+
 		GitConfiguration config = new GitConfiguration();
 
 		modelMapper.map(configuration, config);
 		// Fill object
-		config.setRepoApiLink(
-				"https://api.github.com/repos/" + configuration.getRepoOwner() + "/" + configuration.getRepoName());
-		config.setRepoGitLink(
-				"https://github.com/" + configuration.getRepoOwner() + "/" + configuration.getRepoName() + ".git");
-		config.setForkApiLink(
-				"https://api.github.com/repos/" + configuration.getBotName() + "/" + configuration.getRepoName());
-		config.setForkGitLink(
-				"https://github.com/" + configuration.getBotName() + "/" + configuration.getRepoName() + ".git");
+		config.setRepoApiLink(apiUrl);
+		config.setRepoGitLink(gitUrl + ".git");
 
 		if (configuration.getAnalysisService() != null) {
 			config.setAnalysisService(configuration.getAnalysisService());
 		}
 
 		return config;
+	}
+
+	/**
+	 * This method adds the details of a fork to the GitConfiguration after the fork
+	 * was created.
+	 * 
+	 * @param gitConfig
+	 * @param apiUrl
+	 * @param gitUrl
+	 * @return gitConfig
+	 */
+	public GitConfiguration addForkDetailsToConfiguration(GitConfiguration gitConfig, String apiUrl, String gitUrl) {
+		gitConfig.setForkApiLink(apiUrl);
+		gitConfig.setForkGitLink(gitUrl + ".git");
+		return gitConfig;
 	}
 
 	/**
@@ -157,27 +168,6 @@ public class GithubObjectTranslator {
 
 	/**
 	 * This method creates an object that can be used to create a Pull-Request on
-	 * GitHub after a request comment refactoring.
-	 * 
-	 * @param gitConfig
-	 * @return createRequest
-	 */
-	public GithubCreateRequest makeCreateRequest(BotPullRequest refactoredRequest, GitConfiguration gitConfig,
-			String botBranchName) {
-		GithubCreateRequest createRequest = new GithubCreateRequest();
-
-		// Fill object with data
-		createRequest.setTitle("Bot Pull-Request Refactoring for PullRequest #" + refactoredRequest.getRequestNumber());
-		createRequest.setBody(pullRequestBodyComment);
-		createRequest.setHead(gitConfig.getBotName() + ":" + botBranchName);
-		createRequest.setBase(refactoredRequest.getBranchName());
-		createRequest.setMaintainer_can_modify(true);
-
-		return createRequest;
-	}
-
-	/**
-	 * This method creates an object that can be used to create a Pull-Request on
 	 * GitHub after a analysis service refactoring.
 	 * 
 	 * @param gitConfig
@@ -189,8 +179,8 @@ public class GithubObjectTranslator {
 		GithubCreateRequest createRequest = new GithubCreateRequest();
 
 		// Fill object with data
-		createRequest.setTitle("Bot Pull-Request Refactoring with '" + gitConfig.getAnalysisService() + "'");
-		createRequest.setBody(pullRequestBodyComment);
+		createRequest.setTitle(issue.getCommitMessage());
+		createRequest.setBody(PULL_REQUEST_DESCRIPTION);
 		createRequest.setHead(gitConfig.getBotName() + ":" + newBranch);
 		createRequest.setBase("master");
 		createRequest.setMaintainer_can_modify(true);
@@ -207,7 +197,7 @@ public class GithubObjectTranslator {
 	 */
 	public ReplyComment createReplyComment(BotPullRequestComment replyTo, String newRequestURL) {
 		ReplyComment comment = new ReplyComment();
-		
+
 		comment.setIn_reply_to(replyTo.getCommentID());
 
 		if (newRequestURL != null) {

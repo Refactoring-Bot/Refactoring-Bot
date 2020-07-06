@@ -1,8 +1,8 @@
 package de.refactoringbot.model.exceptions;
 
 /**
- * This exception should be thrown whenever our langauge processing services (Wit or ANTLR) are
- * not able to process a comment correctly.
+ * This exception should be thrown whenever our language processing service
+ * (ANTLR) is not able to process a comment correctly.
  * 
  * @author Stefan Basaric
  *
