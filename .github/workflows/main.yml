@@ -18,14 +18,7 @@ jobs:
       run: mvn -B package --file pom.xml
       env:
         WIT_CLIENT_TOKEN: ${{secrets.WIT_CLIENT_TOKEN}}
-    - name: analyze with sonarcloud
-      if: github.ref == 'refs/heads/master'
-      uses: xlui/action-maven-cli/jdk11@master      
-      with:
-        args: clean package org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
 
   sonar:
     name: analyze with sonarqube
