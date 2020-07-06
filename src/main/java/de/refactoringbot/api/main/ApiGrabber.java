@@ -14,10 +14,12 @@ import de.refactoringbot.api.github.GithubDataGrabber;
 import de.refactoringbot.api.gitlab.GitlabDataGrabber;
 import de.refactoringbot.api.sonarqube.SonarQubeDataGrabber;
 import de.refactoringbot.model.botissue.BotIssue;
+import de.refactoringbot.model.configuration.AnalysisProvider;
 import de.refactoringbot.model.configuration.GitConfiguration;
 import de.refactoringbot.model.configuration.GitConfigurationDTO;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.GitLabAPIException;
+import de.refactoringbot.model.exceptions.SonarQubeAPIException;
 import de.refactoringbot.model.github.pullrequest.GithubCreateRequest;
 import de.refactoringbot.model.github.pullrequest.GithubPullRequests;
 import de.refactoringbot.model.github.repository.GithubRepository;
@@ -315,19 +317,19 @@ public class ApiGrabber {
 	 * 
 	 * @param analysisService
 	 * @param analysisServiceProjectKey
+	 * 
+	 * @throws SonarQubeAPIException
+	 * @throws URISyntaxException 
 	 */
-	private void checkAnalysisService(GitConfigurationDTO configuration) throws Exception {
+	private void checkAnalysisService(GitConfigurationDTO configuration) throws SonarQubeAPIException, URISyntaxException {
 		// Check if input exists
 		if (configuration.getAnalysisService() == null || configuration.getAnalysisServiceProjectKey() == null
 				|| configuration.getAnalysisServiceApiLink() == null) {
 			return;
 		}
 		// Pick service
-		switch (configuration.getAnalysisService()) {
-		case sonarqube:
+		if (configuration.getAnalysisService().equals(AnalysisProvider.sonarqube)) {
 			sonarQubeGrabber.checkSonarData(configuration);
-			break;
 		}
-
 	}
 }

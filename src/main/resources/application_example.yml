@@ -20,7 +20,6 @@ spring:
   profiles: dev
 bot:
   botRefactoringDirectory: ${LOCAL_DIR:C:/Users/Marvin/Documents/BotForks}
-  witClientToken: V2FLDGUZHWA3X7WYL5XLWORJTCB34I6R
 ---
 scheduling:
   enable: true
