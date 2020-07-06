@@ -39,7 +39,7 @@ jobs:
         run: >
           ./mvnw --batch-mode
           -Pcoverage
-          clean verify
+          clean org.jacoco:jacoco-maven-plugin:prepare-agent verify
           sonar:sonar
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.organization=refactoring-bot
