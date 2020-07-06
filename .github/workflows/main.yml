@@ -33,6 +33,8 @@ jobs:
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+      - name: make mvnw executable
+        run: chmod +x mvnw
       - name: Run analysis
         run: >
           ./mvnw --batch-mode
