@@ -251,7 +251,11 @@ public class RefactoringHelper {
 			if (!ancestor.getQualifiedName().equals("java.lang.Object")) {
 				for (ResolvedMethodDeclaration method : ancestor.getAllMethods()) {
 					if (method.getSignature().equals(targetMethod.resolve().getSignature())) {
-						result.add(ancestor.getTypeDeclaration());
+						Optional<ResolvedReferenceTypeDeclaration> typeDeclaration = ancestor.getTypeDeclaration();
+						if (typeDeclaration.isPresent()) {
+							result.add(typeDeclaration.get());
+						}
+						
 					}
 				}
 			}
@@ -281,10 +285,12 @@ public class RefactoringHelper {
 			for (ResolvedReferenceType ancestor : resolvedClass.getAncestors(true)) {
 				ancestors.add(ancestor);
 				// Get indirect ancestors recursively
-				for (ResolvedReferenceType inheritedAncestor : getAllResolvableAncestors(
-						ancestor.getTypeDeclaration())) {
-					if (!ancestors.contains(inheritedAncestor)) {
-						ancestors.add(inheritedAncestor);
+				Optional<ResolvedReferenceTypeDeclaration> typeDeclaration = ancestor.getTypeDeclaration();
+				if (typeDeclaration.isPresent()) {
+					for (ResolvedReferenceType inheritedAncestor : getAllResolvableAncestors(typeDeclaration.get())) {
+						if (!ancestors.contains(inheritedAncestor)) {
+							ancestors.add(inheritedAncestor);
+						}
 					}
 				}
 			}
