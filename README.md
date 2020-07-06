@@ -1,6 +1,6 @@
 # Refactoring-Bot
 
-[![Build Status](https://travis-ci.org/Refactoring-Bot/Refactoring-Bot.svg?branch=master)](https://travis-ci.org/Refactoring-Bot/Refactoring-Bot) 
+[![Build Status](https://github.com/Refactoring-Bot/Refactoring-Bot/workflows/Java%20CI%20with%20Maven%20and%20Sonar/badge.svg)](https://github.com/Refactoring-Bot/Refactoring-Bot/actions)
 [![Sonarcloud Dashboard](https://sonarcloud.io/api/project_badges/measure?project=de.refactoringBot%3ARefactoringBot&metric=alert_status)](https://sonarcloud.io/dashboard?id=de.refactoringBot%3ARefactoringBot) 
 
 Implementation of a bot that performs automatic refactorings based on the results of static code analysis. The changes are made available to the developers as pull requests for easy review. It is possible to interact with the bot through natural language line comments in the proposed pull requests.
