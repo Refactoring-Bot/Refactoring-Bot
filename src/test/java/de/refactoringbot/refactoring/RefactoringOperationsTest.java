@@ -1,16 +1,18 @@
 package de.refactoringbot.refactoring;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+
+import java.util.Map;
+
+import org.junit.Test;
+
 import de.refactoringbot.refactoring.supportedrefactorings.AddOverrideAnnotation;
+import de.refactoringbot.refactoring.supportedrefactorings.ImmediatelyReturnExpression;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveCommentedOutCode;
 import de.refactoringbot.refactoring.supportedrefactorings.RemoveMethodParameter;
 import de.refactoringbot.refactoring.supportedrefactorings.RenameMethod;
 import de.refactoringbot.refactoring.supportedrefactorings.ReorderModifier;
-import org.junit.Test;
-
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 public class RefactoringOperationsTest {
 
@@ -28,6 +30,7 @@ public class RefactoringOperationsTest {
 						entry("Rename Method", RenameMethod.class),
 						entry("Reorder Modifier", ReorderModifier.class),
 						entry("Remove Commented Out Code", RemoveCommentedOutCode.class),
-						entry("Remove Parameter", RemoveMethodParameter.class));
+						entry("Remove Parameter", RemoveMethodParameter.class),
+						entry("Immediately return expression", ImmediatelyReturnExpression.class));
 	}
 }

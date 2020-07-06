@@ -85,8 +85,7 @@ public class RemoveCommentedOutCodeTest extends AbstractRefactoringTests {
 		File modifiedTempFile = removeComment(lineWithCommentToBeRemoved);
 
 		String lineContent = getStrippedContentFromFile(modifiedTempFile, lineWithCommentToBeRemoved);
-		// For some reason JavaParser also removes one empty line below the comment block
-		assertThat(lineContent).isEqualTo("}");
+		assertThat(lineContent).isEmpty();
 	}
 
 	@Test

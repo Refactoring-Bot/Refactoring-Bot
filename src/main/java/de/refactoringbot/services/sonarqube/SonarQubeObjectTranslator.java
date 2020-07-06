@@ -64,6 +64,10 @@ public class SonarQubeObjectTranslator {
 				botIssue.setRefactorString(getNameOfFirstUnusedParameterInIssue(issue));
 				botIssues.add(botIssue);
 				break;
+			case "squid:S1488":
+				botIssue.setRefactoringOperation(RefactoringOperations.IMMEDIATELY_RETURN_EXPRESSION);
+				botIssues.add(botIssue);
+				break;
 			default:
 				botIssue.setRefactoringOperation(RefactoringOperations.UNKNOWN);
 				break;
