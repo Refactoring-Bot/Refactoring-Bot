@@ -52,7 +52,7 @@ public class WitServiceIT {
 		 * successfully run it on a local machine, this method must not be executed and
 		 * a client token for wit API access must be provided in the mock.
 		 */
-		assumeThat(System.getenv("TRAVIS")).isNotNull();
+		assumeThat(System.getenv("GITHUB_ACTIONS")).isNotNull();
 		assumeThat(System.getenv(WIT_CLIENT_TOKEN_ENV_NAME)).isNotNull();
 	}
 
