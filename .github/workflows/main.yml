@@ -20,7 +20,7 @@ jobs:
         WIT_CLIENT_TOKEN: ${{secrets.WIT_CLIENT_TOKEN}}
     - name: analyze with sonarcloud
       if: github.ref == 'refs/heads/master'
-      uses: xlui/action-aven-cli/jdk11@master      
+      uses: xlui/action-maven-cli/jdk11@master      
       with:
         args: clean package org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
       env:
