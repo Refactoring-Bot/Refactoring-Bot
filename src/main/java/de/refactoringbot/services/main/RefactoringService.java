@@ -24,8 +24,6 @@ import de.refactoringbot.model.exceptions.DatabaseConnectionException;
 import de.refactoringbot.model.exceptions.GitHubAPIException;
 import de.refactoringbot.model.exceptions.GitLabAPIException;
 import de.refactoringbot.model.exceptions.GitWorkflowException;
-import de.refactoringbot.model.exceptions.ReviewCommentUnclearException;
-import de.refactoringbot.model.exceptions.WitAPIException;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequest;
 import de.refactoringbot.model.output.botpullrequest.BotPullRequests;
 import de.refactoringbot.model.output.botpullrequestcomment.BotPullRequestComment;
@@ -34,7 +32,6 @@ import de.refactoringbot.model.refactoredissue.RefactoredIssueRepository;
 import de.refactoringbot.refactoring.RefactoringOperations;
 import de.refactoringbot.refactoring.RefactoringPicker;
 import de.refactoringbot.services.sonarqube.SonarQubeObjectTranslator;
-import de.refactoringbot.services.wit.WitService;
 import javassist.NotFoundException;
 
 /**
@@ -68,8 +65,6 @@ public class RefactoringService {
 	SonarQubeObjectTranslator sonarTranslator;
 	@Autowired
 	BotService botService;
-	@Autowired
-	WitService witService;
 	@Autowired
 	FileService fileService;
 
@@ -182,36 +177,26 @@ public class RefactoringService {
 
 					if (grammarService.isBotMentionedInComment(comment.getCommentBody(), config)
 							&& !grammarService.isCommentByBot(comment.getUsername(), config)) {
-						// If can NOT parse comment with ANTLR
-						if (!grammarService.checkComment(comment.getCommentBody(), config)) {
-							// Try to parse with wit.ai
-							try {
-								botIssue = witService.createBotIssue(comment);
-								logger.info("Comment translated with 'wit.ai': {}", comment.getCommentBody());
-							} catch (ReviewCommentUnclearException | WitAPIException e) {
-								logger.warn("Comment translation with 'wit.ai' failed! Comment: "
-										+ comment.getCommentBody());
-								botIssue = createBotIssueFromInvalidComment(comment, e.getMessage());
-								allRefactoredIssues
-										.add(processFailedRefactoring(config, comment, request, botIssue, true));
-								continue;
-							}
-						} else {
+						boolean isValidBotGrammar = grammarService.checkComment(comment.getCommentBody(), config);
+						if (isValidBotGrammar) {
 							// Try to refactor with ANTRL4
 							try {
-								// If ANTLR can parse -> create Issue
-								botIssue = grammarService.createIssueFromComment(comment, config);
+								botIssue = grammarService.createIssueFromComment(comment);
 								logger.info("Comment translated with 'ANTLR': {}", comment.getCommentBody());
 							} catch (Exception g) {
 								logger.error(g.getMessage(), g);
-								// If refactoring failed
 								botIssue = createBotIssueFromInvalidComment(comment, g.getMessage());
 								allRefactoredIssues
 										.add(processFailedRefactoring(config, comment, request, botIssue, true));
 								continue;
 							}
+						} else {
+							logger.warn("Comment has no valid grammar! Comment: {}", comment.getCommentBody());
+							botIssue = createBotIssueFromInvalidComment(comment, "Comment has no valid grammar!");
+							allRefactoredIssues.add(processFailedRefactoring(config, comment, request, botIssue, true));
+							continue;
 						}
-						// Refactor the created BotIssue
+						// refactor the created BotIssue
 						allRefactoredIssues.add(refactorComment(config, botIssue, request, comment));
 					}
 				}

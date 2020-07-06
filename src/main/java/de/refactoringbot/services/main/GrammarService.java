@@ -98,7 +98,7 @@ public class GrammarService {
 	 * @return issue
 	 * @throws Exception
 	 */
-	public BotIssue createIssueFromComment(BotPullRequestComment comment, GitConfiguration gitConfig) throws Exception {
+	public BotIssue createIssueFromComment(BotPullRequestComment comment) throws Exception {
 		try {
 			// Create object
 			BotIssue issue = new BotIssue();
