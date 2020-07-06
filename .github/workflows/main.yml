@@ -38,12 +38,12 @@ jobs:
       - name: Run analysis
         run: >
           ./mvnw --batch-mode
-          -Pcoverage
           clean org.jacoco:jacoco-maven-plugin:prepare-agent verify
           sonar:sonar
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.organization=refactoring-bot
           -Dsonar.projectKey=de.refactoringBot:RefactoringBot
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
