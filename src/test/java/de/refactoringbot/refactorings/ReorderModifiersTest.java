@@ -80,7 +80,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 		// assert
 		FileInputStream in = new FileInputStream(tempFile);
 		CompilationUnit cu = StaticJavaParser.parse(in);
-		FieldDeclaration fieldDeclarationAfterRefactoring = RefactoringHelper
+		FieldDeclaration fieldDeclarationAfterRefactoring = ReorderModifier
 				.getFieldDeclarationByLineNumber(lineNumber, cu);
 		assertAllModifiersInCorrectOrder(fieldDeclarationAfterRefactoring.getModifiers());
 	}
@@ -101,7 +101,7 @@ public class ReorderModifiersTest extends AbstractRefactoringTests {
 		// assert
 		FileInputStream in = new FileInputStream(tempFile);
 		CompilationUnit cu = StaticJavaParser.parse(in);
-		FieldDeclaration fieldDeclarationAfterRefactoring = RefactoringHelper
+		FieldDeclaration fieldDeclarationAfterRefactoring = ReorderModifier
 				.getFieldDeclarationByLineNumber(lineNumber, cu);
 		assertAllModifiersInCorrectOrder(fieldDeclarationAfterRefactoring.getModifiers());
 	}

@@ -112,25 +112,6 @@ public class RefactoringHelper {
 	}
 
 	/**
-	 * Finds a field declaration in a compilation unit that starts at the specified
-	 * line number
-	 * 
-	 * @param lineNumber
-	 * @param cu
-	 * @return FieldDeclaration or null if none found
-	 */
-	public static FieldDeclaration getFieldDeclarationByLineNumber(int lineNumber, CompilationUnit cu) {
-		FieldDeclaration result = null;
-		List<FieldDeclaration> fields = cu.findAll(FieldDeclaration.class);
-		for (FieldDeclaration field : fields) {
-			if (isFieldDeclarationAtLine(field, lineNumber)) {
-				result = field;
-			}
-		}
-		return result;
-	}
-
-	/**
 	 * @param fieldDeclaration
 	 * @param lineNumber
 	 * @return true if given field starts at given line, false otherwise

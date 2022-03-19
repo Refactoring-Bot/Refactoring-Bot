@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.PrintWriter;
 import java.util.EnumSet;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,25 @@ import de.refactoringbot.refactoring.RefactoringImpl;
 public class ReorderModifier implements RefactoringImpl {
 
 	/**
+	 * Finds a field declaration in a compilation unit that starts at the specified
+	 * line number
+	 *
+	 * @param lineNumber
+	 * @param cu
+	 * @return FieldDeclaration or null if none found
+	 */
+	public static FieldDeclaration getFieldDeclarationByLineNumber(int lineNumber, CompilationUnit cu) {
+		FieldDeclaration result = null;
+		List<FieldDeclaration> fields = cu.findAll(FieldDeclaration.class);
+		for (FieldDeclaration field : fields) {
+			if (RefactoringHelper.isFieldDeclarationAtLine(field, lineNumber)) {
+				result = field;
+			}
+		}
+		return result;
+	}
+
+	/**
 	 * Reorder modifiers of a given field or method to comply with the JLS
 	 */
 	@Override
@@ -38,7 +58,7 @@ public class ReorderModifier implements RefactoringImpl {
 		FileInputStream in = new FileInputStream(filepath);
 		CompilationUnit compilationUnit = LexicalPreservingPrinter.setup(StaticJavaParser.parse(in));
 
-		FieldDeclaration field = RefactoringHelper.getFieldDeclarationByLineNumber(issue.getLine(), compilationUnit);
+		FieldDeclaration field = getFieldDeclarationByLineNumber(issue.getLine(), compilationUnit);
 		MethodDeclaration method = RefactoringHelper.getMethodDeclarationByLineNumber(issue.getLine(),
 				compilationUnit);
 		boolean isModifierListUnchanged = false;
