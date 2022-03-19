@@ -249,10 +249,10 @@ public class GitlabDataGrabber {
 		headers.set(TOKEN_HEADER, gitConfig.getBotToken());
 		HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
 
-		String json = null;
+		String requestJson= null;
 		try {
 			// Send Request to the GitLab-API
-			json = rest.exchange(requestUri, HttpMethod.GET, entity, String.class).getBody();
+			requestJson = rest.exchange(requestUri, HttpMethod.GET, entity, String.class).getBody();
 		} catch (RestClientException e) {
 			logger.error(e.getMessage(), e);
 			throw new GitLabAPIException("Could not get Pull-Requests from GitLab!", e);
@@ -261,7 +261,7 @@ public class GitlabDataGrabber {
 		GitLabPullRequests allRequests = new GitLabPullRequests();
 
 		try {
-			List<GitLabPullRequest> requestList = mapper.readValue(json,
+			List<GitLabPullRequest> requestList = mapper.readValue(requestJson,
 					mapper.getTypeFactory().constructCollectionType(List.class, GitLabPullRequest.class));
 			allRequests.setAllPullRequests(requestList);
 			return allRequests;
@@ -403,9 +403,9 @@ public class GitlabDataGrabber {
 		URI result = null;
 		try {
 			result = new URI(link);
-		} catch (URISyntaxException u) {
-			logger.error(u.getMessage(), u);
-			throw new URISyntaxException("Could not create URI from given API link!", u.getMessage());
+		} catch (URISyntaxException uriSyntaxException) {
+			logger.error(uriSyntaxException.getMessage(), uriSyntaxException);
+			throw new URISyntaxException("Could not create URI from given API link!", uriSyntaxException.getMessage());
 		}
 		return result;
 	}

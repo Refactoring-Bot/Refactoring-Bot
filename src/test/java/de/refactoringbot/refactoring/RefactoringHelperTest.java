@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import de.refactoringbot.refactoring.supportedrefactorings.ReorderModifier;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -87,7 +88,7 @@ public class RefactoringHelperTest {
 		String expectedFieldAsString = "public static int lineNumberOfFieldDeclaration = " + lineNumber + ";";
 
 		// act
-		FieldDeclaration field = RefactoringHelper.getFieldDeclarationByLineNumber(lineNumber, cu);
+		FieldDeclaration field = ReorderModifier.getFieldDeclarationByLineNumber(lineNumber, cu);
 
 		// assert
 		assertThat(field).isNotNull();

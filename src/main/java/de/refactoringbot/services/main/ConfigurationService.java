@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Optional;
 
+import de.refactoringbot.api.main.ApiGrabberInterface;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import de.refactoringbot.api.main.ApiGrabber;
 import de.refactoringbot.configuration.BotConfiguration;
 import de.refactoringbot.model.configuration.ConfigurationRepository;
 import de.refactoringbot.model.configuration.GitConfiguration;
@@ -34,7 +34,7 @@ public class ConfigurationService {
 	@Autowired
 	ConfigurationRepository repo;
 	@Autowired
-	ApiGrabber grabber;
+	ApiGrabberInterface grabber;
 	@Autowired
 	GithubObjectTranslator translator;
 	@Autowired

@@ -81,9 +81,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath());
 
-		apiUriBuilder.queryParam("access_token", botToken);
-
-		URI githubURI = apiUriBuilder.build().encode().toUri();
+		URI githubURI = getUri(apiUriBuilder, botToken);
 
 		RestTemplate rest = new RestTemplate();
 
@@ -98,6 +96,13 @@ public class GithubDataGrabber {
 			logger.error(e.getMessage(), e);
 			throw new GitHubAPIException("Repository does not exist on GitHub or invalid Bot-Token!", e);
 		}
+	}
+
+	private URI getUri(UriComponentsBuilder apiUriBuilder, String botToken) {
+		apiUriBuilder.queryParam("access_token", botToken);
+
+		URI githubURI = apiUriBuilder.build().encode().toUri();
+		return githubURI;
 	}
 
 	/**
@@ -125,9 +130,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme()).host(configUri.getHost())
 				.path(configUri.getPath());
 
-		apiUriBuilder.queryParam("access_token", botToken);
-
-		URI githubURI = apiUriBuilder.build().encode().toUri();
+		URI githubURI = getUri(apiUriBuilder, botToken);
 
 		RestTemplate rest = new RestTemplate();
 		HttpHeaders headers = new HttpHeaders();
@@ -174,9 +177,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/branches/" + branchName);
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
-
-		URI pullsUri = apiUriBuilder.build().encode().toUri();
+		URI pullsUri = getUri(apiUriBuilder, gitConfig.getBotToken());
 
 		RestTemplate rest = new RestTemplate();
 
@@ -216,9 +217,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/pulls");
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
-
-		URI pullsUri = apiUriBuilder.build().encode().toUri();
+		URI pullsUri = getUri(apiUriBuilder, gitConfig.getBotToken());
 
 		RestTemplate rest = new RestTemplate();
 
@@ -261,9 +260,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(commentsUri.getScheme())
 				.host(commentsUri.getHost()).path(commentsUri.getPath());
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
-
-		URI githubURI = apiUriBuilder.build().encode().toUri();
+		URI githubURI = getUri(apiUriBuilder, gitConfig.getBotToken());
 
 		RestTemplate rest = new RestTemplate();
 
@@ -310,9 +307,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/pulls/" + requestNumber);
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
-
-		URI pullsUri = apiUriBuilder.build().encode().toUri();
+		URI pullsUri = getUri(apiUriBuilder, gitConfig.getBotToken());
 
 		// For PATCH-Requests
 		HttpHeaders headers = new HttpHeaders();
@@ -348,9 +343,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/pulls/" + requestNumber + "/comments");
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
-
-		URI pullsUri = apiUriBuilder.build().encode().toUri();
+		URI pullsUri = getUri(apiUriBuilder, gitConfig.getBotToken());
 
 		RestTemplate rest = new RestTemplate();
 
@@ -379,9 +372,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/pulls");
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
-
-		URI pullsUri = apiUriBuilder.build().encode().toUri();
+		URI pullsUri = getUri(apiUriBuilder, gitConfig.getBotToken());
 
 		RestTemplate rest = new RestTemplate();
 
@@ -410,9 +401,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath() + "/forks");
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
-
-		URI forksUri = apiUriBuilder.build().encode().toUri();
+		URI forksUri = getUri(apiUriBuilder, gitConfig.getBotToken());
 
 		RestTemplate rest = new RestTemplate();
 
@@ -446,9 +435,7 @@ public class GithubDataGrabber {
 		UriComponentsBuilder apiUriBuilder = UriComponentsBuilder.newInstance().scheme(configUri.getScheme())
 				.host(configUri.getHost()).path(configUri.getPath());
 
-		apiUriBuilder.queryParam("access_token", gitConfig.getBotToken());
-
-		URI repoUri = apiUriBuilder.build().encode().toUri();
+		URI repoUri = getUri(apiUriBuilder, gitConfig.getBotToken());
 
 		RestTemplate rest = new RestTemplate();
 
